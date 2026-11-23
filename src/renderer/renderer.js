@@ -2,7 +2,6 @@ const listEl = document.getElementById('server-list');
 const formEl = document.getElementById('server-form');
 const testBtn = document.getElementById('btn-test');
 const testResultEl = document.getElementById('test-result');
-const placeholderEl = document.getElementById('placeholder');
 const viewEl = document.getElementById('server-view');
 const nameEl = document.getElementById('srv-name');
 const hostEl = document.getElementById('srv-host');
@@ -175,7 +174,6 @@ async function loadStatus() {
 async function selectServer(s) {
   if (currentServer && currentServer.id !== s.id) await window.api.stopLogs(currentServer.id);
   currentServer = s;
-  placeholderEl.hidden = true;
   viewEl.hidden = false;
   nameEl.textContent = s.name;
   hostEl.textContent = `${s.host}:${s.queryPort}`;
@@ -302,7 +300,6 @@ deleteBtn.addEventListener('click', async () => {
   currentServer = null;
   clearInterval(statusTimer);
   viewEl.hidden = true;
-  placeholderEl.hidden = false;
   await refreshList();
 });
 
