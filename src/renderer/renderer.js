@@ -306,4 +306,9 @@ deleteBtn.addEventListener('click', async () => {
   await refreshList();
 });
 
+window.api.getBuild().then((b) => {
+  const sub = document.querySelector('.brand-sub');
+  if (sub) sub.textContent = `Gérez votre serveur Minecraft — build ${b}`;
+});
+
 refreshList();
