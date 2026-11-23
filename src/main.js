@@ -35,6 +35,7 @@ function publicServer(server) {
     sshUser: server.sshUser,
     serverDir: server.serverDir,
     hasSshPassword: Boolean(server.encryptedSshPassword),
+    sshKey: server.sshKey,
     hasSshKey: Boolean(server.sshKey),
   };
 }
