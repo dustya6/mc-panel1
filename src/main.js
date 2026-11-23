@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
 const { Client } = require('ssh2');
@@ -34,6 +35,7 @@ function publicServer(server) {
     sshUser: server.sshUser,
     serverDir: server.serverDir,
     hasSshPassword: Boolean(server.encryptedSshPassword),
+    hasSshKey: Boolean(server.sshKey),
   };
 }
 
@@ -96,7 +98,8 @@ function startLogStream(server) {
   const client = new Client();
   let remainder = '';
   client.on('ready', () => {
-    const dir = (server.serverDir || '~/minecraft').replace(/^~/, '$HOME');
+    const raw = (server.serverDir || '~/minecraft').trim();
+    const dir = raw.replace(/^~\s*/, os.homedir() + '/');
     client.exec(`tail -n 400 -F "${dir}/logs/latest.log"`, (err, stream) => {
       if (err) {
         if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
@@ -120,13 +123,15 @@ function startLogStream(server) {
   client.on('error', (err) => {
     if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
   });
-  client.connect({
+  const sshConfig = {
     host: server.host,
     port: Number(server.sshPort) || 22,
     username: server.sshUser,
-    password: decrypt(server.encryptedSshPassword),
     readyTimeout: 8000,
-  });
+  };
+  if (server.sshKey) sshConfig.privateKey = fs.readFileSync(server.sshKey);
+  else sshConfig.password = decrypt(server.encryptedSshPassword);
+  client.connect(sshConfig);
 }
 
 function createWindow() {
@@ -165,6 +170,7 @@ app.whenReady().then(() => {
       sshPort: Number(input.sshPort) || 22,
       sshUser: input.sshUser || '',
       encryptedSshPassword: encrypt(input.sshPassword) || (existing ? existing.encryptedSshPassword : null),
+      sshKey: input.sshKey || (existing ? existing.sshKey : ''),
       serverDir: input.serverDir || '~/minecraft',
     };
     const index = servers.findIndex((s) => s.id === entry.id);

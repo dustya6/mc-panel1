@@ -57,6 +57,7 @@ function formData() {
     sshPort: field('f-ssh-port') || '22',
     sshUser: field('f-ssh-user'),
     sshPassword: document.getElementById('f-ssh-pass').value,
+    sshKey: field('f-ssh-key'),
     serverDir: field('f-server-dir') || '~/minecraft',
   };
 }
@@ -184,6 +185,7 @@ async function selectServer(s) {
   document.getElementById('f-rcon-port').value = s.rconPort;
   document.getElementById('f-ssh-port').value = s.sshPort || 22;
   document.getElementById('f-ssh-user').value = s.sshUser || '';
+  document.getElementById('f-ssh-key').value = s.sshKey || '';
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
   consoleOut.innerHTML = '';
   loadCmdHistory();
@@ -200,7 +202,13 @@ async function selectServer(s) {
 
 formEl.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const saved = await window.api.saveServer(formData());
+  const data = formData();
+  if (!data.password && !(currentServer && currentServer.hasPassword)) {
+    testResultEl.className = 'err';
+    testResultEl.textContent = 'Mets le mot de passe RCON avant d\'enregistrer, sinon la console ne marchera pas.';
+    return;
+  }
+  const saved = await window.api.saveServer(data);
   formEl.reset();
   await selectServer(saved);
 });
