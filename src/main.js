@@ -1,13 +1,13 @@
 const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
 const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
+const BUILD = 'ssh-home-remote';
 
 const serversFile = () => path.join(app.getPath('userData'), 'servers.json');
 
@@ -99,9 +99,9 @@ function startLogStream(server) {
   const client = new Client();
   let remainder = '';
   client.on('ready', () => {
-    const raw = (server.serverDir || '~/minecraft').trim();
-    const dir = raw.replace(/^~\s*/, os.homedir() + '/');
-    client.exec(`tail -n 400 -F "${dir}/logs/latest.log"`, (err, stream) => {
+    const raw = (server.serverDir || '~/minecraft').trim().replace(/^~\s*/, '~');
+    const dirExpr = raw.startsWith('~') ? `"$HOME${raw.slice(1)}"` : `"${raw}"`;
+    client.exec(`tail -n 400 -F ${dirExpr}/logs/latest.log`, (err, stream) => {
       if (err) {
         if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
         client.end();
@@ -155,6 +155,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('app:build', () => BUILD);
+
   ipcMain.handle('servers:list', () => loadServers().map(publicServer));
 
   ipcMain.handle('servers:save', (event, input) => {
