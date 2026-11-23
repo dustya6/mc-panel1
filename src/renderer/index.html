@@ -2,48 +2,81 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self'" />
     <title>MC Panel</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <aside>
-      <h1>MC Panel</h1>
+      <div class="brand">
+        <span class="brand-logo">⛏</span>
+        <div>
+          <h1>MC Panel</h1>
+          <p class="brand-sub">Gérez votre serveur Minecraft</p>
+        </div>
+      </div>
       <h2>Mes serveurs</h2>
       <ul id="server-list"></ul>
-      <h2>Ajouter un serveur</h2>
-      <form id="server-form">
-        <input id="f-name" type="text" placeholder="Nom (ex : Mon serveur)" required />
-        <input id="f-host" type="text" placeholder="Adresse IP du serveur" required />
-        <input id="f-query-port" type="number" placeholder="Port query" value="25565" />
-        <input id="f-rcon-port" type="number" placeholder="Port RCON" value="25575" />
-        <input id="f-password" type="password" placeholder="Mot de passe RCON" />
-        <div class="row">
-          <button type="submit">Enregistrer</button>
-          <button type="button" id="btn-test">Tester la connexion</button>
-        </div>
-      </form>
-      <p id="test-result"></p>
+      <div class="card form-card">
+        <h2>Ajouter un serveur</h2>
+        <form id="server-form">
+          <label>Nom du serveur
+            <input id="f-name" type="text" placeholder="Mon serveur" required />
+          </label>
+          <label>Adresse IP
+            <input id="f-host" type="text" placeholder="62.220.136.19" required />
+          </label>
+          <div class="grid2">
+            <label>Port query
+              <input id="f-query-port" type="number" value="25565" />
+            </label>
+            <label>Port RCON
+              <input id="f-rcon-port" type="number" value="25575" />
+            </label>
+          </div>
+          <label>Mot de passe RCON
+            <input id="f-password" type="password" placeholder="••••••••" />
+          </label>
+          <div class="row">
+            <button type="submit" class="primary">Enregistrer</button>
+            <button type="button" id="btn-test" class="ghost">Tester la connexion</button>
+          </div>
+        </form>
+        <p id="test-result"></p>
+      </div>
     </aside>
     <main>
-      <p id="placeholder">Sélectionne un serveur à gauche pour voir ses statistiques.</p>
+      <div id="placeholder" class="empty">
+        <div class="empty-icon">⛏</div>
+        <p>Sélectionnez un serveur à gauche<br />pour voir ses statistiques en direct.</p>
+      </div>
       <section id="server-view" hidden>
         <div class="header">
-          <h2 id="srv-name"></h2>
+          <div>
+            <h2 id="srv-name"></h2>
+            <span id="srv-host" class="muted"></span>
+          </div>
           <div class="row">
-            <button type="button" id="btn-refresh">Rafraîchir</button>
+            <button type="button" id="btn-refresh" class="ghost">Rafraîchir</button>
             <button type="button" id="btn-delete" class="danger">Supprimer</button>
           </div>
         </div>
-        <div id="status"></div>
-        <h3>Joueurs en ligne</h3>
-        <ul id="players"></ul>
-        <h3>Console (RCON)</h3>
-        <form id="console-form" class="row">
-          <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />
-          <button type="submit">Envoyer</button>
-        </form>
-        <pre id="console-out"></pre>
+        <div class="card">
+          <div class="card-title">Statut du serveur</div>
+          <div id="status"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Joueurs en ligne</div>
+          <ul id="players" class="players"></ul>
+        </div>
+        <div class="card console-card">
+          <div class="card-title">Console (RCON) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
+          <pre id="console-out"></pre>
+          <form id="console-form" class="row">
+            <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />
+            <button type="submit" class="primary">Envoyer</button>
+          </form>
+        </div>
       </section>
     </main>
     <script src="renderer.js"></script>

@@ -5,6 +5,7 @@ const testResultEl = document.getElementById('test-result');
 const placeholderEl = document.getElementById('placeholder');
 const viewEl = document.getElementById('server-view');
 const nameEl = document.getElementById('srv-name');
+const hostEl = document.getElementById('srv-host');
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
@@ -66,8 +67,37 @@ function parseList(list) {
     .filter(Boolean);
 }
 
+function playerChip(name) {
+  const li = document.createElement('li');
+  const img = document.createElement('img');
+  img.alt = name;
+  img.src = `https://mc-heads.net/avatar/${encodeURIComponent(name)}/26`;
+  const fb = document.createElement('span');
+  fb.className = 'avatar-fallback';
+  fb.textContent = (name[0] || '?').toUpperCase();
+  fb.style.display = 'none';
+  img.onerror = () => {
+    img.style.display = 'none';
+    fb.style.display = 'inline-flex';
+  };
+  const label = document.createElement('span');
+  label.textContent = name;
+  li.appendChild(img);
+  li.appendChild(fb);
+  li.appendChild(label);
+  return li;
+}
+
 function renderStatus(result) {
   statusEl.innerHTML = '';
+  const online = Boolean(result.ping);
+  const badge = document.createElement('span');
+  badge.className = `badge ${online ? 'online' : 'offline'}`;
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  badge.appendChild(dot);
+  badge.appendChild(document.createTextNode(online ? 'En ligne' : 'Hors ligne'));
+  statusEl.appendChild(badge);
   if (result.error) {
     const p = document.createElement('p');
     p.className = 'error';
@@ -77,7 +107,7 @@ function renderStatus(result) {
   if (result.ping) {
     const p = document.createElement('p');
     const lat = result.ping.latency != null ? `, latence ${result.ping.latency} ms` : '';
-    p.textContent = `En ligne — version ${result.ping.version}, ${result.ping.playersOnline}/${result.ping.playersMax} joueurs${lat}`;
+    p.textContent = `Version ${result.ping.version} — ${result.ping.playersOnline}/${result.ping.playersMax} joueurs${lat}`;
     statusEl.appendChild(p);
     if (result.ping.motd) {
       const m = document.createElement('p');
@@ -93,26 +123,36 @@ function renderStatus(result) {
   }
   if (names.length === 0) {
     const li = document.createElement('li');
+    li.className = 'muted';
     li.textContent = 'Aucun joueur en ligne';
     playersEl.appendChild(li);
   } else {
-    for (const n of names) {
-      const li = document.createElement('li');
-      li.textContent = n;
-      playersEl.appendChild(li);
-    }
+    for (const n of names) playersEl.appendChild(playerChip(n));
   }
 }
 
 async function refreshList() {
   const servers = await window.api.listServers();
   listEl.innerHTML = '';
+  if (servers.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'server-empty';
+    li.textContent = 'Aucun serveur enregistré.';
+    listEl.appendChild(li);
+    return;
+  }
   for (const s of servers) {
     const li = document.createElement('li');
     const btn = document.createElement('button');
     btn.className = 'server-item';
     if (currentServer && currentServer.id === s.id) btn.classList.add('active');
-    btn.textContent = s.name;
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = s.name;
+    const hostSpan = document.createElement('span');
+    hostSpan.className = 'host';
+    hostSpan.textContent = `${s.host}:${s.queryPort}`;
+    btn.appendChild(nameSpan);
+    btn.appendChild(hostSpan);
     btn.addEventListener('click', () => selectServer(s));
     li.appendChild(btn);
     listEl.appendChild(li);
@@ -130,6 +170,7 @@ async function selectServer(s) {
   placeholderEl.hidden = true;
   viewEl.hidden = false;
   nameEl.textContent = s.name;
+  hostEl.textContent = `${s.host}:${s.queryPort}`;
   consoleOut.textContent = '';
   loadCmdHistory();
   await refreshList();
@@ -146,14 +187,17 @@ formEl.addEventListener('submit', async (e) => {
 });
 
 testBtn.addEventListener('click', async () => {
+  testResultEl.className = '';
   testResultEl.textContent = 'Test en cours...';
   const result = await window.api.testServer(formData());
   if (result.error) {
+    testResultEl.className = 'err';
     testResultEl.textContent = `Échec : ${result.error}`;
   } else {
     const parts = [];
     if (result.ping) parts.push(`${result.ping.playersOnline}/${result.ping.playersMax} joueurs en ligne`);
     if (result.list) parts.push(`RCON OK : ${result.list}`);
+    testResultEl.className = 'ok';
     testResultEl.textContent = `OK — ${parts.join(' | ')}`;
   }
 });
