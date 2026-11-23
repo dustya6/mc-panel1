@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'debug-log-file';
+const BUILD = 'safe-mode';
 
 function debugLog(msg) {
   try {
@@ -182,8 +182,12 @@ function createWindow() {
     },
   });
   mainWindow = win;
+  debugLog('window created');
   win.webContents.on('console-message', (event, level, message) => {
     debugLog(`[console.${level}] ${message}`);
+  });
+  win.webContents.on('render-process-gone', (event, details) => {
+    debugLog(`render-process-gone: ${JSON.stringify(details)}`);
   });
   win.on('closed', () => {
     for (const id of [...logStreams.keys()]) stopLogStream(id);
@@ -193,6 +197,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  debugLog('app ready');
   ipcMain.handle('app:build', () => BUILD);
 
   ipcMain.handle('debug:log', (event, msg) => {

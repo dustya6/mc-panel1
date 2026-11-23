@@ -4,7 +4,8 @@
   "description": "Application de bureau pour surveiller et gérer un serveur Minecraft (joueurs en ligne, console RCON, statistiques)",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "start-safe": "electron . --disable-gpu"
   },
   "dependencies": {
     "minecraft-server-util": "^5.4.4",
