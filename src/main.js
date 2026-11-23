@@ -77,7 +77,7 @@ async function probe({ host, queryPort, rconPort, password }) {
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
-    height: 800,
+    height: 900,
     title: 'MC Panel',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
