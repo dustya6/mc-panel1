@@ -15,6 +15,31 @@ const deleteBtn = document.getElementById('btn-delete');
 
 let currentServer = null;
 let statusTimer = null;
+let cmdHistory = [];
+let cmdIndex = 0;
+let cmdDraft = '';
+
+function historyKey() {
+  return `mcpanel-cmds-${currentServer ? currentServer.id : 'default'}`;
+}
+
+function loadCmdHistory() {
+  try {
+    cmdHistory = JSON.parse(localStorage.getItem(historyKey()) || '[]');
+  } catch {
+    cmdHistory = [];
+  }
+  cmdIndex = cmdHistory.length;
+}
+
+function pushCmdHistory(cmd) {
+  if (cmdHistory[cmdHistory.length - 1] !== cmd) {
+    cmdHistory.push(cmd);
+    if (cmdHistory.length > 50) cmdHistory = cmdHistory.slice(-50);
+    localStorage.setItem(historyKey(), JSON.stringify(cmdHistory));
+  }
+  cmdIndex = cmdHistory.length;
+}
 
 function field(id) {
   return document.getElementById(id).value.trim();
@@ -106,6 +131,7 @@ async function selectServer(s) {
   viewEl.hidden = false;
   nameEl.textContent = s.name;
   consoleOut.textContent = '';
+  loadCmdHistory();
   await refreshList();
   await loadStatus();
   clearInterval(statusTimer);
@@ -137,6 +163,7 @@ consoleForm.addEventListener('submit', async (e) => {
   if (!currentServer) return;
   const cmd = cmdInput.value.trim();
   if (!cmd) return;
+  pushCmdHistory(cmd);
   consoleOut.textContent += `> ${cmd}\n`;
   try {
     const out = await window.api.sendCommand(currentServer.id, cmd);
@@ -146,6 +173,26 @@ consoleForm.addEventListener('submit', async (e) => {
   }
   cmdInput.value = '';
   consoleOut.scrollTop = consoleOut.scrollHeight;
+});
+
+cmdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (cmdIndex > 0) {
+      if (cmdIndex === cmdHistory.length) cmdDraft = cmdInput.value;
+      cmdIndex -= 1;
+      cmdInput.value = cmdHistory[cmdIndex];
+    }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (cmdIndex < cmdHistory.length - 1) {
+      cmdIndex += 1;
+      cmdInput.value = cmdHistory[cmdIndex];
+    } else {
+      cmdIndex = cmdHistory.length;
+      cmdInput.value = cmdDraft;
+    }
+  }
 });
 
 refreshBtn.addEventListener('click', loadStatus);
