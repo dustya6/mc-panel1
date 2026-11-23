@@ -14,6 +14,7 @@ const refreshBtn = document.getElementById('btn-refresh');
 const deleteBtn = document.getElementById('btn-delete');
 
 let currentServer = null;
+let statusTimer = null;
 
 function field(id) {
   return document.getElementById(id).value.trim();
@@ -61,6 +62,9 @@ function renderStatus(result) {
   }
   playersEl.innerHTML = '';
   const names = parseList(result.list);
+  if (names.length === 0 && result.ping && result.ping.playersSample) {
+    names.push(...result.ping.playersSample);
+  }
   if (names.length === 0) {
     const li = document.createElement('li');
     li.textContent = 'Aucun joueur en ligne';
@@ -103,6 +107,8 @@ async function selectServer(s) {
   consoleOut.textContent = '';
   await refreshList();
   await loadStatus();
+  clearInterval(statusTimer);
+  statusTimer = setInterval(loadStatus, 15000);
 }
 
 formEl.addEventListener('submit', async (e) => {
@@ -147,6 +153,7 @@ deleteBtn.addEventListener('click', async () => {
   if (!currentServer) return;
   await window.api.deleteServer(currentServer.id);
   currentServer = null;
+  clearInterval(statusTimer);
   viewEl.hidden = true;
   placeholderEl.hidden = false;
   await refreshList();
