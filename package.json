@@ -1,0 +1,16 @@
+{
+  "name": "mc-panel",
+  "version": "0.1.0",
+  "description": "Application de bureau pour surveiller et gérer un serveur Minecraft (joueurs en ligne, console RCON, statistiques)",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "minecraft-server-util": "^5.4.4",
+    "rcon-client": "^4.2.5"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0"
+  }
+}

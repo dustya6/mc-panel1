@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <title>MC Panel</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <aside>
+      <h1>MC Panel</h1>
+      <h2>Mes serveurs</h2>
+      <ul id="server-list"></ul>
+      <h2>Ajouter un serveur</h2>
+      <form id="server-form">
+        <input id="f-name" type="text" placeholder="Nom (ex : Mon serveur)" required />
+        <input id="f-host" type="text" placeholder="Adresse IP du serveur" required />
+        <input id="f-query-port" type="number" placeholder="Port query" value="25565" />
+        <input id="f-rcon-port" type="number" placeholder="Port RCON" value="25575" />
+        <input id="f-password" type="password" placeholder="Mot de passe RCON" />
+        <div class="row">
+          <button type="submit">Enregistrer</button>
+          <button type="button" id="btn-test">Tester la connexion</button>
+        </div>
+      </form>
+      <p id="test-result"></p>
+    </aside>
+    <main>
+      <p id="placeholder">Sélectionne un serveur à gauche pour voir ses statistiques.</p>
+      <section id="server-view" hidden>
+        <div class="header">
+          <h2 id="srv-name"></h2>
+          <div class="row">
+            <button type="button" id="btn-refresh">Rafraîchir</button>
+            <button type="button" id="btn-delete" class="danger">Supprimer</button>
+          </div>
+        </div>
+        <div id="status"></div>
+        <h3>Joueurs en ligne</h3>
+        <ul id="players"></ul>
+        <h3>Console (RCON)</h3>
+        <form id="console-form" class="row">
+          <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />
+          <button type="submit">Envoyer</button>
+        </form>
+        <pre id="console-out"></pre>
+      </section>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>
