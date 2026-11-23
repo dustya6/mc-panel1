@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ssh-home-remote';
+const BUILD = 'charts-multi-periodes';
 
 const serversFile = () => path.join(app.getPath('userData'), 'servers.json');
 

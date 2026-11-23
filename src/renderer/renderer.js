@@ -9,7 +9,6 @@ const nameEl = document.getElementById('srv-name');
 const hostEl = document.getElementById('srv-host');
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
-const chartEl = document.getElementById('chart');
 const consoleForm = document.getElementById('console-form');
 const cmdInput = document.getElementById('cmd');
 const consoleOut = document.getElementById('console-out');
@@ -19,6 +18,7 @@ const deleteBtn = document.getElementById('btn-delete');
 let currentServer = null;
 let statusTimer = null;
 let currentPage = 'overview';
+let currentRange = 86400000;
 let cmdHistory = [];
 let cmdIndex = 0;
 let cmdDraft = '';
@@ -157,43 +157,82 @@ function renderStatus(result) {
   }
 }
 
-function drawChart(history) {
-  chartEl.innerHTML = '';
+function drawMetric(svg, history, key, color, unit) {
+  svg.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
-  if (!history || history.length < 2) {
+  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
+  let pts = (history || []).filter((p) => p.ts >= since && p[key] != null);
+  if (pts.length === 0) {
     const t = document.createElementNS(ns, 'text');
     t.setAttribute('x', '10');
-    t.setAttribute('y', '80');
+    t.setAttribute('y', '70');
     t.setAttribute('fill', '#8b96a8');
     t.setAttribute('font-size', '12');
-    t.textContent = "Pas encore assez de données — attends ~30 s.";
-    chartEl.appendChild(t);
+    t.textContent = 'Pas de données sur cette période.';
+    svg.appendChild(t);
     return;
   }
+  if (pts.length > 240) {
+    const size = Math.ceil(pts.length / 240);
+    const buckets = [];
+    for (let i = 0; i < pts.length; i += size) {
+      const chunk = pts.slice(i, i + size);
+      buckets.push({ v: chunk.reduce((a, p) => a + p[key], 0) / chunk.length });
+    }
+    pts = buckets;
+  }
   const w = 600;
-  const h = 160;
+  const h = 140;
   const pad = 8;
-  const values = history.map((p) => p.players ?? 0);
-  const max = Math.max(10, ...values);
-  const points = history.map((p, i) => {
-    const x = pad + (i / (history.length - 1)) * (w - 2 * pad);
-    const y = h - pad - ((p.players ?? 0) / max) * (h - 2 * pad);
+  const vals = pts.map((p) => p.v);
+  const digits = key === 'players' ? 0 : 1;
+  const max = Math.max(...vals);
+  const min = Math.min(...vals);
+  const span = max - min || 1;
+  if (pts.length === 1) {
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', '10');
+    t.setAttribute('y', '70');
+    t.setAttribute('fill', '#8b96a8');
+    t.setAttribute('font-size', '12');
+    t.textContent = `${vals[0].toFixed(digits)}${unit} (un seul point sur cette période)`;
+    svg.appendChild(t);
+    return;
+  }
+  const points = pts.map((p, i) => {
+    const x = pad + (i / (pts.length - 1)) * (w - 2 * pad);
+    const y = h - pad - ((p.v - min) / span) * (h - 2 * pad);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
   const line = document.createElementNS(ns, 'polyline');
   line.setAttribute('points', points.join(' '));
   line.setAttribute('fill', 'none');
-  line.setAttribute('stroke', '#3b82f6');
+  line.setAttribute('stroke', color);
   line.setAttribute('stroke-width', '2');
-  chartEl.appendChild(line);
+  svg.appendChild(line);
   const label = document.createElementNS(ns, 'text');
   label.setAttribute('x', String(pad));
   label.setAttribute('y', String(h - 2));
   label.setAttribute('fill', '#8b96a8');
   label.setAttribute('font-size', '11');
-  label.textContent = `${values[values.length - 1]} joueur(s) maintenant — max ${max}`;
-  chartEl.appendChild(label);
+  label.textContent = `max ${max.toFixed(digits)}${unit} — min ${min.toFixed(digits)}${unit} — ${vals[vals.length - 1].toFixed(digits)}${unit} maintenant`;
+  svg.appendChild(label);
 }
+
+function drawAllCharts(history) {
+  drawMetric(document.getElementById('chart-players'), history, 'players', '#3b82f6', '');
+  drawMetric(document.getElementById('chart-latency'), history, 'latency', '#d29922', ' ms');
+  drawMetric(document.getElementById('chart-tps'), history, 'tps', '#3fb950', '');
+}
+
+document.querySelectorAll('.range-btn').forEach((b) => {
+  b.addEventListener('click', async () => {
+    document.querySelectorAll('.range-btn').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    currentRange = b.dataset.range === 'all' ? 'all' : Number(b.dataset.range);
+    if (currentServer) drawAllCharts(await window.api.getHistory(currentServer.id));
+  });
+});
 
 async function refreshList() {
   const servers = await window.api.listServers();
@@ -227,7 +266,7 @@ async function loadStatus() {
   if (!currentServer) return;
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
-  drawChart(await window.api.getHistory(currentServer.id));
+  drawAllCharts(await window.api.getHistory(currentServer.id));
 }
 
 async function selectServer(s) {
