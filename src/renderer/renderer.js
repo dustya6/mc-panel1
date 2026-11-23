@@ -202,21 +202,34 @@ testBtn.addEventListener('click', async () => {
   }
 });
 
+function addConsoleLine(text, cls) {
+  const div = document.createElement('div');
+  div.className = `line ${cls}`;
+  const t = document.createElement('span');
+  t.className = 'ts';
+  t.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] `;
+  div.appendChild(t);
+  div.appendChild(document.createTextNode(text));
+  consoleOut.appendChild(div);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+
 consoleForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentServer) return;
   const cmd = cmdInput.value.trim();
   if (!cmd) return;
   pushCmdHistory(cmd);
-  consoleOut.textContent += `> ${cmd}\n`;
+  addConsoleLine(`> ${cmd}`, 'cmd');
   try {
     const out = await window.api.sendCommand(currentServer.id, cmd);
-    consoleOut.textContent += `${out}\n\n`;
+    for (const l of String(out).split('\n')) {
+      if (l.trim()) addConsoleLine(l, 'out');
+    }
   } catch (err) {
-    consoleOut.textContent += `Erreur : ${err.message}\n\n`;
+    addConsoleLine(`Erreur : ${err.message}`, 'err');
   }
   cmdInput.value = '';
-  consoleOut.scrollTop = consoleOut.scrollHeight;
 });
 
 cmdInput.addEventListener('keydown', (e) => {

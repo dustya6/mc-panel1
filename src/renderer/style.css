@@ -12,7 +12,7 @@
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; border-radius: 0; }
 
 body {
   margin: 0;
@@ -40,7 +40,6 @@ main { flex: 1; padding: 24px; overflow-y: auto; }
   font-size: 24px;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -61,7 +60,6 @@ h2 {
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
 }
@@ -87,7 +85,6 @@ input {
   width: 100%;
   margin-top: 4px;
   padding: 9px 10px;
-  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
@@ -98,7 +95,6 @@ input:focus { outline: none; border-color: var(--primary); }
 button {
   padding: 9px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
   font-size: 13px;
   cursor: pointer;
   background: var(--panel-2);
@@ -120,7 +116,6 @@ button.danger:hover { background: var(--danger); color: #fff; }
   text-align: left;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
   margin: 6px 0;
   padding: 10px 12px;
   display: flex;
@@ -146,12 +141,12 @@ button.danger:hover { background: var(--danger); color: #fff; }
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
-  border-radius: 999px;
+  border: 1px solid currentColor;
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
 }
-.badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.badge .dot { width: 8px; height: 8px; background: currentColor; }
 .badge.online { color: var(--ok); background: rgba(63, 185, 80, .12); }
 .badge.offline { color: var(--danger); background: rgba(229, 83, 75, .12); }
 
@@ -166,16 +161,14 @@ button.danger:hover { background: var(--danger); color: #fff; }
   gap: 8px;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 999px;
   padding: 4px 12px 4px 4px;
   font-size: 13px;
 }
 .players li.muted { border: none; background: none; padding: 4px 2px; }
-.players img { width: 26px; height: 26px; border-radius: 6px; }
+.players img { width: 26px; height: 26px; }
 .avatar-fallback {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
   background: var(--primary);
   color: #fff;
   display: inline-flex;
@@ -187,17 +180,20 @@ button.danger:hover { background: var(--danger); color: #fff; }
 
 .console-card { padding-bottom: 12px; }
 #console-out {
-  background: #0a0d12;
+  background: #000;
   border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 12px;
-  height: 240px;
+  height: 320px;
   overflow-y: auto;
-  white-space: pre-wrap;
   font-size: 13px;
   font-family: var(--mono);
+  color: #d4d4d4;
   margin-bottom: 10px;
 }
+#console-out .line { white-space: pre-wrap; word-break: break-word; min-height: 1.2em; }
+#console-out .ts { color: #6a737d; }
+#console-out .cmd { color: #7ee787; font-weight: 600; }
+#console-out .err { color: #ff7b72; }
 #console-form input { flex: 1; font-family: var(--mono); }
 
 .empty {
