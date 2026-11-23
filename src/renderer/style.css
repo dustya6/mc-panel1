@@ -190,7 +190,7 @@ button.danger:hover { background: var(--danger); color: #fff; }
   background: #000;
   border: 1px solid var(--border);
   padding: 12px;
-  height: 300px;
+  height: 440px;
   overflow-y: auto;
   font-size: 13px;
   font-family: var(--mono);
