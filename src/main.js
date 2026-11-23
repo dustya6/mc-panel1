@@ -23,6 +23,24 @@ function saveServers(servers) {
   fs.writeFileSync(serversFile(), JSON.stringify(servers, null, 2));
 }
 
+const historyDir = () => path.join(app.getPath('userData'), 'history');
+
+function loadHistory(id) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(historyDir(), `${id}.json`), 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function appendHistory(id, point) {
+  fs.mkdirSync(historyDir(), { recursive: true });
+  const file = path.join(historyDir(), `${id}.json`);
+  const history = loadHistory(id);
+  history.push(point);
+  fs.writeFileSync(file, JSON.stringify(history.slice(-1000)));
+}
+
 function publicServer(server) {
   return {
     id: server.id,
@@ -200,13 +218,23 @@ app.whenReady().then(() => {
   ipcMain.handle('server:status', async (event, id) => {
     const server = loadServers().find((s) => s.id === id);
     if (!server) throw new Error('Serveur introuvable');
-    return probe({
+    const result = await probe({
       host: server.host,
       queryPort: server.queryPort,
       rconPort: server.rconPort,
       password: decrypt(server.encryptedPassword),
     });
+    if (result.ping) {
+      appendHistory(server.id, {
+        ts: Date.now(),
+        players: result.ping.playersOnline,
+        latency: result.ping.latency ?? null,
+      });
+    }
+    return result;
   });
+
+  ipcMain.handle('server:history', (event, id) => loadHistory(id));
 
   ipcMain.handle('server:logs:start', (event, id) => {
     const server = loadServers().find((s) => s.id === id);

@@ -15,10 +15,14 @@
           <p class="brand-sub">Gérez votre serveur Minecraft</p>
         </div>
       </div>
+      <nav id="nav">
+        <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
+        <button type="button" class="nav-btn" data-page="console">Console</button>
+      </nav>
       <h2>Mes serveurs</h2>
       <ul id="server-list"></ul>
       <div class="card form-card">
-        <h2>Ajouter un serveur</h2>
+        <h2>Ajouter / modifier un serveur</h2>
         <form id="server-form">
           <label>Nom du serveur
             <input id="f-name" type="text" placeholder="Mon serveur" required />
@@ -64,17 +68,17 @@
       </div>
     </aside>
     <main>
-      <section id="server-view" hidden>
-        <div class="header">
-          <div>
-            <h2 id="srv-name"></h2>
-            <span id="srv-host" class="muted"></span>
-          </div>
-          <div class="row">
-            <button type="button" id="btn-refresh" class="ghost">Rafraîchir</button>
-            <button type="button" id="btn-delete" class="danger">Supprimer</button>
-          </div>
+      <div class="header" id="server-header" hidden>
+        <div>
+          <h2 id="srv-name"></h2>
+          <span id="srv-host" class="muted"></span>
         </div>
+        <div class="row">
+          <button type="button" id="btn-refresh" class="ghost">Rafraîchir</button>
+          <button type="button" id="btn-delete" class="danger">Supprimer</button>
+        </div>
+      </div>
+      <section id="page-overview" hidden>
         <div class="top-cards">
           <div class="card">
             <div class="card-title">Statut du serveur</div>
@@ -85,6 +89,12 @@
             <ul id="players" class="players"></ul>
           </div>
         </div>
+        <div class="card">
+          <div class="card-title">Historique — joueurs en ligne <span class="hint">échantillonné toutes les 15 s, gardé ~4 h en local</span></div>
+          <svg id="chart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+        </div>
+      </section>
+      <section id="page-console" hidden>
         <div class="card console-card">
           <div class="card-title">Console (RCON + logs en direct) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
           <div id="console-out"></div>

@@ -2,11 +2,14 @@ const listEl = document.getElementById('server-list');
 const formEl = document.getElementById('server-form');
 const testBtn = document.getElementById('btn-test');
 const testResultEl = document.getElementById('test-result');
-const viewEl = document.getElementById('server-view');
+const headerEl = document.getElementById('server-header');
+const pageOverview = document.getElementById('page-overview');
+const pageConsole = document.getElementById('page-console');
 const nameEl = document.getElementById('srv-name');
 const hostEl = document.getElementById('srv-host');
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
+const chartEl = document.getElementById('chart');
 const consoleForm = document.getElementById('console-form');
 const cmdInput = document.getElementById('cmd');
 const consoleOut = document.getElementById('console-out');
@@ -15,6 +18,7 @@ const deleteBtn = document.getElementById('btn-delete');
 
 let currentServer = null;
 let statusTimer = null;
+let currentPage = 'overview';
 let cmdHistory = [];
 let cmdIndex = 0;
 let cmdDraft = '';
@@ -40,6 +44,22 @@ function pushCmdHistory(cmd) {
   }
   cmdIndex = cmdHistory.length;
 }
+
+function showPage(page) {
+  currentPage = page;
+  for (const b of document.querySelectorAll('.nav-btn')) {
+    b.classList.toggle('active', b.dataset.page === page);
+  }
+  pageOverview.hidden = page !== 'overview';
+  pageConsole.hidden = page !== 'console';
+}
+
+document.querySelectorAll('.nav-btn').forEach((b) => {
+  b.addEventListener('click', () => {
+    if (!currentServer) return;
+    showPage(b.dataset.page);
+  });
+});
 
 function field(id) {
   return document.getElementById(id).value.trim();
@@ -137,6 +157,44 @@ function renderStatus(result) {
   }
 }
 
+function drawChart(history) {
+  chartEl.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  if (!history || history.length < 2) {
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', '10');
+    t.setAttribute('y', '80');
+    t.setAttribute('fill', '#8b96a8');
+    t.setAttribute('font-size', '12');
+    t.textContent = "Pas encore assez de données — attends ~30 s.";
+    chartEl.appendChild(t);
+    return;
+  }
+  const w = 600;
+  const h = 160;
+  const pad = 8;
+  const values = history.map((p) => p.players ?? 0);
+  const max = Math.max(10, ...values);
+  const points = history.map((p, i) => {
+    const x = pad + (i / (history.length - 1)) * (w - 2 * pad);
+    const y = h - pad - ((p.players ?? 0) / max) * (h - 2 * pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const line = document.createElementNS(ns, 'polyline');
+  line.setAttribute('points', points.join(' '));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', '#3b82f6');
+  line.setAttribute('stroke-width', '2');
+  chartEl.appendChild(line);
+  const label = document.createElementNS(ns, 'text');
+  label.setAttribute('x', String(pad));
+  label.setAttribute('y', String(h - 2));
+  label.setAttribute('fill', '#8b96a8');
+  label.setAttribute('font-size', '11');
+  label.textContent = `${values[values.length - 1]} joueur(s) maintenant — max ${max}`;
+  chartEl.appendChild(label);
+}
+
 async function refreshList() {
   const servers = await window.api.listServers();
   listEl.innerHTML = '';
@@ -169,12 +227,15 @@ async function loadStatus() {
   if (!currentServer) return;
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
+  drawChart(await window.api.getHistory(currentServer.id));
 }
 
 async function selectServer(s) {
   if (currentServer && currentServer.id !== s.id) await window.api.stopLogs(currentServer.id);
   currentServer = s;
-  viewEl.hidden = false;
+  headerEl.hidden = false;
+  pageOverview.hidden = currentPage !== 'overview';
+  pageConsole.hidden = currentPage !== 'console';
   nameEl.textContent = s.name;
   hostEl.textContent = `${s.host}:${s.queryPort}`;
   document.getElementById('f-name').value = s.name;
@@ -299,7 +360,9 @@ deleteBtn.addEventListener('click', async () => {
   await window.api.deleteServer(currentServer.id);
   currentServer = null;
   clearInterval(statusTimer);
-  viewEl.hidden = true;
+  headerEl.hidden = true;
+  pageOverview.hidden = true;
+  pageConsole.hidden = true;
   await refreshList();
 });
 

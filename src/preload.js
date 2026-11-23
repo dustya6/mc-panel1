@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   deleteServer: (id) => ipcRenderer.invoke('servers:delete', id),
   testServer: (server) => ipcRenderer.invoke('server:test', server),
   getStatus: (id) => ipcRenderer.invoke('server:status', id),
+  getHistory: (id) => ipcRenderer.invoke('server:history', id),
   sendCommand: (id, command) => ipcRenderer.invoke('server:command', { id, command }),
   startLogs: (id) => ipcRenderer.invoke('server:logs:start', id),
   stopLogs: (id) => ipcRenderer.invoke('server:logs:stop', id),
