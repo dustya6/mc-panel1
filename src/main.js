@@ -38,7 +38,13 @@ function appendHistory(id, point) {
   const file = path.join(historyDir(), `${id}.json`);
   const history = loadHistory(id);
   history.push(point);
-  fs.writeFileSync(file, JSON.stringify(history.slice(-1000)));
+  const now = Date.now();
+  const dayMs = 24 * 3600 * 1000;
+  let pruned = history;
+  if (history.length > 30000) {
+    pruned = history.filter((p, i) => now - p.ts < dayMs || i % 40 === 0);
+  }
+  fs.writeFileSync(file, JSON.stringify(pruned.slice(-30000)));
 }
 
 function publicServer(server) {
@@ -77,26 +83,31 @@ async function ping(host, port) {
   };
 }
 
-async function runRcon({ host, port, password }, command) {
+async function runRcon({ host, port, password }, commands) {
   if (!password) throw new Error('Mot de passe RCON manquant — renseigne-le dans le formulaire du serveur.');
   const rcon = new Rcon({ host, port, password, timeout: 5000 });
   await rcon.connect();
   try {
-    return await rcon.send(command);
+    const out = {};
+    for (const cmd of commands) out[cmd] = await rcon.send(cmd);
+    return out;
   } finally {
     await rcon.end();
   }
 }
 
 async function probe({ host, queryPort, rconPort, password }) {
-  const result = { ping: null, list: null, error: null };
+  const result = { ping: null, list: null, tps: null, error: null };
   try {
     result.ping = await ping(host, Number(queryPort) || 25565);
   } catch (err) {
     result.error = `Query: ${err.message}`;
   }
   try {
-    result.list = await runRcon({ host, port: Number(rconPort) || 25575, password }, 'list');
+    const out = await runRcon({ host, port: Number(rconPort) || 25575, password }, ['list', 'tps']);
+    result.list = out['list'];
+    const m = String(out['tps'] || '').match(/1m:\s*([0-9]+(?:\.[0-9]+)?)/);
+    if (m) result.tps = Number(m[1]);
   } catch (err) {
     const msg = `RCON: ${err.message}`;
     result.error = result.error ? `${result.error} | ${msg}` : msg;
@@ -229,6 +240,7 @@ app.whenReady().then(() => {
         ts: Date.now(),
         players: result.ping.playersOnline,
         latency: result.ping.latency ?? null,
+        tps: result.tps,
       });
     }
     return result;
@@ -252,10 +264,11 @@ app.whenReady().then(() => {
   ipcMain.handle('server:command', async (event, { id, command }) => {
     const server = loadServers().find((s) => s.id === id);
     if (!server) throw new Error('Serveur introuvable');
-    return runRcon(
+    const out = await runRcon(
       { host: server.host, port: server.rconPort, password: decrypt(server.encryptedPassword) },
-      command
+      [command]
     );
+    return out[command];
   });
 
   createWindow();

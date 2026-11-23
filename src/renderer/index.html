@@ -90,8 +90,30 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-title">Historique — joueurs en ligne <span class="hint">échantillonné toutes les 15 s, gardé ~4 h en local</span></div>
-          <svg id="chart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+          <div class="card-title">Statistiques
+            <span class="range-bar" id="range-bar">
+              <button type="button" class="range-btn" data-range="3600000">1 h</button>
+              <button type="button" class="range-btn active" data-range="86400000">1 j</button>
+              <button type="button" class="range-btn" data-range="259200000">3 j</button>
+              <button type="button" class="range-btn" data-range="604800000">1 sem</button>
+              <button type="button" class="range-btn" data-range="864000000">10 j</button>
+              <button type="button" class="range-btn" data-range="1728000000">20 j</button>
+              <button type="button" class="range-btn" data-range="2592000000">30 j</button>
+              <button type="button" class="range-btn" data-range="all">Tout</button>
+            </span>
+          </div>
+          <div class="chart-block">
+            <div class="chart-label">Joueurs en ligne</div>
+            <svg id="chart-players" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="chart-block">
+            <div class="chart-label">Latence (ms)</div>
+            <svg id="chart-latency" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="chart-block">
+            <div class="chart-label">TPS (via RCON, Paper)</div>
+            <svg id="chart-tps" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+          </div>
         </div>
       </section>
       <section id="page-console" hidden>
