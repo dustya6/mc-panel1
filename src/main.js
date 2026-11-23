@@ -7,7 +7,13 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'debug-js-errors';
+const BUILD = 'debug-log-file';
+
+function debugLog(msg) {
+  try {
+    fs.appendFileSync(path.join(app.getPath('userData'), 'debug.log'), `${new Date().toISOString()} ${msg}\n`);
+  } catch { }
+}
 
 const serversFile = () => path.join(app.getPath('userData'), 'servers.json');
 
@@ -176,6 +182,9 @@ function createWindow() {
     },
   });
   mainWindow = win;
+  win.webContents.on('console-message', (event, level, message) => {
+    debugLog(`[console.${level}] ${message}`);
+  });
   win.on('closed', () => {
     for (const id of [...logStreams.keys()]) stopLogStream(id);
     mainWindow = null;
@@ -185,6 +194,11 @@ function createWindow() {
 
 app.whenReady().then(() => {
   ipcMain.handle('app:build', () => BUILD);
+
+  ipcMain.handle('debug:log', (event, msg) => {
+    debugLog(`[renderer] ${msg}`);
+    return true;
+  });
 
   ipcMain.handle('servers:list', () => loadServers().map(publicServer));
 

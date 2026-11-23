@@ -1,4 +1,11 @@
+const origConsoleError = console.error.bind(console);
+console.error = (...args) => {
+  origConsoleError(...args);
+  if (window.api && window.api.logDebug) window.api.logDebug(args.map(String).join(' '));
+};
+
 window.addEventListener('error', (e) => {
+  if (window.api && window.api.logDebug) window.api.logDebug(`[JS] ${e.message} @ ${e.filename}:${e.lineno}`);
   const el = document.getElementById('console-out');
   if (el) {
     const div = document.createElement('div');
@@ -276,7 +283,9 @@ async function loadStatus() {
   if (!currentServer) return;
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
-  drawAllCharts(await window.api.getHistory(currentServer.id));
+  const history = await window.api.getHistory(currentServer.id);
+  if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
+  drawAllCharts(history);
 }
 
 async function selectServer(s) {
@@ -301,8 +310,10 @@ async function selectServer(s) {
   await loadStatus();
   clearInterval(statusTimer);
   statusTimer = setInterval(loadStatus, 15000);
+  if (window.api.logDebug) window.api.logDebug(`selectServer id=${s.id} sshUser=${s.sshUser || '(vide)'}`);
   if (s.sshUser) {
-    await window.api.startLogs(s.id);
+    const r = await window.api.startLogs(s.id);
+    if (window.api.logDebug) window.api.logDebug(`startLogs -> ${JSON.stringify(r)}`);
   } else {
     addConsoleLine('Logs en direct inactifs — remplis la connexion SSH dans le formulaire pour voir le chat et les logs du serveur.', 'ts', false);
   }
@@ -359,8 +370,12 @@ function logClass(line) {
 
 window.api.onLogs((data) => {
   if (!currentServer || data.id !== currentServer.id) return;
-  if (data.error) addConsoleLine(`[SSH] ${data.error}`, 'err', false);
-  else if (data.line) addConsoleLine(data.line, logClass(data.line), false);
+  if (data.error) {
+    if (window.api.logDebug) window.api.logDebug(`[SSH error] ${data.error}`);
+    addConsoleLine(`[SSH] ${data.error}`, 'err', false);
+  } else if (data.line) {
+    addConsoleLine(data.line, logClass(data.line), false);
+  }
 });
 
 consoleForm.addEventListener('submit', async (e) => {

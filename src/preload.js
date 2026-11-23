@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getBuild: () => ipcRenderer.invoke('app:build'),
+  logDebug: (msg) => ipcRenderer.invoke('debug:log', msg),
   listServers: () => ipcRenderer.invoke('servers:list'),
   saveServer: (server) => ipcRenderer.invoke('servers:save', server),
   deleteServer: (id) => ipcRenderer.invoke('servers:delete', id),
