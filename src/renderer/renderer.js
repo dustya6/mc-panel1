@@ -174,21 +174,51 @@ function renderStatus(result) {
   }
 }
 
+function fmtTime(ts, rangeMs) {
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  if (rangeMs <= 3 * 86400000) return `${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}h`;
+}
+
+function svgText(svg, ns, x, y, str, anchor, fill, size) {
+  const t = document.createElementNS(ns, 'text');
+  t.setAttribute('x', String(x));
+  t.setAttribute('y', String(y));
+  if (anchor) t.setAttribute('text-anchor', anchor);
+  t.setAttribute('fill', fill || '#8b96a8');
+  t.setAttribute('font-size', String(size || 10));
+  t.textContent = str;
+  svg.appendChild(t);
+}
+
+function svgLine(svg, ns, x1, y1, x2, y2, stroke) {
+  const l = document.createElementNS(ns, 'line');
+  l.setAttribute('x1', String(x1));
+  l.setAttribute('y1', String(y1));
+  l.setAttribute('x2', String(x2));
+  l.setAttribute('y2', String(y2));
+  l.setAttribute('stroke', stroke);
+  svg.appendChild(l);
+}
+
 function drawMetric(svg, history, key, color, unit) {
   svg.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
   const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
   let pts = (history || [])
     .filter((p) => p.ts >= since && p[key] != null)
-    .map((p) => ({ v: Number(p[key]) }));
+    .map((p) => ({ ts: p.ts, v: Number(p[key]) }));
+  const w = 600;
+  const h = 140;
+  const padL = 38;
+  const padR = 8;
+  const padT = 8;
+  const padB = 20;
+  const pw = w - padL - padR;
+  const ph = h - padT - padB;
   if (pts.length === 0) {
-    const t = document.createElementNS(ns, 'text');
-    t.setAttribute('x', '10');
-    t.setAttribute('y', '70');
-    t.setAttribute('fill', '#8b96a8');
-    t.setAttribute('font-size', '12');
-    t.textContent = 'Pas de données sur cette période.';
-    svg.appendChild(t);
+    svgText(svg, ns, 10, 70, 'Pas de données sur cette période.', null, '#8b96a8', 12);
     return;
   }
   if (pts.length > 240) {
@@ -196,46 +226,52 @@ function drawMetric(svg, history, key, color, unit) {
     const buckets = [];
     for (let i = 0; i < pts.length; i += size) {
       const chunk = pts.slice(i, i + size);
-      buckets.push({ v: chunk.reduce((a, p) => a + p[key], 0) / chunk.length });
+      buckets.push({ ts: chunk[0].ts, v: chunk.reduce((a, p) => a + p.v, 0) / chunk.length });
     }
     pts = buckets;
   }
-  const w = 600;
-  const h = 140;
-  const pad = 8;
-  const vals = pts.map((p) => p.v);
   const digits = key === 'players' ? 0 : 1;
-  const max = Math.max(...vals);
-  const min = Math.min(...vals);
-  const span = max - min || 1;
-  if (pts.length === 1) {
-    const t = document.createElementNS(ns, 'text');
-    t.setAttribute('x', '10');
-    t.setAttribute('y', '70');
-    t.setAttribute('fill', '#8b96a8');
-    t.setAttribute('font-size', '12');
-    t.textContent = `${vals[0].toFixed(digits)}${unit} (un seul point sur cette période)`;
-    svg.appendChild(t);
-    return;
+  const vals = pts.map((p) => p.v);
+  let max = Math.max(...vals);
+  let min = Math.min(...vals);
+  if (max === min) {
+    max += 1;
+    min = Math.max(0, min - 1);
   }
-  const points = pts.map((p, i) => {
-    const x = pad + (i / (pts.length - 1)) * (w - 2 * pad);
-    const y = h - pad - ((p.v - min) / span) * (h - 2 * pad);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const line = document.createElementNS(ns, 'polyline');
-  line.setAttribute('points', points.join(' '));
-  line.setAttribute('fill', 'none');
-  line.setAttribute('stroke', color);
-  line.setAttribute('stroke-width', '2');
-  svg.appendChild(line);
-  const label = document.createElementNS(ns, 'text');
-  label.setAttribute('x', String(pad));
-  label.setAttribute('y', String(h - 2));
-  label.setAttribute('fill', '#8b96a8');
-  label.setAttribute('font-size', '11');
-  label.textContent = `max ${max.toFixed(digits)}${unit} — min ${min.toFixed(digits)}${unit} — ${vals[vals.length - 1].toFixed(digits)}${unit} maintenant`;
-  svg.appendChild(label);
+  const span = max - min;
+  const effRange = currentRange === 'all' ? pts[pts.length - 1].ts - pts[0].ts : currentRange;
+  const X = (i) => padL + (pts.length === 1 ? pw / 2 : (i / (pts.length - 1)) * pw);
+  const Y = (v) => padT + ph - ((v - min) / span) * ph;
+  svgLine(svg, ns, padL, padT, padL, padT + ph, '#2a3342');
+  svgLine(svg, ns, padL, padT + ph, padL + pw, padT + ph, '#2a3342');
+  for (const f of [0, 0.5, 1]) {
+    const v = min + span * f;
+    const yy = Y(v);
+    svgLine(svg, ns, padL, yy, padL + pw, yy, '#1c2330');
+    svgText(svg, ns, padL - 4, yy + 3, `${v.toFixed(digits)}${unit}`, 'end');
+  }
+  const nTicks = 4;
+  for (let i = 0; i <= nTicks; i++) {
+    const idx = Math.round((i / nTicks) * (pts.length - 1));
+    svgText(svg, ns, X(idx), h - 6, fmtTime(pts[idx].ts, effRange), 'middle');
+  }
+  if (pts.length === 1) {
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', String(X(0)));
+    c.setAttribute('cy', String(Y(vals[0])));
+    c.setAttribute('r', '3');
+    c.setAttribute('fill', color);
+    svg.appendChild(c);
+  } else {
+    const points = pts.map((p, i) => `${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`);
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', points.join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', '2');
+    svg.appendChild(line);
+  }
+  svgText(svg, ns, w - padR, padT + 4, `${vals[vals.length - 1].toFixed(digits)}${unit} maintenant`, 'end', color, 11);
 }
 
 function drawAllCharts(history) {
