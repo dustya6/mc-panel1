@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'safe-mode';
+const BUILD = 'fix-chart-nan';
 
 function debugLog(msg) {
   try {

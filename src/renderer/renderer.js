@@ -178,7 +178,9 @@ function drawMetric(svg, history, key, color, unit) {
   svg.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
   const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
-  let pts = (history || []).filter((p) => p.ts >= since && p[key] != null);
+  let pts = (history || [])
+    .filter((p) => p.ts >= since && p[key] != null)
+    .map((p) => ({ v: Number(p[key]) }));
   if (pts.length === 0) {
     const t = document.createElementNS(ns, 'text');
     t.setAttribute('x', '10');
@@ -285,7 +287,11 @@ async function loadStatus() {
   renderStatus(result);
   const history = await window.api.getHistory(currentServer.id);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
-  drawAllCharts(history);
+  try {
+    drawAllCharts(history);
+  } catch (err) {
+    if (window.api.logDebug) window.api.logDebug(`draw error: ${err.message}`);
+  }
 }
 
 async function selectServer(s) {
