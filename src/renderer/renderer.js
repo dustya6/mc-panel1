@@ -1,3 +1,13 @@
+window.addEventListener('error', (e) => {
+  const el = document.getElementById('console-out');
+  if (el) {
+    const div = document.createElement('div');
+    div.className = 'line err';
+    div.textContent = `[JS] ${e.message}`;
+    el.appendChild(div);
+  }
+});
+
 const listEl = document.getElementById('server-list');
 const formEl = document.getElementById('server-form');
 const testBtn = document.getElementById('btn-test');
