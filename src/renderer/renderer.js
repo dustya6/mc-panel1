@@ -53,6 +53,10 @@ function formData() {
     queryPort: field('f-query-port') || '25565',
     rconPort: field('f-rcon-port') || '25575',
     password: document.getElementById('f-password').value,
+    sshPort: field('f-ssh-port') || '22',
+    sshUser: field('f-ssh-user'),
+    sshPassword: document.getElementById('f-ssh-pass').value,
+    serverDir: field('f-server-dir') || '~/minecraft',
   };
 }
 
@@ -166,17 +170,23 @@ async function loadStatus() {
 }
 
 async function selectServer(s) {
+  if (currentServer && currentServer.id !== s.id) await window.api.stopLogs(currentServer.id);
   currentServer = s;
   placeholderEl.hidden = true;
   viewEl.hidden = false;
   nameEl.textContent = s.name;
   hostEl.textContent = `${s.host}:${s.queryPort}`;
-  consoleOut.textContent = '';
+  consoleOut.innerHTML = '';
   loadCmdHistory();
   await refreshList();
   await loadStatus();
   clearInterval(statusTimer);
   statusTimer = setInterval(loadStatus, 15000);
+  if (s.sshUser) {
+    await window.api.startLogs(s.id);
+  } else {
+    addConsoleLine('Logs en direct inactifs — remplis la connexion SSH dans le formulaire pour voir le chat et les logs du serveur.', 'ts', false);
+  }
 }
 
 formEl.addEventListener('submit', async (e) => {
@@ -202,17 +212,31 @@ testBtn.addEventListener('click', async () => {
   }
 });
 
-function addConsoleLine(text, cls) {
+function addConsoleLine(text, cls, withTs = true) {
   const div = document.createElement('div');
   div.className = `line ${cls}`;
-  const t = document.createElement('span');
-  t.className = 'ts';
-  t.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] `;
-  div.appendChild(t);
+  if (withTs) {
+    const t = document.createElement('span');
+    t.className = 'ts';
+    t.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] `;
+    div.appendChild(t);
+  }
   div.appendChild(document.createTextNode(text));
   consoleOut.appendChild(div);
   consoleOut.scrollTop = consoleOut.scrollHeight;
 }
+
+function logClass(line) {
+  if (/ERROR|SEVERE/i.test(line)) return 'err';
+  if (/WARN/i.test(line)) return 'warn';
+  return 'log';
+}
+
+window.api.onLogs((data) => {
+  if (!currentServer || data.id !== currentServer.id) return;
+  if (data.error) addConsoleLine(`[SSH] ${data.error}`, 'err', false);
+  else if (data.line) addConsoleLine(data.line, logClass(data.line), false);
+});
 
 consoleForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -256,6 +280,7 @@ refreshBtn.addEventListener('click', loadStatus);
 
 deleteBtn.addEventListener('click', async () => {
   if (!currentServer) return;
+  await window.api.stopLogs(currentServer.id);
   await window.api.deleteServer(currentServer.id);
   currentServer = null;
   clearInterval(statusTimer);

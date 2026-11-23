@@ -37,6 +37,21 @@
           <label>Mot de passe RCON
             <input id="f-password" type="password" placeholder="••••••••" />
           </label>
+          <details class="ssh-box">
+            <summary>Connexion SSH — pour voir les logs en direct (chat, erreurs, advancements...)</summary>
+            <label>Port SSH
+              <input id="f-ssh-port" type="number" value="22" />
+            </label>
+            <label>Utilisateur SSH
+              <input id="f-ssh-user" type="text" placeholder="leon" />
+            </label>
+            <label>Mot de passe SSH
+              <input id="f-ssh-pass" type="password" placeholder="••••••••" />
+            </label>
+            <label>Dossier du serveur
+              <input id="f-server-dir" type="text" placeholder="~/minecraft" />
+            </label>
+          </details>
           <div class="row">
             <button type="submit" class="primary">Enregistrer</button>
             <button type="button" id="btn-test" class="ghost">Tester la connexion</button>
@@ -71,7 +86,7 @@
           </div>
         </div>
         <div class="card console-card">
-          <div class="card-title">Console (RCON) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
+          <div class="card-title">Console (RCON + logs en direct) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
           <div id="console-out"></div>
           <form id="console-form" class="row">
             <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />

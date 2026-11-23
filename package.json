@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "minecraft-server-util": "^5.4.4",
-    "rcon-client": "^4.2.5"
+    "rcon-client": "^4.2.5",
+    "ssh2": "^1.17.0"
   },
   "devDependencies": {
     "electron": "^45.0.0"

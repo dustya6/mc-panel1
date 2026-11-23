@@ -3,6 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
+const { Client } = require('ssh2');
+
+let mainWindow = null;
+const logStreams = new Map();
 
 const serversFile = () => path.join(app.getPath('userData'), 'servers.json');
 
@@ -26,12 +30,16 @@ function publicServer(server) {
     queryPort: server.queryPort,
     rconPort: server.rconPort,
     hasPassword: Boolean(server.encryptedPassword),
+    sshPort: server.sshPort,
+    sshUser: server.sshUser,
+    serverDir: server.serverDir,
+    hasSshPassword: Boolean(server.encryptedSshPassword),
   };
 }
 
-function decryptPassword(server) {
-  if (!server.encryptedPassword) return null;
-  return safeStorage.decryptString(Buffer.from(server.encryptedPassword, 'base64'));
+function decrypt(value) {
+  if (!value) return null;
+  return safeStorage.decryptString(Buffer.from(value, 'base64'));
 }
 
 async function ping(host, port) {
@@ -74,6 +82,52 @@ async function probe({ host, queryPort, rconPort, password }) {
   return result;
 }
 
+function stopLogStream(id) {
+  const s = logStreams.get(id);
+  if (!s) return;
+  try { s.stream.destroy(); } catch { }
+  try { s.client.end(); } catch { }
+  logStreams.delete(id);
+}
+
+function startLogStream(server) {
+  stopLogStream(server.id);
+  const client = new Client();
+  let remainder = '';
+  client.on('ready', () => {
+    const dir = (server.serverDir || '~/minecraft').replace(/^~/, '$HOME');
+    client.exec(`tail -n 400 -F "${dir}/logs/latest.log"`, (err, stream) => {
+      if (err) {
+        if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
+        client.end();
+        return;
+      }
+      logStreams.set(server.id, { client, stream });
+      stream.on('data', (data) => {
+        remainder += data.toString('utf8');
+        const lines = remainder.split('\n');
+        remainder = lines.pop();
+        for (const l of lines) {
+          if (l.trim() && mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, line: l });
+        }
+      });
+      stream.stderr.on('data', (d) => {
+        if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: d.toString().trim() });
+      });
+    });
+  });
+  client.on('error', (err) => {
+    if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
+  });
+  client.connect({
+    host: server.host,
+    port: Number(server.sshPort) || 22,
+    username: server.sshUser,
+    password: decrypt(server.encryptedSshPassword),
+    readyTimeout: 8000,
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -84,6 +138,11 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
+  });
+  mainWindow = win;
+  win.on('closed', () => {
+    for (const id of [...logStreams.keys()]) stopLogStream(id);
+    mainWindow = null;
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
@@ -103,6 +162,10 @@ app.whenReady().then(() => {
       queryPort: Number(input.queryPort) || 25565,
       rconPort: Number(input.rconPort) || 25575,
       encryptedPassword,
+      sshPort: Number(input.sshPort) || 22,
+      sshUser: input.sshUser || '',
+      encryptedSshPassword: input.sshPassword ? safeStorage.encryptString(input.sshPassword).toString('base64') : null,
+      serverDir: input.serverDir || '~/minecraft',
     };
     const index = servers.findIndex((s) => s.id === entry.id);
     if (index >= 0) servers[index] = entry;
@@ -132,15 +195,28 @@ app.whenReady().then(() => {
       host: server.host,
       queryPort: server.queryPort,
       rconPort: server.rconPort,
-      password: decryptPassword(server),
+      password: decrypt(server.encryptedPassword),
     });
+  });
+
+  ipcMain.handle('server:logs:start', (event, id) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server) throw new Error('Serveur introuvable');
+    if (!server.sshUser) return { started: false };
+    startLogStream(server);
+    return { started: true };
+  });
+
+  ipcMain.handle('server:logs:stop', (event, id) => {
+    stopLogStream(id);
+    return true;
   });
 
   ipcMain.handle('server:command', async (event, { id, command }) => {
     const server = loadServers().find((s) => s.id === id);
     if (!server) throw new Error('Serveur introuvable');
     return runRcon(
-      { host: server.host, port: server.rconPort, password: decryptPassword(server) },
+      { host: server.host, port: server.rconPort, password: decrypt(server.encryptedPassword) },
       command
     );
   });
