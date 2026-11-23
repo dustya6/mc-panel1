@@ -44,7 +44,7 @@ async function ping(host, port) {
     playersMax: res.players?.max,
     playersSample: (res.players?.sample || []).map((p) => p.name),
     motd,
-    latency: res.latency ?? res.ping,
+    latency: res.latency ?? res.ping ?? res.roundTripLatency,
   };
 }
 

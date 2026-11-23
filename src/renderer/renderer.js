@@ -51,7 +51,8 @@ function renderStatus(result) {
   }
   if (result.ping) {
     const p = document.createElement('p');
-    p.textContent = `En ligne — version ${result.ping.version}, ${result.ping.playersOnline}/${result.ping.playersMax} joueurs, latence ${result.ping.latency} ms`;
+    const lat = result.ping.latency != null ? `, latence ${result.ping.latency} ms` : '';
+    p.textContent = `En ligne — version ${result.ping.version}, ${result.ping.playersOnline}/${result.ping.playersMax} joueurs${lat}`;
     statusEl.appendChild(p);
     if (result.ping.motd) {
       const m = document.createElement('p');
