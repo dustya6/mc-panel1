@@ -57,6 +57,7 @@ async function ping(host, port) {
 }
 
 async function runRcon({ host, port, password }, command) {
+  if (!password) throw new Error('Mot de passe RCON manquant — renseigne-le dans le formulaire du serveur.');
   const rcon = new Rcon({ host, port, password, timeout: 5000 });
   await rcon.connect();
   try {
@@ -152,19 +153,18 @@ app.whenReady().then(() => {
 
   ipcMain.handle('servers:save', (event, input) => {
     const servers = loadServers();
-    const encryptedPassword = input.password
-      ? safeStorage.encryptString(input.password).toString('base64')
-      : null;
+    const existing = servers.find((s) => s.id === input.id);
+    const encrypt = (v) => (v ? safeStorage.encryptString(v).toString('base64') : null);
     const entry = {
       id: input.id || String(Date.now()),
       name: input.name,
       host: input.host,
       queryPort: Number(input.queryPort) || 25565,
       rconPort: Number(input.rconPort) || 25575,
-      encryptedPassword,
+      encryptedPassword: encrypt(input.password) || (existing ? existing.encryptedPassword : null),
       sshPort: Number(input.sshPort) || 22,
       sshUser: input.sshUser || '',
-      encryptedSshPassword: input.sshPassword ? safeStorage.encryptString(input.sshPassword).toString('base64') : null,
+      encryptedSshPassword: encrypt(input.sshPassword) || (existing ? existing.encryptedSshPassword : null),
       serverDir: input.serverDir || '~/minecraft',
     };
     const index = servers.findIndex((s) => s.id === entry.id);

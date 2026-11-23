@@ -48,6 +48,7 @@ function field(id) {
 
 function formData() {
   return {
+    id: currentServer ? currentServer.id : undefined,
     name: field('f-name'),
     host: field('f-host'),
     queryPort: field('f-query-port') || '25565',
@@ -121,9 +122,10 @@ function renderStatus(result) {
     }
   }
   playersEl.innerHTML = '';
-  const names = parseList(result.list);
+  const clean = (n) => n.replace(/^\*+/, '').trim();
+  const names = [...new Set(parseList(result.list).map(clean))];
   if (names.length === 0 && result.ping && result.ping.playersSample) {
-    names.push(...result.ping.playersSample);
+    names.push(...new Set(result.ping.playersSample.map(clean)));
   }
   if (names.length === 0) {
     const li = document.createElement('li');
@@ -176,6 +178,13 @@ async function selectServer(s) {
   viewEl.hidden = false;
   nameEl.textContent = s.name;
   hostEl.textContent = `${s.host}:${s.queryPort}`;
+  document.getElementById('f-name').value = s.name;
+  document.getElementById('f-host').value = s.host;
+  document.getElementById('f-query-port').value = s.queryPort;
+  document.getElementById('f-rcon-port').value = s.rconPort;
+  document.getElementById('f-ssh-port').value = s.sshPort || 22;
+  document.getElementById('f-ssh-user').value = s.sshUser || '';
+  document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
   consoleOut.innerHTML = '';
   loadCmdHistory();
   await refreshList();
