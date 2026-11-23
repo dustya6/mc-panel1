@@ -138,7 +138,7 @@ button.danger:hover { background: var(--danger); color: #fff; }
 .header .row { padding-top: 4px; }
 .muted { color: var(--muted); font-size: 12px; font-family: var(--mono); }
 
-#server-view { display: flex; flex-direction: column; height: calc(100vh - 48px); min-height: 620px; }
+#server-view { display: flex; flex-direction: column; height: 100%; min-height: 540px; }
 #server-view[hidden] { display: none; }
 .top-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
@@ -190,7 +190,7 @@ button.danger:hover { background: var(--danger); color: #fff; }
   border: 1px solid var(--border);
   padding: 12px;
   flex: 1;
-  min-height: 300px;
+  min-height: 200px;
   overflow-y: auto;
   font-size: 13px;
   font-family: var(--mono);
