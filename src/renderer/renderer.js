@@ -31,11 +31,56 @@ const cmdInput = document.getElementById('cmd');
 const consoleOut = document.getElementById('console-out');
 const refreshBtn = document.getElementById('btn-refresh');
 const deleteBtn = document.getElementById('btn-delete');
+const welcomeEl = document.getElementById('welcome');
+const setupEl = document.getElementById('setup');
+const btnWelcomeAdd = document.getElementById('btn-welcome-add');
+const btnConnect = document.getElementById('btn-connect');
+const connectResultEl = document.getElementById('connect-result');
 
 let currentServer = null;
 let statusTimer = null;
 let currentPage = 'overview';
 let currentRange = 86400000;
+let mode = 'welcome';
+
+function setMode(m) {
+  mode = m;
+  welcomeEl.hidden = m !== 'welcome';
+  setupEl.hidden = m !== 'setup';
+  document.body.classList.toggle('welcome', m === 'welcome');
+}
+
+async function doConnect() {
+  const data = formData();
+  connectResultEl.className = '';
+  if (!data.name || !data.host) {
+    connectResultEl.className = 'err';
+    connectResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
+    return;
+  }
+  if (!data.password) {
+    connectResultEl.className = 'err';
+    connectResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
+    return;
+  }
+  connectResultEl.textContent = 'Test de connexion en cours...';
+  const res = await window.api.testServer(data);
+  if (!res.ping) {
+    connectResultEl.className = 'err';
+    connectResultEl.textContent = `Serveur injoignable : ${res.error}`;
+    return;
+  }
+  if (res.error && res.error.includes('RCON')) {
+    connectResultEl.className = 'err';
+    connectResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
+    return;
+  }
+  connectResultEl.className = 'ok';
+  connectResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
+  const saved = await window.api.saveServer(data);
+  formEl.reset();
+  await selectServer(saved);
+}
 let cmdHistory = [];
 let cmdIndex = 0;
 let cmdDraft = '';
@@ -333,6 +378,8 @@ async function loadStatus() {
 async function selectServer(s) {
   if (currentServer && currentServer.id !== s.id) await window.api.stopLogs(currentServer.id);
   currentServer = s;
+  setMode('app');
+  await window.api.setSetting('lastServerId', s.id);
   headerEl.hidden = false;
   pageOverview.hidden = currentPage !== 'overview';
   pageConsole.hidden = currentPage !== 'console';
@@ -369,6 +416,10 @@ async function selectServer(s) {
 
 formEl.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (mode === 'setup') {
+    await doConnect();
+    return;
+  }
   const data = formData();
   if (!data.password && !(currentServer && currentServer.hasPassword)) {
     testResultEl.className = 'err';
@@ -487,7 +538,23 @@ deleteBtn.addEventListener('click', async () => {
   headerEl.hidden = true;
   pageOverview.hidden = true;
   pageConsole.hidden = true;
+  const remaining = await window.api.listServers();
   await refreshList();
+  if (remaining.length === 0) setMode('welcome');
+  else await selectServer(remaining[0]);
+});
+
+btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
+btnConnect.addEventListener('click', doConnect);
+
+document.querySelectorAll('.code').forEach((c) => {
+  c.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(c.textContent);
+      c.classList.add('copied');
+      setTimeout(() => c.classList.remove('copied'), 800);
+    } catch { }
+  });
 });
 
 window.api.getBuild().then((b) => {
@@ -495,4 +562,14 @@ window.api.getBuild().then((b) => {
   if (sub) sub.textContent = `Gérez votre serveur Minecraft — build ${b}`;
 });
 
-refreshList();
+(async () => {
+  const servers = await window.api.listServers();
+  await refreshList();
+  if (servers.length === 0) {
+    setMode('welcome');
+  } else {
+    const last = await window.api.getSetting('lastServerId');
+    const s = servers.find((x) => x.id === last) || servers[0];
+    await selectServer(s);
+  }
+})();
