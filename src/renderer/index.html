@@ -80,16 +80,13 @@
         <div id="setup-form-slot"></div>
         <div class="card setup-help">
           <div class="card-title">À configurer sur TON serveur — clique sur un bloc pour copier</div>
-          <h4>1. Dans <code>server.properties</code>, puis redémarre le serveur :</h4>
           <pre class="code">enable-query=true
 query.port=25565
 enable-rcon=true
 rcon.port=25575
 rcon.password=TON_MOT_DE_PASSE_FORT</pre>
-          <h4>2. Ouvre les ports dans le pare-feu :</h4>
           <pre class="code">sudo ufw allow 25565/udp
 sudo ufw allow 25575/tcp</pre>
-          <h4>3. Logs en direct (page Console) — clé SSH :</h4>
           <pre class="code">ssh-keygen -t ed25519
 ssh-copy-id leon@IP_DU_SERVEUR</pre>
         </div>
