@@ -291,3 +291,6 @@ li.player-action:hover { border-color: var(--primary); }
 .metric-bar { display: flex; gap: 4px; }
 .metric-btn { padding: 4px 8px; font-size: 11px; }
 .metric-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.ban-row { justify-content: space-between; }
+.small-btn { padding: 4px 10px; font-size: 12px; }

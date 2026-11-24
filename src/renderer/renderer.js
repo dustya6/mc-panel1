@@ -27,6 +27,7 @@ const playersOnlineEl = document.getElementById('players-online');
 const whitelistListEl = document.getElementById('whitelist-list');
 const whitelistStatusEl = document.getElementById('whitelist-status');
 const banListEl = document.getElementById('ban-list');
+const banStatusEl = document.getElementById('ban-status');
 const wlForm = document.getElementById('wl-form');
 const wlInput = document.getElementById('wl-input');
 const btnRefreshPlayers = document.getElementById('btn-refresh-players');
@@ -644,7 +645,10 @@ function parseNames(out) {
   if (!out) return [];
   const idx = out.indexOf(':');
   if (idx === -1) return [];
-  return out.slice(idx + 1).split(',').map((s) => s.trim()).filter(Boolean);
+  return out.slice(idx + 1)
+    .split(/[,\n]/)
+    .map((s) => s.replace(/^\*+/, '').replace(/\(.*$/, '').trim())
+    .filter((s) => /^[A-Za-z0-9_]{2,16}$/.test(s));
 }
 
 async function runCmd(cmd) {
@@ -686,16 +690,36 @@ async function refreshPlayers() {
     }
     const bans = await runCmd('banlist players');
     banListEl.innerHTML = '';
+    banStatusEl.textContent = '';
     const bnames = parseNames(bans);
     if (!bnames.length) banListEl.innerHTML = '<li class="muted">Aucun joueur banni</li>';
     for (const n of bnames) {
       const li = document.createElement('li');
-      li.className = 'player-action';
-      li.textContent = `${n} (unban)`;
-      li.addEventListener('click', async () => {
-        try { await runCmd(`unban ${n}`); } catch (err) { whitelistStatusEl.textContent = `Erreur : ${err.message}`; }
+      li.className = 'player-action ban-row';
+      const label = document.createElement('span');
+      label.textContent = n;
+      li.appendChild(label);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'danger small-btn';
+      btn.textContent = 'Unban';
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        let msg;
+        try {
+          const out = await runCmd(`unban ${n}`);
+          addConsoleLine(`> unban ${n}`, 'cmd');
+          if (out) addConsoleLine(out, 'out');
+          msg = `${n} d\u00e9banni`;
+        } catch (err) {
+          msg = `Erreur : ${err.message}`;
+        }
         await refreshPlayers();
+        banStatusEl.textContent = msg;
       });
+      li.appendChild(btn);
+      li.addEventListener('click', () => openModal(n));
       banListEl.appendChild(li);
     }
   } catch (err) {
