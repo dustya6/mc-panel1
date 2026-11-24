@@ -34,8 +34,7 @@ const deleteBtn = document.getElementById('btn-delete');
 const welcomeEl = document.getElementById('welcome');
 const setupEl = document.getElementById('setup');
 const btnWelcomeAdd = document.getElementById('btn-welcome-add');
-const btnConnect = document.getElementById('btn-connect');
-const connectResultEl = document.getElementById('connect-result');
+const btnSubmit = document.getElementById('btn-submit');
 const navEl = document.getElementById('nav');
 const formCard = document.getElementById('form-card');
 const setupFormSlot = document.getElementById('setup-form-slot');
@@ -56,37 +55,38 @@ function setMode(m) {
   pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
   pageConsole.hidden = m !== 'app' || currentPage !== 'console';
   document.body.classList.toggle('fullscreen', m !== 'app');
+  btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   if (m === 'setup') setupFormSlot.appendChild(formCard);
   else asideFormSlot.appendChild(formCard);
 }
 
 async function doConnect() {
   const data = formData();
-  connectResultEl.className = '';
+  testResultEl.className = '';
   if (!data.name || !data.host) {
-    connectResultEl.className = 'err';
-    connectResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
+    testResultEl.className = 'err';
+    testResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
     return;
   }
   if (!data.password) {
-    connectResultEl.className = 'err';
-    connectResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
+    testResultEl.className = 'err';
+    testResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
     return;
   }
-  connectResultEl.textContent = 'Test de connexion en cours...';
+  testResultEl.textContent = 'Test de connexion en cours...';
   const res = await window.api.testServer(data);
   if (!res.ping) {
-    connectResultEl.className = 'err';
-    connectResultEl.textContent = `Serveur injoignable : ${res.error}`;
+    testResultEl.className = 'err';
+    testResultEl.textContent = `Serveur injoignable : ${res.error}`;
     return;
   }
   if (res.error && res.error.includes('RCON')) {
-    connectResultEl.className = 'err';
-    connectResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
+    testResultEl.className = 'err';
+    testResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
     return;
   }
-  connectResultEl.className = 'ok';
-  connectResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
+  testResultEl.className = 'ok';
+  testResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
   const saved = await window.api.saveServer(data);
   formEl.reset();
   await selectServer(saved);
@@ -560,7 +560,6 @@ deleteBtn.addEventListener('click', async () => {
 });
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
-btnConnect.addEventListener('click', doConnect);
 
 document.querySelectorAll('.code').forEach((c) => {
   c.addEventListener('click', async () => {

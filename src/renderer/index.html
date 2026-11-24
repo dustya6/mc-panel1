@@ -58,7 +58,7 @@
             </label>
           </details>
           <div class="row">
-            <button type="submit" class="primary">Enregistrer</button>
+            <button type="submit" class="primary" id="btn-submit">Enregistrer</button>
             <button type="button" id="btn-test" class="ghost">Tester la connexion</button>
           </div>
         </form>
@@ -94,9 +94,6 @@ sudo ufw allow 25575/tcp</pre>
           <pre class="code">ssh-keygen -t ed25519
 ssh-copy-id leon@IP_DU_SERVEUR</pre>
           <p class="hint">La clé est détectée automatiquement dans l'appli. Sans SSH, l'appli marche quand même, juste sans les logs en direct.</p>
-          <h4>4. Remplis le formulaire à gauche, puis clique :</h4>
-          <button type="button" id="btn-connect" class="primary big">Se connecter</button>
-          <p id="connect-result"></p>
         </div>
         </div>
       </section>
