@@ -25,41 +25,48 @@
         </div>
       </section>
       <section id="page-overview" hidden>
-        <div class="top-cards">
-          <div class="card">
+        <div class="kpi-row">
+          <div class="card kpi">
             <div class="card-title">Statut du serveur</div>
             <div id="status"></div>
           </div>
-          <div class="card">
+          <div class="card kpi">
             <div class="card-title">Joueurs en ligne</div>
+            <div id="kpi-players" class="kpi-num">&mdash;</div>
             <ul id="players" class="players"></ul>
+          </div>
+          <div class="card kpi">
+            <div class="card-title">Latence</div>
+            <div id="kpi-latency" class="kpi-num">&mdash;</div>
+            <svg id="spark-latency" class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="card kpi">
+            <div class="card-title">TPS</div>
+            <div id="kpi-tps" class="kpi-num">&mdash;</div>
+            <svg id="spark-tps" class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">Statistiques — <span id="chart-srv"></span>
-            <span class="range-bar" id="range-bar">
-              <button type="button" class="range-btn" data-range="3600000">1 h</button>
-              <button type="button" class="range-btn active" data-range="86400000">1 j</button>
-              <button type="button" class="range-btn" data-range="259200000">3 j</button>
-              <button type="button" class="range-btn" data-range="604800000">1 sem</button>
-              <button type="button" class="range-btn" data-range="864000000">10 j</button>
-              <button type="button" class="range-btn" data-range="1728000000">20 j</button>
-              <button type="button" class="range-btn" data-range="2592000000">30 j</button>
-              <button type="button" class="range-btn" data-range="all">Tout</button>
+          <div class="card-title"><span>Historique &mdash; <span id="chart-srv"></span></span>
+            <span class="title-bars">
+              <span class="range-bar" id="range-bar">
+                <button type="button" class="range-btn" data-range="3600000">1 h</button>
+                <button type="button" class="range-btn active" data-range="86400000">1 j</button>
+                <button type="button" class="range-btn" data-range="259200000">3 j</button>
+                <button type="button" class="range-btn" data-range="604800000">1 sem</button>
+                <button type="button" class="range-btn" data-range="864000000">10 j</button>
+                <button type="button" class="range-btn" data-range="1728000000">20 j</button>
+                <button type="button" class="range-btn" data-range="2592000000">30 j</button>
+                <button type="button" class="range-btn" data-range="all">Tout</button>
+              </span>
+              <span class="metric-bar" id="metric-bar">
+                <button type="button" class="metric-btn active" data-metric="players">Joueurs</button>
+                <button type="button" class="metric-btn" data-metric="latency">Latence</button>
+                <button type="button" class="metric-btn" data-metric="tps">TPS</button>
+              </span>
             </span>
           </div>
-          <div class="chart-block">
-            <div class="chart-label">Joueurs en ligne</div>
-            <svg id="chart-players" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
-          </div>
-          <div class="chart-block">
-            <div class="chart-label">Latence (ms)</div>
-            <svg id="chart-latency" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
-          </div>
-          <div class="chart-block">
-            <div class="chart-label">TPS (via RCON, Paper)</div>
-            <svg id="chart-tps" class="chart" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
-          </div>
+          <svg id="chart-main" class="chart chart-main" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
         </div>
       </section>
       <section id="page-console" hidden>

@@ -40,6 +40,12 @@ const searchStatus = document.getElementById('search-status');
 const searchResults = document.getElementById('search-results');
 let modalPlayer = null;
 const statusEl = document.getElementById('status');
+const kpiPlayersEl = document.getElementById('kpi-players');
+const kpiLatencyEl = document.getElementById('kpi-latency');
+const kpiTpsEl = document.getElementById('kpi-tps');
+const sparkLatencyEl = document.getElementById('spark-latency');
+const sparkTpsEl = document.getElementById('spark-tps');
+const chartMainEl = document.getElementById('chart-main');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
 const cmdInput = document.getElementById('cmd');
@@ -57,6 +63,9 @@ let currentServer = null;
 let statusTimer = null;
 let currentPage = 'overview';
 let currentRange = 86400000;
+let currentMetric = 'players';
+let lastHistory = [];
+let lastResult = null;
 let mode = 'welcome';
 let cmdHistory = [];
 let cmdIndex = 0;
@@ -276,25 +285,16 @@ function svgLine(svg, ns, x1, y1, x2, y2, stroke) {
   svg.appendChild(l);
 }
 
-function drawMetric(svg, history, key, color, unit) {
-  svg.innerHTML = '';
-  const ns = 'http://www.w3.org/2000/svg';
-  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
+const METRICS = {
+  players: { color: '#3b82f6', unit: '', digits: 0, label: 'Joueurs en ligne' },
+  latency: { color: '#d29922', unit: ' ms', digits: 1, label: 'Latence' },
+  tps: { color: '#3fb950', unit: '', digits: 1, label: 'TPS' },
+};
+
+function metricPoints(history, key, since) {
   let pts = (history || [])
     .filter((p) => p.ts >= since && p[key] != null)
     .map((p) => ({ ts: p.ts, v: Number(p[key]) }));
-  const w = 600;
-  const h = 140;
-  const padL = 38;
-  const padR = 8;
-  const padT = 8;
-  const padB = 20;
-  const pw = w - padL - padR;
-  const ph = h - padT - padB;
-  if (pts.length === 0) {
-    svgText(svg, ns, 10, 70, 'Pas de données sur cette période.', null, '#8b96a8', 12);
-    return;
-  }
   if (pts.length > 240) {
     const size = Math.ceil(pts.length / 240);
     const buckets = [];
@@ -304,7 +304,58 @@ function drawMetric(svg, history, key, color, unit) {
     }
     pts = buckets;
   }
-  const digits = key === 'players' ? 0 : 1;
+  return pts;
+}
+
+function drawSpark(svg, history, key, color) {
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const pts = metricPoints(history, key, Date.now() - 3600000);
+  if (pts.length === 0) return;
+  const w = 200;
+  const h = 36;
+  const vals = pts.map((p) => p.v);
+  let max = Math.max(...vals);
+  let min = Math.min(...vals);
+  if (max === min) {
+    max += 1;
+    min -= 1;
+  }
+  const X = (i) => (pts.length === 1 ? w / 2 : (i / (pts.length - 1)) * w);
+  const Y = (v) => h - 2 - ((v - min) / (max - min)) * (h - 4);
+  const linePts = pts.map((p, i) => `${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`);
+  const area = document.createElementNS(ns, 'polygon');
+  area.setAttribute('points', `0,${h} ${linePts.join(' ')} ${w},${h}`);
+  area.setAttribute('fill', color);
+  area.setAttribute('fill-opacity', '0.15');
+  svg.appendChild(area);
+  const line = document.createElementNS(ns, 'polyline');
+  line.setAttribute('points', linePts.join(' '));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '1.5');
+  svg.appendChild(line);
+}
+
+function drawMain(history) {
+  const svg = chartMainEl;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const m = METRICS[currentMetric] || METRICS.players;
+  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
+  const pts = metricPoints(history, currentMetric, since);
+  const w = 600;
+  const h = 240;
+  const padL = 44;
+  const padR = 8;
+  const padT = 12;
+  const padB = 22;
+  const pw = w - padL - padR;
+  const ph = h - padT - padB;
+  if (pts.length === 0) {
+    svgText(svg, ns, w / 2, h / 2, 'Pas de donn\u00e9es sur cette p\u00e9riode.', 'middle', '#8b96a8', 13);
+    return;
+  }
   const vals = pts.map((p) => p.v);
   let max = Math.max(...vals);
   let min = Math.min(...vals);
@@ -322,36 +373,53 @@ function drawMetric(svg, history, key, color, unit) {
     const v = min + span * f;
     const yy = Y(v);
     svgLine(svg, ns, padL, yy, padL + pw, yy, '#1c2330');
-    svgText(svg, ns, padL - 4, yy + 3, `${v.toFixed(digits)}${unit}`, 'end');
+    svgText(svg, ns, padL - 6, yy + 3, `${v.toFixed(m.digits)}${m.unit}`, 'end');
   }
-  const nTicks = 4;
+  const nTicks = 5;
   for (let i = 0; i <= nTicks; i++) {
     const idx = Math.round((i / nTicks) * (pts.length - 1));
     svgText(svg, ns, X(idx), h - 6, fmtTime(pts[idx].ts, effRange), 'middle');
   }
+  const linePts = pts.map((p, i) => `${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`);
+  const area = document.createElementNS(ns, 'polygon');
+  area.setAttribute('points', `${padL},${padT + ph} ${linePts.join(' ')} ${padL + pw},${padT + ph}`);
+  area.setAttribute('fill', m.color);
+  area.setAttribute('fill-opacity', '0.18');
+  svg.appendChild(area);
   if (pts.length === 1) {
     const c = document.createElementNS(ns, 'circle');
     c.setAttribute('cx', String(X(0)));
     c.setAttribute('cy', String(Y(vals[0])));
-    c.setAttribute('r', '3');
-    c.setAttribute('fill', color);
+    c.setAttribute('r', '3.5');
+    c.setAttribute('fill', m.color);
     svg.appendChild(c);
   } else {
-    const points = pts.map((p, i) => `${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`);
     const line = document.createElementNS(ns, 'polyline');
-    line.setAttribute('points', points.join(' '));
+    line.setAttribute('points', linePts.join(' '));
     line.setAttribute('fill', 'none');
-    line.setAttribute('stroke', color);
+    line.setAttribute('stroke', m.color);
     line.setAttribute('stroke-width', '2');
     svg.appendChild(line);
   }
-  svgText(svg, ns, w - padR, padT + 4, `${vals[vals.length - 1].toFixed(digits)}${unit} maintenant`, 'end', color, 11);
+  svgText(svg, ns, padL + 6, padT + 12, m.label, null, m.color, 11);
+  svgText(svg, ns, w - padR, padT + 12, `${vals[vals.length - 1].toFixed(m.digits)}${m.unit} maintenant`, 'end', m.color, 11);
 }
 
-function drawAllCharts(history) {
-  drawMetric(document.getElementById('chart-players'), history, 'players', '#3b82f6', '');
-  drawMetric(document.getElementById('chart-latency'), history, 'latency', '#d29922', ' ms');
-  drawMetric(document.getElementById('chart-tps'), history, 'tps', '#3fb950', '');
+function drawDashboard(history, result) {
+  lastHistory = history || [];
+  if (result !== undefined) lastResult = result;
+  const r = lastResult || {};
+  const last = lastHistory.length ? lastHistory[lastHistory.length - 1] : null;
+  const pOnline = r.ping && r.ping.playersOnline != null ? r.ping.playersOnline : last ? last.players : null;
+  const pMax = r.ping && r.ping.playersMax != null ? r.ping.playersMax : null;
+  kpiPlayersEl.textContent = pOnline != null ? (pMax != null ? `${pOnline}/${pMax}` : `${pOnline}`) : '\u2014';
+  const lat = r.ping && r.ping.latency != null ? r.ping.latency : last ? last.latency : null;
+  kpiLatencyEl.textContent = lat != null ? `${Math.round(lat)} ms` : '\u2014';
+  const tps = r.tps != null ? r.tps : last ? last.tps : null;
+  kpiTpsEl.textContent = tps != null ? `${Number(tps).toFixed(1)}` : '\u2014';
+  drawMain(lastHistory);
+  drawSpark(sparkLatencyEl, lastHistory, 'latency', METRICS.latency.color);
+  drawSpark(sparkTpsEl, lastHistory, 'tps', METRICS.tps.color);
 }
 
 document.querySelectorAll('.range-btn').forEach((b) => {
@@ -359,7 +427,16 @@ document.querySelectorAll('.range-btn').forEach((b) => {
     document.querySelectorAll('.range-btn').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     currentRange = b.dataset.range === 'all' ? 'all' : Number(b.dataset.range);
-    if (currentServer) drawAllCharts(await window.api.getHistory(currentServer.id));
+    if (currentServer) drawDashboard(await window.api.getHistory(currentServer.id), lastResult);
+  });
+});
+
+document.querySelectorAll('.metric-btn').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.metric-btn').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    currentMetric = b.dataset.metric;
+    drawDashboard(lastHistory, lastResult);
   });
 });
 
@@ -415,7 +492,7 @@ async function loadStatus() {
   const history = await window.api.getHistory(currentServer.id);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
-    drawAllCharts(history);
+    drawDashboard(history, result);
   } catch (err) {
     if (window.api.logDebug) window.api.logDebug(`draw error: ${err.message}`);
   }
@@ -428,7 +505,7 @@ async function selectServer(s) {
   await window.api.setSetting('lastServerId', s.id);
   const chartSrv = document.getElementById('chart-srv');
   if (chartSrv) chartSrv.textContent = s.name;
-  drawAllCharts([]);
+  drawDashboard([], null);
   document.getElementById('f-name').value = s.name;
   document.getElementById('f-host').value = s.host;
   document.getElementById('f-query-port').value = s.queryPort;
