@@ -387,7 +387,8 @@ async function refreshList() {
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm(`Supprimer le serveur « ${s.name} » ?`)) return;
-      if (currentServer && currentServer.id === s.id) {
+      const wasCurrent = currentServer && currentServer.id === s.id;
+      if (wasCurrent) {
         await window.api.stopLogs(s.id);
         currentServer = null;
         clearInterval(statusTimer);
@@ -395,8 +396,11 @@ async function refreshList() {
       await window.api.deleteServer(s.id);
       const remaining = await window.api.listServers();
       await refreshList();
-      if (currentServer && remaining.length === 0) setMode('welcome');
-      else if (currentServer) await selectServer(remaining.find((x) => x.id === currentServer.id) || remaining[0]);
+      if (remaining.length === 0) {
+        setMode('welcome');
+      } else if (wasCurrent) {
+        await selectServer(remaining[0]);
+      }
     });
     li.appendChild(btn);
     li.appendChild(del);
@@ -422,6 +426,9 @@ async function selectServer(s) {
   currentServer = s;
   setMode('app');
   await window.api.setSetting('lastServerId', s.id);
+  const chartSrv = document.getElementById('chart-srv');
+  if (chartSrv) chartSrv.textContent = s.name;
+  drawAllCharts([]);
   document.getElementById('f-name').value = s.name;
   document.getElementById('f-host').value = s.host;
   document.getElementById('f-query-port').value = s.queryPort;
