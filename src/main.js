@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'help-bottom';
+const BUILD = 'help-dossier';
 
 function debugLog(msg) {
   try {
