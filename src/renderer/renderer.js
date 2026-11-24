@@ -148,7 +148,6 @@ function formData() {
     sshPort: field('f-ssh-port') || '22',
     sshUser: field('f-ssh-user'),
     sshPassword: document.getElementById('f-ssh-pass').value,
-    sshKey: field('f-ssh-key'),
     serverDir: field('f-server-dir') || '~/minecraft',
   };
 }
@@ -401,14 +400,9 @@ async function selectServer(s) {
   document.getElementById('f-rcon-port').value = s.rconPort;
   document.getElementById('f-ssh-port').value = s.sshPort || 22;
   document.getElementById('f-ssh-user').value = s.sshUser || '';
-  document.getElementById('f-ssh-key').value = s.sshKey || '';
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
   const sshBox = document.querySelector('.ssh-box');
-  if (sshBox && s.sshUser && !s.sshKey && !s.hasSshPassword) sshBox.open = true;
-  if (!s.sshKey) {
-    const k = await window.api.defaultSshKey();
-    if (k) document.getElementById('f-ssh-key').value = k;
-  }
+  if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';
   loadCmdHistory();
   await refreshList();
@@ -439,18 +433,6 @@ formEl.addEventListener('submit', async (e) => {
   const saved = await window.api.saveServer(data);
   formEl.reset();
   await selectServer(saved);
-});
-
-document.getElementById('btn-ssh-autodetect').addEventListener('click', async () => {
-  const k = await window.api.defaultSshKey();
-  if (k) {
-    document.getElementById('f-ssh-key').value = k;
-    testResultEl.className = 'ok';
-    testResultEl.textContent = `Clé trouvée : ${k}`;
-  } else {
-    testResultEl.className = 'err';
-    testResultEl.textContent = 'Aucune clé trouvée dans ~/.ssh (id_ed25519, id_rsa, id_ecdsa). Crée-en une avec : ssh-keygen -t ed25519';
-  }
 });
 
 testBtn.addEventListener('click', async () => {

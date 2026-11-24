@@ -50,10 +50,6 @@
             <label>Mot de passe SSH <span class="info" data-tip="Mot de passe de cet utilisateur pour se connecter en SSH. Laisse vide si tu utilises une clé.">i</span>
               <input id="f-ssh-pass" type="password" placeholder="laisser vide = garder l'actuel" />
             </label>
-            <label>Clé privée SSH (optionnel, prioritaire sur le mot de passe) <span class="info" data-tip="Chemin de ta clé privée SSH. Pour la créer sur ton PC : ssh-keygen -t ed25519, puis l'envoyer sur le serveur : ssh-copy-id leon@IP_DU_SERVEUR. Le bouton ci-dessous la trouve tout seul.">i</span>
-              <input id="f-ssh-key" type="text" placeholder="" />
-            </label>
-            <button type="button" id="btn-ssh-autodetect" class="ghost">Détecter ma clé SSH automatiquement</button>
             <label>Dossier du serveur <span class="info" data-tip="Chemin du dossier où se trouve server.jar (ex : ~/minecraft). Sert à lire les logs en direct.">i</span>
               <input id="f-server-dir" type="text" placeholder="" />
             </label>
