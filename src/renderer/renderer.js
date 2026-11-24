@@ -158,8 +158,11 @@ async function doConnect() {
     return;
   }
   if (res.error && res.error.includes('RCON')) {
-    testResultEl.className = 'err';
-    testResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
+    testResultEl.className = 'ok';
+    testResultEl.textContent = `OK (${res.ping.playersOnline}/${res.ping.playersMax} joueurs) — RCON non disponible : ${res.error} → pas de console/logs (normal sur Aternos gratuit). Connexion...`;
+    const saved = await window.api.saveServer(data);
+    formEl.reset();
+    await selectServer(saved);
     return;
   }
   testResultEl.className = 'ok';

@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'modal-slim';
+const BUILD = 'aternos-ok';
 
 function sshExec(server, command, timeoutMs = 25000) {
   return new Promise((resolve) => {
