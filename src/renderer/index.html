@@ -20,6 +20,7 @@
       <div id="aside-form-slot">
       <div class="card form-card" id="form-card">
         <h2>Ajouter / modifier un serveur</h2>
+        <p class="hint">Survole les « i » à droite de chaque champ pour savoir où trouver la valeur.</p>
         <form id="server-form">
           <label>Nom du serveur <span class="info" data-tip="Juste un nom pour reconnaître ton serveur dans la liste (ex : DustySMP).">i</span>
             <input id="f-name" type="text" placeholder="Mon serveur" required />
@@ -78,18 +79,6 @@
       <section id="setup" hidden>
         <div class="setup-grid">
         <div id="setup-form-slot"></div>
-        <div class="card setup-help">
-          <div class="card-title">À configurer sur TON serveur — clique sur un bloc pour copier</div>
-          <pre class="code">enable-query=true
-query.port=25565
-enable-rcon=true
-rcon.port=25575
-rcon.password=TON_MOT_DE_PASSE_FORT</pre>
-          <pre class="code">sudo ufw allow 25565/udp
-sudo ufw allow 25575/tcp</pre>
-          <pre class="code">ssh-keygen -t ed25519
-ssh-copy-id leon@IP_DU_SERVEUR</pre>
-        </div>
         </div>
       </section>
       <div class="header" id="server-header" hidden>
