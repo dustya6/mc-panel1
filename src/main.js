@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'charts-axes';
+const BUILD = 'ssh-debug';
 
 function debugLog(msg) {
   try {
@@ -133,6 +133,17 @@ function startLogStream(server) {
   stopLogStream(server.id);
   const client = new Client();
   let remainder = '';
+  let privateKey = null;
+  if (server.sshKey) {
+    try {
+      privateKey = fs.readFileSync(server.sshKey);
+    } catch (err) {
+      debugLog(`ssh key unreadable: ${server.sshKey} (${err.message})`);
+      if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: `Clé SSH introuvable : ${server.sshKey}` });
+      return;
+    }
+  }
+  debugLog(`ssh connect host=${server.host} port=${server.sshPort || 22} user=${server.sshUser} auth=${privateKey ? 'cle' : 'motdepasse'} key=${server.sshKey || '-'}`);
   client.on('ready', () => {
     const raw = (server.serverDir || '~/minecraft').trim().replace(/^~\s*/, '~');
     const dirExpr = raw.startsWith('~') ? `"$HOME${raw.slice(1)}"` : `"${raw}"`;
@@ -157,6 +168,7 @@ function startLogStream(server) {
     });
   });
   client.on('error', (err) => {
+    debugLog(`ssh error: ${err.message} level=${err.level || ''}`);
     if (mainWindow) mainWindow.webContents.send('server:logs', { id: server.id, error: err.message });
   });
   const sshConfig = {
@@ -165,7 +177,7 @@ function startLogStream(server) {
     username: server.sshUser,
     readyTimeout: 8000,
   };
-  if (server.sshKey) sshConfig.privateKey = fs.readFileSync(server.sshKey);
+  if (privateKey) sshConfig.privateKey = privateKey;
   else sshConfig.password = decrypt(server.encryptedSshPassword);
   client.connect(sshConfig);
 }
