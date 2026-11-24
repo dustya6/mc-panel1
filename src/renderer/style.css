@@ -294,3 +294,19 @@ li.player-action:hover { border-color: var(--primary); }
 
 .ban-row { justify-content: space-between; }
 .small-btn { padding: 4px 10px; font-size: 12px; }
+
+#btn-refresh { margin-left: 8px; }
+button.loading { opacity: .75; }
+button.loading::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: mcs-spin .6s linear infinite;
+}
+@keyframes mcs-spin { to { transform: rotate(360deg); } }

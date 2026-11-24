@@ -31,6 +31,7 @@ const banStatusEl = document.getElementById('ban-status');
 const wlForm = document.getElementById('wl-form');
 const wlInput = document.getElementById('wl-input');
 const btnRefreshPlayers = document.getElementById('btn-refresh-players');
+const btnRefresh = document.getElementById('btn-refresh');
 const modal = document.getElementById('player-modal');
 const modalPlayerEl = document.getElementById('modal-player');
 const modalResult = document.getElementById('modal-result');
@@ -782,7 +783,29 @@ wlForm.addEventListener('submit', async (e) => {
   }
 });
 
-btnRefreshPlayers.addEventListener('click', refreshPlayers);
+async function withRefresh(btn, fn) {
+  if (!btn) return fn();
+  btn.classList.add('loading');
+  btn.disabled = true;
+  const start = Date.now();
+  try {
+    await fn();
+  } finally {
+    const wait = Math.max(0, 600 - (Date.now() - start));
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }, wait);
+  }
+}
+
+btnRefreshPlayers.addEventListener('click', () => withRefresh(btnRefreshPlayers, refreshPlayers));
+
+btnRefresh.addEventListener('click', () => withRefresh(btnRefresh, async () => {
+  await refreshList();
+  await loadStatus();
+  if (currentPage === 'players') await refreshPlayers();
+}));
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
