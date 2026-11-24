@@ -98,6 +98,15 @@
           <div class="card-title">Bannis (clique pour unban)</div>
           <ul id="ban-list" class="players"></ul>
         </div>
+        <div class="card">
+          <div class="card-title">Rechercher un joueur déjà venu sur le serveur (via les logs)</div>
+          <form id="search-form" class="row">
+            <input id="search-input" type="text" placeholder="pseudo (même partiel)" required />
+            <button type="submit" class="primary">Rechercher</button>
+          </form>
+          <p id="search-status" class="hint"></p>
+          <ul id="search-results" class="players"></ul>
+        </div>
       </section>
     </main>
     <div id="player-modal" class="modal" hidden>

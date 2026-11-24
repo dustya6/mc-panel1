@@ -8,7 +8,38 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'page-players';
+const BUILD = 'player-search';
+
+function sshExec(server, command, timeoutMs = 25000) {
+  return new Promise((resolve) => {
+    const client = new Client();
+    const finish = (res) => {
+      clearTimeout(timer);
+      try { client.end(); } catch { }
+      resolve(res);
+    };
+    const timer = setTimeout(() => finish({ error: 'timeout' }), timeoutMs);
+    client.on('ready', () => {
+      client.exec(command, (err, stream) => {
+        if (err) { finish({ error: err.message }); return; }
+        let out = '';
+        stream.on('data', (d) => {
+          out += d.toString('utf8');
+          if (out.length > 1000000) { out = out.slice(0, 1000000); try { stream.destroy(); } catch { } }
+        });
+        stream.stderr.on('data', () => { });
+        stream.on('close', () => finish({ out }));
+      });
+    });
+    client.on('error', (err) => finish({ error: err.message }));
+    const cfg = { host: server.host, port: Number(server.sshPort) || 22, username: server.sshUser, readyTimeout: 8000 };
+    if (server.encryptedSshPassword) cfg.password = decrypt(server.encryptedSshPassword);
+    if (server.sshKey) {
+      try { cfg.privateKey = fs.readFileSync(server.sshKey); } catch { }
+    }
+    client.connect(cfg);
+  });
+}
 
 function cleanDir(d) {
   return (d || '~/minecraft').trim().replace(/^cd\s+/, '').replace(/^~\s*/, '~');
@@ -333,6 +364,13 @@ app.whenReady().then(() => {
   ipcMain.handle('server:logs:stop', (event, id) => {
     stopLogStream(id);
     return true;
+  });
+
+  ipcMain.handle('server:ssh-exec', async (event, { id, command }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server) throw new Error('Serveur introuvable');
+    if (!server.sshUser) return { error: 'SSH non configuré sur ce serveur' };
+    return sshExec(server, command);
   });
 
   ipcMain.handle('server:command', async (event, { id, command }) => {

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   getHistory: (id) => ipcRenderer.invoke('server:history', id),
   sendCommand: (id, command) => ipcRenderer.invoke('server:command', { id, command }),
   startLogs: (id) => ipcRenderer.invoke('server:logs:start', id),
+  sshExec: (id, command) => ipcRenderer.invoke('server:ssh-exec', { id, command }),
   stopLogs: (id) => ipcRenderer.invoke('server:logs:stop', id),
   onLogs: (cb) => ipcRenderer.on('server:logs', (event, data) => cb(data)),
 });
