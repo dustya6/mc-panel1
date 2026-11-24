@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ssh-guard';
+const BUILD = 'ssh-autofill';
 
 function debugLog(msg) {
   try {

@@ -346,6 +346,8 @@ async function selectServer(s) {
   document.getElementById('f-ssh-user').value = s.sshUser || '';
   document.getElementById('f-ssh-key').value = s.sshKey || '';
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
+  const sshBox = document.querySelector('.ssh-box');
+  if (sshBox && s.sshUser && !s.sshKey && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';
   loadCmdHistory();
   await refreshList();
