@@ -11,6 +11,7 @@
       <nav id="nav" hidden>
         <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
         <button type="button" class="nav-btn" data-page="console">Console</button>
+        <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <span id="build-tag" class="muted"></span>
       </nav>
@@ -78,7 +79,47 @@
         </div>
         <div id="servers-form-slot"></div>
       </section>
+      <section id="page-players" hidden>
+        <div class="top-cards">
+          <div class="card">
+            <div class="card-title">En ligne <button type="button" id="btn-refresh-players" class="ghost">Rafraîchir</button></div>
+            <ul id="players-online" class="players"></ul>
+          </div>
+          <div class="card">
+            <div class="card-title">Whitelist <span id="whitelist-status" class="hint"></span></div>
+            <ul id="whitelist-list" class="players"></ul>
+            <form id="wl-form" class="row">
+              <input id="wl-input" type="text" placeholder="pseudo à whitelister" required />
+              <button type="submit" class="primary">Ajouter</button>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bannis (clique pour unban)</div>
+          <ul id="ban-list" class="players"></ul>
+        </div>
+      </section>
     </main>
+    <div id="player-modal" class="modal" hidden>
+      <div class="card modal-box">
+        <div class="card-title">Actions pour <b id="modal-player"></b></div>
+        <div class="modal-actions">
+          <button type="button" data-act="kick">🚪 Kick</button>
+          <button type="button" data-act="ban" class="danger">🔨 Ban</button>
+          <button type="button" data-act="op">👑 Op</button>
+          <button type="button" data-act="deop">Retirer op</button>
+          <button type="button" data-act="gm_creative">🎮 Créatif</button>
+          <button type="button" data-act="gm_survival">⛏ Survie</button>
+          <button type="button" data-act="give">📦 Give</button>
+          <button type="button" data-act="tp">🧭 Téléporter</button>
+        </div>
+        <input id="modal-extra" type="text" placeholder="Raison (kick/ban) ou item ex: diamond 64 (give) ou X Y Z (tp)" />
+        <div class="row" style="margin-top:10px">
+          <button type="button" id="modal-close">Fermer</button>
+        </div>
+        <p id="modal-result"></p>
+      </div>
+    </div>
     <div class="card form-card" id="form-card">
       <h2>Ajouter / modifier un serveur</h2>
       <p class="hint">Survole les « i » à droite de chaque champ pour savoir où trouver la valeur.</p>

@@ -22,6 +22,19 @@ const testResultEl = document.getElementById('test-result');
 const pageOverview = document.getElementById('page-overview');
 const pageConsole = document.getElementById('page-console');
 const pageServers = document.getElementById('page-servers');
+const pagePlayers = document.getElementById('page-players');
+const playersOnlineEl = document.getElementById('players-online');
+const whitelistListEl = document.getElementById('whitelist-list');
+const whitelistStatusEl = document.getElementById('whitelist-status');
+const banListEl = document.getElementById('ban-list');
+const wlForm = document.getElementById('wl-form');
+const wlInput = document.getElementById('wl-input');
+const btnRefreshPlayers = document.getElementById('btn-refresh-players');
+const modal = document.getElementById('player-modal');
+const modalPlayerEl = document.getElementById('modal-player');
+const modalResult = document.getElementById('modal-result');
+const modalExtra = document.getElementById('modal-extra');
+let modalPlayer = null;
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
@@ -50,6 +63,7 @@ function setMode(m) {
   pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
   pageConsole.hidden = m !== 'app' || currentPage !== 'console';
   pageServers.hidden = m !== 'app' || currentPage !== 'servers';
+  pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -121,6 +135,8 @@ function showPage(page) {
   pageOverview.hidden = page !== 'overview';
   pageConsole.hidden = page !== 'console';
   pageServers.hidden = page !== 'servers';
+  pagePlayers.hidden = page !== 'players';
+  if (page === 'players') refreshPlayers();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -412,6 +428,7 @@ async function selectServer(s) {
   loadCmdHistory();
   await refreshList();
   await loadStatus();
+  if (currentPage === 'players') refreshPlayers();
   clearInterval(statusTimer);
   statusTimer = setInterval(loadStatus, 15000);
   if (window.api.logDebug) window.api.logDebug(`selectServer id=${s.id} sshUser=${s.sshUser || '(vide)'}`);
