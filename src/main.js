@@ -8,7 +8,11 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ssh-password-first';
+const BUILD = 'dir-sanitize';
+
+function cleanDir(d) {
+  return (d || '~/minecraft').trim().replace(/^cd\s+/, '').replace(/^~\s*/, '~');
+}
 
 function debugLog(msg) {
   try {
@@ -161,7 +165,7 @@ function startLogStream(server) {
   }
   debugLog(`ssh connect host=${server.host} port=${server.sshPort || 22} user=${server.sshUser} auth=${pwd ? 'motdepasse' : 'cle'} key=${server.sshKey || '-'}`);
   client.on('ready', () => {
-    const raw = (server.serverDir || '~/minecraft').trim().replace(/^~\s*/, '~');
+    const raw = cleanDir(server.serverDir);
     const dirExpr = raw.startsWith('~') ? `"$HOME${raw.slice(1)}"` : `"${raw}"`;
     client.exec(`tail -n 400 -F ${dirExpr}/logs/latest.log`, (err, stream) => {
       if (err) {
@@ -272,7 +276,7 @@ app.whenReady().then(() => {
       sshUser: input.sshUser || '',
       encryptedSshPassword: encrypt(input.sshPassword) || (existing ? existing.encryptedSshPassword : null),
       sshKey: input.sshKey || (existing ? existing.sshKey : ''),
-      serverDir: (input.serverDir || '~/minecraft').trim().replace(/^~\s*/, '~'),
+      serverDir: cleanDir(input.serverDir),
     };
     const index = servers.findIndex((s) => s.id === entry.id);
     if (index >= 0) servers[index] = entry;
