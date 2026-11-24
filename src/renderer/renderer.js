@@ -21,6 +21,7 @@ const testBtn = document.getElementById('btn-test');
 const testResultEl = document.getElementById('test-result');
 const pageOverview = document.getElementById('page-overview');
 const pageConsole = document.getElementById('page-console');
+const pageServers = document.getElementById('page-servers');
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
@@ -33,7 +34,7 @@ const btnSubmit = document.getElementById('btn-submit');
 const navEl = document.getElementById('nav');
 const formCard = document.getElementById('form-card');
 const setupFormSlot = document.getElementById('setup-form-slot');
-const asideFormSlot = document.getElementById('aside-form-slot');
+const serversFormSlot = document.getElementById('servers-form-slot');
 
 let currentServer = null;
 let statusTimer = null;
@@ -48,10 +49,11 @@ function setMode(m) {
   navEl.hidden = m !== 'app';
   pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
   pageConsole.hidden = m !== 'app' || currentPage !== 'console';
-  document.body.classList.toggle('fullscreen', m !== 'app');
+  pageServers.hidden = m !== 'app' || currentPage !== 'servers';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
-  if (m === 'setup') setupFormSlot.appendChild(formCard);
-  else asideFormSlot.appendChild(formCard);
+  formCard.hidden = false;
+  if (m === 'app') serversFormSlot.appendChild(formCard);
+  else setupFormSlot.appendChild(formCard);
 }
 
 async function doConnect() {
@@ -118,11 +120,12 @@ function showPage(page) {
   }
   pageOverview.hidden = page !== 'overview';
   pageConsole.hidden = page !== 'console';
+  pageServers.hidden = page !== 'servers';
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
   b.addEventListener('click', () => {
-    if (!currentServer) return;
+    if (mode !== 'app') return;
     showPage(b.dataset.page);
   });
 });
@@ -534,8 +537,8 @@ document.querySelectorAll('.code').forEach((c) => {
 });
 
 window.api.getBuild().then((b) => {
-  const sub = document.querySelector('.brand-sub');
-  if (sub) sub.textContent = `Gérez votre serveur Minecraft — build ${b}`;
+  const tag = document.getElementById('build-tag');
+  if (tag) tag.textContent = `build ${b}`;
 });
 
 (async () => {
