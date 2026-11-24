@@ -34,6 +34,10 @@ const modal = document.getElementById('player-modal');
 const modalPlayerEl = document.getElementById('modal-player');
 const modalResult = document.getElementById('modal-result');
 const modalExtra = document.getElementById('modal-extra');
+const searchForm = document.getElementById('search-form');
+const searchInput = document.getElementById('search-input');
+const searchStatus = document.getElementById('search-status');
+const searchResults = document.getElementById('search-results');
 let modalPlayer = null;
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
@@ -54,53 +58,6 @@ let statusTimer = null;
 let currentPage = 'overview';
 let currentRange = 86400000;
 let mode = 'welcome';
-
-function setMode(m) {
-  mode = m;
-  welcomeEl.hidden = m !== 'welcome';
-  setupEl.hidden = m !== 'setup';
-  navEl.hidden = m !== 'app';
-  pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
-  pageConsole.hidden = m !== 'app' || currentPage !== 'console';
-  pageServers.hidden = m !== 'app' || currentPage !== 'servers';
-  pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
-  btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
-  formCard.hidden = false;
-  if (m === 'app') serversFormSlot.appendChild(formCard);
-  else setupFormSlot.appendChild(formCard);
-}
-
-async function doConnect() {
-  const data = formData();
-  testResultEl.className = '';
-  if (!data.name || !data.host) {
-    testResultEl.className = 'err';
-    testResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
-    return;
-  }
-  if (!data.password) {
-    testResultEl.className = 'err';
-    testResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
-    return;
-  }
-  testResultEl.textContent = 'Test de connexion en cours...';
-  const res = await window.api.testServer(data);
-  if (!res.ping) {
-    testResultEl.className = 'err';
-    testResultEl.textContent = `Serveur injoignable : ${res.error}`;
-    return;
-  }
-  if (res.error && res.error.includes('RCON')) {
-    testResultEl.className = 'err';
-    testResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
-    return;
-  }
-  testResultEl.className = 'ok';
-  testResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
-  const saved = await window.api.saveServer(data);
-  formEl.reset();
-  await selectServer(saved);
-}
 let cmdHistory = [];
 let cmdIndex = 0;
 let cmdDraft = '';
@@ -125,6 +82,21 @@ function pushCmdHistory(cmd) {
     localStorage.setItem(historyKey(), JSON.stringify(cmdHistory));
   }
   cmdIndex = cmdHistory.length;
+}
+
+function setMode(m) {
+  mode = m;
+  welcomeEl.hidden = m !== 'welcome';
+  setupEl.hidden = m !== 'setup';
+  navEl.hidden = m !== 'app';
+  pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
+  pageConsole.hidden = m !== 'app' || currentPage !== 'console';
+  pageServers.hidden = m !== 'app' || currentPage !== 'servers';
+  pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
+  btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
+  formCard.hidden = false;
+  if (m === 'app') serversFormSlot.appendChild(formCard);
+  else setupFormSlot.appendChild(formCard);
 }
 
 function showPage(page) {
@@ -163,6 +135,38 @@ function formData() {
     sshPassword: document.getElementById('f-ssh-pass').value,
     serverDir: field('f-server-dir') || '~/minecraft',
   };
+}
+
+async function doConnect() {
+  const data = formData();
+  testResultEl.className = '';
+  if (!data.name || !data.host) {
+    testResultEl.className = 'err';
+    testResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
+    return;
+  }
+  if (!data.password) {
+    testResultEl.className = 'err';
+    testResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
+    return;
+  }
+  testResultEl.textContent = 'Test de connexion en cours...';
+  const res = await window.api.testServer(data);
+  if (!res.ping) {
+    testResultEl.className = 'err';
+    testResultEl.textContent = `Serveur injoignable : ${res.error}`;
+    return;
+  }
+  if (res.error && res.error.includes('RCON')) {
+    testResultEl.className = 'err';
+    testResultEl.textContent = `RCON refusé (vérifie enable-rcon + rcon.password) : ${res.error}`;
+    return;
+  }
+  testResultEl.className = 'ok';
+  testResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
+  const saved = await window.api.saveServer(data);
+  formEl.reset();
+  await selectServer(saved);
 }
 
 function parseList(list) {
@@ -436,7 +440,7 @@ async function selectServer(s) {
     const r = await window.api.startLogs(s.id);
     if (window.api.logDebug) window.api.logDebug(`startLogs -> ${JSON.stringify(r)}`);
   } else {
-    addConsoleLine('Logs en direct inactifs — remplis la connexion SSH dans le formulaire pour voir le chat et les logs du serveur.', 'ts', false);
+    addConsoleLine('Logs en direct inactifs — remplis la connexion SSH (mot de passe) dans Mes serveurs pour voir le chat et les logs.', 'ts', false);
   }
 }
 
@@ -449,7 +453,7 @@ formEl.addEventListener('submit', async (e) => {
   const data = formData();
   if (!data.password && !(currentServer && currentServer.hasPassword)) {
     testResultEl.className = 'err';
-    testResultEl.textContent = 'Mets le mot de passe RCON avant d\'enregistrer, sinon la console ne marchera pas.';
+    testResultEl.textContent = "Mets le mot de passe RCON avant d'enregistrer, sinon la console ne marchera pas.";
     return;
   }
   const saved = await window.api.saveServer(data);
@@ -541,17 +545,156 @@ cmdInput.addEventListener('keydown', (e) => {
   }
 });
 
-btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
+function parseNames(out) {
+  if (!out) return [];
+  const idx = out.indexOf(':');
+  if (idx === -1) return [];
+  return out.slice(idx + 1).split(',').map((s) => s.trim()).filter(Boolean);
+}
 
-document.querySelectorAll('.code').forEach((c) => {
-  c.addEventListener('click', async () => {
+async function runCmd(cmd) {
+  return window.api.sendCommand(currentServer.id, cmd);
+}
+
+async function refreshPlayers() {
+  if (!currentServer) return;
+  try {
+    const list = await runCmd('list');
+    playersOnlineEl.innerHTML = '';
+    const names = parseNames(list);
+    if (!names.length) playersOnlineEl.innerHTML = '<li class="muted">Aucun joueur en ligne</li>';
+    for (const n of names) {
+      const li = document.createElement('li');
+      li.className = 'player-action';
+      li.textContent = n;
+      li.title = 'Actions (kick, ban, op...)';
+      li.addEventListener('click', () => openModal(n));
+      playersOnlineEl.appendChild(li);
+    }
+    const wl = await runCmd('whitelist list');
+    whitelistStatusEl.textContent = /turned off/i.test(wl) ? 'désactivée' : '';
+    whitelistListEl.innerHTML = '';
+    const wnames = parseNames(wl);
+    if (!wnames.length) whitelistListEl.innerHTML = '<li class="muted">Vide — clique un pseudo pour retirer</li>';
+    for (const n of wnames) {
+      const li = document.createElement('li');
+      li.className = 'player-action';
+      li.textContent = `${n} ✕`;
+      li.title = 'Retirer de la whitelist';
+      li.addEventListener('click', async () => {
+        try { await runCmd(`whitelist remove ${n}`); } catch (err) { whitelistStatusEl.textContent = `Erreur : ${err.message}`; }
+        await refreshPlayers();
+      });
+      whitelistListEl.appendChild(li);
+    }
+    const bans = await runCmd('banlist players');
+    banListEl.innerHTML = '';
+    const bnames = parseNames(bans);
+    if (!bnames.length) banListEl.innerHTML = '<li class="muted">Aucun joueur banni</li>';
+    for (const n of bnames) {
+      const li = document.createElement('li');
+      li.className = 'player-action';
+      li.textContent = `${n} (unban)`;
+      li.addEventListener('click', async () => {
+        try { await runCmd(`unban ${n}`); } catch (err) { whitelistStatusEl.textContent = `Erreur : ${err.message}`; }
+        await refreshPlayers();
+      });
+      banListEl.appendChild(li);
+    }
+  } catch (err) {
+    playersOnlineEl.innerHTML = `<li class="muted error">${err.message}</li>`;
+  }
+}
+
+function openModal(name) {
+  modalPlayer = name;
+  modalPlayerEl.textContent = name;
+  modalResult.textContent = '';
+  modalExtra.value = '';
+  modal.hidden = false;
+}
+
+document.getElementById('modal-close').addEventListener('click', () => { modal.hidden = true; });
+modal.addEventListener('click', (e) => { if (e.target === modal) modal.hidden = true; });
+
+document.querySelectorAll('#player-modal [data-act]').forEach((b) => {
+  b.addEventListener('click', async () => {
+    if (!modalPlayer || !currentServer) return;
+    const p = modalPlayer;
+    const extra = modalExtra.value.trim();
+    let cmd = '';
+    switch (b.dataset.act) {
+      case 'kick': cmd = `kick ${p}${extra ? ` ${extra}` : ''}`; break;
+      case 'ban': cmd = `ban ${p}${extra ? ` ${extra}` : ''}`; break;
+      case 'op': cmd = `op ${p}`; break;
+      case 'deop': cmd = `deop ${p}`; break;
+      case 'gm_creative': cmd = `gamemode creative ${p}`; break;
+      case 'gm_survival': cmd = `gamemode survival ${p}`; break;
+      case 'give': cmd = extra ? `give ${p} ${extra}` : ''; break;
+      case 'tp': cmd = extra ? `tp ${p} ${extra}` : ''; break;
+    }
+    if (!cmd) {
+      modalResult.textContent = 'Mets une valeur dans le champ (raison / item / coordonnées).';
+      return;
+    }
+    modalResult.textContent = 'En cours...';
     try {
-      await navigator.clipboard.writeText(c.textContent);
-      c.classList.add('copied');
-      setTimeout(() => c.classList.remove('copied'), 800);
-    } catch { }
+      const out = await runCmd(cmd);
+      modalResult.textContent = out || 'OK';
+      addConsoleLine(`> ${cmd}`, 'cmd');
+      if (out) addConsoleLine(out, 'out');
+    } catch (err) {
+      modalResult.textContent = `Erreur : ${err.message}`;
+    }
+    await refreshPlayers();
+    await loadStatus();
   });
 });
+
+wlForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = wlInput.value.trim();
+  if (!name || !currentServer) return;
+  try {
+    await runCmd(`whitelist add ${name}`);
+    wlInput.value = '';
+    await refreshPlayers();
+  } catch (err) {
+    whitelistStatusEl.textContent = `Erreur : ${err.message}`;
+  }
+});
+
+btnRefreshPlayers.addEventListener('click', refreshPlayers);
+
+searchForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentServer) return;
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) return;
+  searchStatus.textContent = 'Recherche dans les logs du serveur...';
+  searchResults.innerHTML = '';
+  const dir = currentServer.serverDir || '~/minecraft';
+  const cmd = `D=${dir}; cd "$D" 2>/dev/null; { grep -h "joined the game" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "joined the game"; } | sed -E 's/.*\\]: *([^ ]+) joined the game.*/\\1/' | sort -u`;
+  const res = await window.api.sshExec(currentServer.id, cmd);
+  if (res.error) {
+    searchStatus.textContent = `Erreur SSH : ${res.error}`;
+    return;
+  }
+  const all = (res.out || '').split('\n').map((s) => s.trim()).filter(Boolean);
+  const found = all.filter((n) => n.toLowerCase().includes(q));
+  searchStatus.textContent = `${found.length} joueur(s) trouvé(s) sur ${all.length} au total`;
+  if (!found.length) searchResults.innerHTML = '<li class="muted">Aucun résultat</li>';
+  for (const n of found) {
+    const li = document.createElement('li');
+    li.className = 'player-action';
+    li.textContent = n;
+    li.title = 'Actions (ban, op, whitelist...)';
+    li.addEventListener('click', () => openModal(n));
+    searchResults.appendChild(li);
+  }
+});
+
+btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
 window.api.getBuild().then((b) => {
   const tag = document.getElementById('build-tag');
