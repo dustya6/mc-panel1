@@ -79,6 +79,13 @@ body.fullscreen aside { display: none; }
 #connect-result.ok { color: var(--ok); }
 #connect-result.err { color: var(--danger); }
 
+.help-box { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+.help-box summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.help-box summary:hover { color: var(--text); }
+.help-body { margin-top: 8px; }
+.help-body p { font-size: 12px; line-height: 1.5; color: var(--text); margin: 8px 0; }
+.help-body code { background: var(--panel-2); border: 1px solid var(--border); padding: 1px 5px; font-family: var(--mono); font-size: 11px; }
+
 h2 {
   font-size: 12px;
   text-transform: uppercase;

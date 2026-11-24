@@ -23,10 +23,10 @@
         <p class="hint">Survole les « i » à droite de chaque champ pour savoir où trouver la valeur.</p>
         <form id="server-form">
           <label>Nom du serveur <span class="info" data-tip="Juste un nom pour reconnaître ton serveur dans la liste (ex : DustySMP).">i</span>
-            <input id="f-name" type="text" placeholder="Mon serveur" required />
+            <input id="f-name" type="text" placeholder="" required />
           </label>
           <label>Adresse IP <span class="info" data-tip="IP publique de la machine qui héberge le serveur. Pour la trouver, sur le serveur tape : curl ifconfig.me (IP publique) ou hostname -I (IP locale si même réseau).">i</span>
-            <input id="f-host" type="text" placeholder="62.220.136.19" required />
+            <input id="f-host" type="text" placeholder="" required />
           </label>
           <div class="grid2">
             <label>Port query <span class="info" data-tip="Port du jeu : dans server.properties, ligne server-port (25565 par défaut). Sert à voir les joueurs en ligne sans mot de passe.">i</span>
@@ -45,17 +45,17 @@
               <input id="f-ssh-port" type="number" value="22" />
             </label>
             <label>Utilisateur SSH <span class="info" data-tip="Ton nom d'utilisateur sur la machine du serveur (ex : leon).">i</span>
-              <input id="f-ssh-user" type="text" placeholder="leon" />
+              <input id="f-ssh-user" type="text" placeholder="" />
             </label>
             <label>Mot de passe SSH <span class="info" data-tip="Mot de passe de cet utilisateur pour se connecter en SSH. Laisse vide si tu utilises une clé.">i</span>
               <input id="f-ssh-pass" type="password" placeholder="laisser vide = garder l'actuel" />
             </label>
             <label>Clé privée SSH (optionnel, prioritaire sur le mot de passe) <span class="info" data-tip="Chemin de ta clé privée SSH. Pour la créer sur ton PC : ssh-keygen -t ed25519, puis l'envoyer sur le serveur : ssh-copy-id leon@IP_DU_SERVEUR. Le bouton ci-dessous la trouve tout seul.">i</span>
-              <input id="f-ssh-key" type="text" placeholder="C:\Users\leon\.ssh\id_ed25519" />
+              <input id="f-ssh-key" type="text" placeholder="" />
             </label>
             <button type="button" id="btn-ssh-autodetect" class="ghost">Détecter ma clé SSH automatiquement</button>
             <label>Dossier du serveur <span class="info" data-tip="Chemin du dossier où se trouve server.jar (ex : ~/minecraft). Sert à lire les logs en direct.">i</span>
-              <input id="f-server-dir" type="text" placeholder="~/minecraft" />
+              <input id="f-server-dir" type="text" placeholder="" />
             </label>
           </details>
           <div class="row">
@@ -64,6 +64,19 @@
           </div>
         </form>
         <p id="test-result"></p>
+        <details class="help-box">
+          <summary>❓ Aide — où trouver chaque information ?</summary>
+          <div class="help-body">
+            <p><b>Nom du serveur</b> — un nom libre pour le retrouver dans ta liste (ex : le nom de ta communauté).</p>
+            <p><b>Adresse IP</b> — l'adresse publique de la machine qui héberge le serveur Minecraft. Pour la trouver, connecte-toi sur cette machine et tape <code>curl ifconfig.me</code> (IP publique, joignable depuis Internet) ou <code>hostname -I</code> (IP locale, si ton PC est sur le même réseau que le serveur).</p>
+            <p><b>Port query</b> — le port du jeu : dans <code>server.properties</code>, ligne <code>server-port</code> (25565 par défaut). Sert à voir le statut et les joueurs sans mot de passe. À activer : <code>enable-query=true</code> + <code>query.port=25565</code>.</p>
+            <p><b>Port RCON</b> — <code>rcon.port</code> dans <code>server.properties</code> (25575 par défaut).</p>
+            <p><b>Mot de passe RCON</b> — tu le choisis toi-même : dans le dossier du serveur, ouvre <code>server.properties</code>, mets <code>rcon.password=TON_MOT_DE_PASSE_FORT</code> et <code>enable-rcon=true</code>, puis <b>redémarre le serveur</b>. Recopie ici exactement ce mot de passe.</p>
+            <p><b>Pare-feu</b> — ouvre les ports 25565/udp et 25575/tcp sur la machine du serveur : <code>sudo ufw allow 25565/udp</code> et <code>sudo ufw allow 25575/tcp</code>. Sur un VPS, ouvre-les aussi dans le pare-feu du fournisseur (panneau web).</p>
+            <p><b>SSH (logs en direct)</b> — pour afficher le chat et les logs du serveur dans la page Console : crée une clé sur ton PC (<code>ssh-keygen -t ed25519</code>, 3× Entrée), envoie-la sur le serveur (<code>ssh-copy-id TON_USER@IP_DU_SERVEUR</code>), puis remplis l'utilisateur SSH et laisse le bouton « Détecter ma clé SSH automatiquement » trouver le chemin. Sans SSH, l'appli marche quand même, juste sans les logs en direct.</p>
+            <p><b>Dossier du serveur</b> — le chemin du dossier où se trouve <code>server.jar</code> (ex : <code>~/minecraft</code>). Sert uniquement à lire les logs en direct.</p>
+          </div>
+        </details>
       </div>
       </div>
     </aside>
