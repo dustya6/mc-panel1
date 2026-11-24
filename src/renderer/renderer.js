@@ -348,6 +348,10 @@ async function selectServer(s) {
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.sshKey && !s.hasSshPassword) sshBox.open = true;
+  if (!s.sshKey) {
+    const k = await window.api.defaultSshKey();
+    if (k) document.getElementById('f-ssh-key').value = k;
+  }
   consoleOut.innerHTML = '';
   loadCmdHistory();
   await refreshList();
@@ -374,6 +378,18 @@ formEl.addEventListener('submit', async (e) => {
   const saved = await window.api.saveServer(data);
   formEl.reset();
   await selectServer(saved);
+});
+
+document.getElementById('btn-ssh-autodetect').addEventListener('click', async () => {
+  const k = await window.api.defaultSshKey();
+  if (k) {
+    document.getElementById('f-ssh-key').value = k;
+    testResultEl.className = 'ok';
+    testResultEl.textContent = `Clé trouvée : ${k}`;
+  } else {
+    testResultEl.className = 'err';
+    testResultEl.textContent = 'Aucune clé trouvée dans ~/.ssh (id_ed25519, id_rsa, id_ecdsa). Crée-en une avec : ssh-keygen -t ed25519';
+  }
 });
 
 testBtn.addEventListener('click', async () => {

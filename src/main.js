@@ -1,13 +1,14 @@
 const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
 const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'save-log';
+const BUILD = 'onboarding';
 
 function debugLog(msg) {
   try {
@@ -16,6 +17,15 @@ function debugLog(msg) {
 }
 
 const serversFile = () => path.join(app.getPath('userData'), 'servers.json');
+const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
+
+function loadSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
+  } catch {
+    return {};
+  }
+}
 
 function loadServers() {
   try {
@@ -221,6 +231,27 @@ app.whenReady().then(() => {
   ipcMain.handle('debug:log', (event, msg) => {
     debugLog(`[renderer] ${msg}`);
     return true;
+  });
+
+  ipcMain.handle('settings:get', (event, key) => loadSettings()[key]);
+
+  ipcMain.handle('settings:set', (event, key, value) => {
+    const s = loadSettings();
+    s[key] = value;
+    fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2));
+    return true;
+  });
+
+  ipcMain.handle('ssh:default-key', () => {
+    for (const name of ['id_ed25519', 'id_rsa', 'id_ecdsa']) {
+      const p = path.join(os.homedir(), '.ssh', name);
+      try {
+        fs.accessSync(p);
+        debugLog(`default ssh key: ${p}`);
+        return p;
+      } catch { }
+    }
+    return null;
   });
 
   ipcMain.handle('servers:list', () => loadServers().map(publicServer));

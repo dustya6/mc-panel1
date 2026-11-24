@@ -55,6 +55,7 @@
             <label>Clé privée SSH (optionnel, prioritaire sur le mot de passe)
               <input id="f-ssh-key" type="text" placeholder="C:\Users\leon\.ssh\id_ed25519" />
             </label>
+            <button type="button" id="btn-ssh-autodetect" class="ghost">Détecter ma clé SSH automatiquement</button>
             <label>Dossier du serveur
               <input id="f-server-dir" type="text" placeholder="~/minecraft" />
             </label>
@@ -68,6 +69,32 @@
       </div>
     </aside>
     <main>
+      <section id="welcome" hidden>
+        <button type="button" id="btn-welcome-add" class="primary big">＋ Ajouter un serveur</button>
+        <p class="muted">Connecte ton serveur Minecraft et vois tout en direct :<br />joueurs, statistiques, console...</p>
+      </section>
+      <section id="setup" hidden>
+        <div class="card setup-help">
+          <div class="card-title">À configurer sur TON serveur — clique sur un bloc pour copier</div>
+          <h4>1. Dans <code>server.properties</code>, puis redémarre le serveur :</h4>
+          <pre class="code">enable-query=true
+query.port=25565
+enable-rcon=true
+rcon.port=25575
+rcon.password=TON_MOT_DE_PASSE_FORT</pre>
+          <h4>2. Ouvre les ports dans le pare-feu :</h4>
+          <pre class="code">sudo ufw allow 25565/udp
+sudo ufw allow 25575/tcp</pre>
+          <p class="hint">Sur un VPS : ouvre aussi 25565/udp et 25575/tcp dans le pare-feu du fournisseur.</p>
+          <h4>3. Logs en direct (page Console) — clé SSH :</h4>
+          <pre class="code">ssh-keygen -t ed25519
+ssh-copy-id leon@IP_DU_SERVEUR</pre>
+          <p class="hint">La clé est détectée automatiquement dans l'appli. Sans SSH, l'appli marche quand même, juste sans les logs en direct.</p>
+          <h4>4. Remplis le formulaire à gauche, puis clique :</h4>
+          <button type="button" id="btn-connect" class="primary big">Se connecter</button>
+          <p id="connect-result"></p>
+        </div>
+      </section>
       <div class="header" id="server-header" hidden>
         <div>
           <h2 id="srv-name"></h2>
