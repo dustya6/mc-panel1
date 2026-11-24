@@ -2,13 +2,29 @@ const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const net = require('net');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
 const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'aternos-ok';
+const BUILD = 'tcp-check';
+
+function tcpCheck(host, port, timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    const done = (ok) => {
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => done(true));
+    socket.once('timeout', () => done(false));
+    socket.once('error', () => done(false));
+    socket.connect(port, host);
+  });
+}
 
 function sshExec(server, command, timeoutMs = 25000) {
   return new Promise((resolve) => {
@@ -149,8 +165,14 @@ async function runRcon({ host, port, password }, commands) {
 
 async function probe({ host, queryPort, rconPort, password }) {
   const result = { ping: null, list: null, tps: null, error: null };
+  const port = Number(queryPort) || 25565;
+  const tcpOk = await tcpCheck(host, port);
+  if (!tcpOk) {
+    result.error = 'Port du jeu fermé — le serveur est éteint.';
+    return result;
+  }
   try {
-    result.ping = await ping(host, Number(queryPort) || 25565);
+    result.ping = await ping(host, port);
   } catch (err) {
     result.error = `Query: ${err.message}`;
   }
