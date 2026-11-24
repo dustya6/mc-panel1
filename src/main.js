@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'setup-clean';
+const BUILD = 'setup-min';
 
 function debugLog(msg) {
   try {
