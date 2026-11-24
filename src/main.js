@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'unban-fix';
+const BUILD = 'unban-click';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {

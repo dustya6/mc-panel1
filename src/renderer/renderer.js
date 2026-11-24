@@ -695,17 +695,10 @@ async function refreshPlayers() {
     if (!bnames.length) banListEl.innerHTML = '<li class="muted">Aucun joueur banni</li>';
     for (const n of bnames) {
       const li = document.createElement('li');
-      li.className = 'player-action ban-row';
-      const label = document.createElement('span');
-      label.textContent = n;
-      li.appendChild(label);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'danger small-btn';
-      btn.textContent = 'Unban';
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        btn.disabled = true;
+      li.className = 'player-action';
+      li.textContent = n;
+      li.title = 'Cliquer pour d\u00e9bannir';
+      li.addEventListener('click', async () => {
         let msg;
         try {
           const out = await runCmd(`unban ${n}`);
@@ -718,8 +711,6 @@ async function refreshPlayers() {
         await refreshPlayers();
         banStatusEl.textContent = msg;
       });
-      li.appendChild(btn);
-      li.addEventListener('click', () => openModal(n));
       banListEl.appendChild(li);
     }
   } catch (err) {
