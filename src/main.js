@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'tcp-check';
+const BUILD = 'offline-motd';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -140,6 +140,7 @@ async function ping(host, port) {
   const res = await status(host, port, { timeout: 5000 });
   const motd = typeof res.motd === 'string' ? res.motd : res.motd?.clean || res.motd?.raw || '';
   return {
+    offline: /offline/i.test(motd),
     version: res.version?.name,
     protocol: res.version?.protocol,
     playersOnline: res.players?.online,
@@ -173,6 +174,10 @@ async function probe({ host, queryPort, rconPort, password }) {
   }
   try {
     result.ping = await ping(host, port);
+    if (result.ping && result.ping.offline) {
+      result.error = 'Serveur éteint (le proxy répond « Offline »).';
+      result.ping = null;
+    }
   } catch (err) {
     result.error = `Query: ${err.message}`;
   }
