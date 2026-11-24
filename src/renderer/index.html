@@ -15,13 +15,10 @@
           <p class="brand-sub">Gérez votre serveur Minecraft</p>
         </div>
       </div>
-      <nav id="nav">
-        <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
-        <button type="button" class="nav-btn" data-page="console">Console</button>
-      </nav>
       <h2>Mes serveurs</h2>
       <ul id="server-list"></ul>
-      <div class="card form-card">
+      <div id="aside-form-slot">
+      <div class="card form-card" id="form-card">
         <h2>Ajouter / modifier un serveur</h2>
         <form id="server-form">
           <label>Nom du serveur
@@ -67,13 +64,20 @@
         </form>
         <p id="test-result"></p>
       </div>
+      </div>
     </aside>
     <main>
+      <nav id="nav" hidden>
+        <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
+        <button type="button" class="nav-btn" data-page="console">Console</button>
+      </nav>
       <section id="welcome" hidden>
         <button type="button" id="btn-welcome-add" class="primary big">＋ Ajouter un serveur</button>
         <p class="muted">Connecte ton serveur Minecraft et vois tout en direct :<br />joueurs, statistiques, console...</p>
       </section>
       <section id="setup" hidden>
+        <div class="setup-grid">
+        <div id="setup-form-slot"></div>
         <div class="card setup-help">
           <div class="card-title">À configurer sur TON serveur — clique sur un bloc pour copier</div>
           <h4>1. Dans <code>server.properties</code>, puis redémarre le serveur :</h4>
@@ -93,6 +97,7 @@ ssh-copy-id leon@IP_DU_SERVEUR</pre>
           <h4>4. Remplis le formulaire à gauche, puis clique :</h4>
           <button type="button" id="btn-connect" class="primary big">Se connecter</button>
           <p id="connect-result"></p>
+        </div>
         </div>
       </section>
       <div class="header" id="server-header" hidden>

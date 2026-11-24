@@ -36,6 +36,10 @@ const setupEl = document.getElementById('setup');
 const btnWelcomeAdd = document.getElementById('btn-welcome-add');
 const btnConnect = document.getElementById('btn-connect');
 const connectResultEl = document.getElementById('connect-result');
+const navEl = document.getElementById('nav');
+const formCard = document.getElementById('form-card');
+const setupFormSlot = document.getElementById('setup-form-slot');
+const asideFormSlot = document.getElementById('aside-form-slot');
 
 let currentServer = null;
 let statusTimer = null;
@@ -47,7 +51,13 @@ function setMode(m) {
   mode = m;
   welcomeEl.hidden = m !== 'welcome';
   setupEl.hidden = m !== 'setup';
-  document.body.classList.toggle('welcome', m === 'welcome');
+  navEl.hidden = m !== 'app';
+  headerEl.hidden = m !== 'app';
+  pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
+  pageConsole.hidden = m !== 'app' || currentPage !== 'console';
+  document.body.classList.toggle('fullscreen', m !== 'app');
+  if (m === 'setup') setupFormSlot.appendChild(formCard);
+  else asideFormSlot.appendChild(formCard);
 }
 
 async function doConnect() {
@@ -397,7 +407,12 @@ async function selectServer(s) {
   if (sshBox && s.sshUser && !s.sshKey && !s.hasSshPassword) sshBox.open = true;
   if (!s.sshKey) {
     const k = await window.api.defaultSshKey();
-    if (k) document.getElementById('f-ssh-key').value = k;
+    if (k) {
+      document.getElementById('f-ssh-key').value = k;
+      await window.api.saveServer({ ...s, sshKey: k });
+      s.sshKey = k;
+      if (window.api.logDebug) window.api.logDebug(`sshKey auto-enregistree: ${k}`);
+    }
   }
   consoleOut.innerHTML = '';
   loadCmdHistory();
