@@ -21,39 +21,39 @@
       <div class="card form-card" id="form-card">
         <h2>Ajouter / modifier un serveur</h2>
         <form id="server-form">
-          <label>Nom du serveur
+          <label>Nom du serveur <span class="info" data-tip="Juste un nom pour reconnaître ton serveur dans la liste (ex : DustySMP).">i</span>
             <input id="f-name" type="text" placeholder="Mon serveur" required />
           </label>
-          <label>Adresse IP
+          <label>Adresse IP <span class="info" data-tip="IP publique de la machine qui héberge le serveur. Pour la trouver, sur le serveur tape : curl ifconfig.me (IP publique) ou hostname -I (IP locale si même réseau).">i</span>
             <input id="f-host" type="text" placeholder="62.220.136.19" required />
           </label>
           <div class="grid2">
-            <label>Port query
+            <label>Port query <span class="info" data-tip="Port du jeu : dans server.properties, ligne server-port (25565 par défaut). Sert à voir les joueurs en ligne sans mot de passe.">i</span>
               <input id="f-query-port" type="number" value="25565" />
             </label>
-            <label>Port RCON
+            <label>Port RCON <span class="info" data-tip="server.properties → rcon.port (25575 par défaut).">i</span>
               <input id="f-rcon-port" type="number" value="25575" />
             </label>
           </div>
-          <label>Mot de passe RCON
+          <label>Mot de passe RCON <span class="info" data-tip="Tu le crées toi-même : dans le dossier du serveur, ouvre server.properties, mets rcon.password=TON_MOT_DE_PASSE_FORT et enable-rcon=true, puis redémarre le serveur.">i</span>
             <input id="f-password" type="password" placeholder="laisser vide = garder l'actuel" />
           </label>
           <details class="ssh-box">
             <summary>Connexion SSH — pour voir les logs en direct (chat, erreurs, advancements...)</summary>
-            <label>Port SSH
+            <label>Port SSH <span class="info" data-tip="Port SSH du serveur (22 par défaut).">i</span>
               <input id="f-ssh-port" type="number" value="22" />
             </label>
-            <label>Utilisateur SSH
+            <label>Utilisateur SSH <span class="info" data-tip="Ton nom d'utilisateur sur la machine du serveur (ex : leon).">i</span>
               <input id="f-ssh-user" type="text" placeholder="leon" />
             </label>
-            <label>Mot de passe SSH
+            <label>Mot de passe SSH <span class="info" data-tip="Mot de passe de cet utilisateur pour se connecter en SSH. Laisse vide si tu utilises une clé.">i</span>
               <input id="f-ssh-pass" type="password" placeholder="laisser vide = garder l'actuel" />
             </label>
-            <label>Clé privée SSH (optionnel, prioritaire sur le mot de passe)
+            <label>Clé privée SSH (optionnel, prioritaire sur le mot de passe) <span class="info" data-tip="Chemin de ta clé privée SSH. Pour la créer sur ton PC : ssh-keygen -t ed25519, puis l'envoyer sur le serveur : ssh-copy-id leon@IP_DU_SERVEUR. Le bouton ci-dessous la trouve tout seul.">i</span>
               <input id="f-ssh-key" type="text" placeholder="C:\Users\leon\.ssh\id_ed25519" />
             </label>
             <button type="button" id="btn-ssh-autodetect" class="ghost">Détecter ma clé SSH automatiquement</button>
-            <label>Dossier du serveur
+            <label>Dossier du serveur <span class="info" data-tip="Chemin du dossier où se trouve server.jar (ex : ~/minecraft). Sert à lire les logs en direct.">i</span>
               <input id="f-server-dir" type="text" placeholder="~/minecraft" />
             </label>
           </details>

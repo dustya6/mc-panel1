@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'layout-pages';
+const BUILD = 'setup-tooltips';
 
 function debugLog(msg) {
   try {
