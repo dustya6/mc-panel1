@@ -630,11 +630,9 @@ document.querySelectorAll('#player-modal [data-act]').forEach((b) => {
       case 'deop': cmd = `deop ${p}`; break;
       case 'gm_creative': cmd = `gamemode creative ${p}`; break;
       case 'gm_survival': cmd = `gamemode survival ${p}`; break;
-      case 'give': cmd = extra ? `give ${p} ${extra}` : ''; break;
-      case 'tp': cmd = extra ? `tp ${p} ${extra}` : ''; break;
     }
     if (!cmd) {
-      modalResult.textContent = 'Mets une valeur dans le champ (raison / item / coordonnées).';
+      modalResult.textContent = 'Mets une raison dans le champ pour kick/ban.';
       return;
     }
     modalResult.textContent = 'En cours...';

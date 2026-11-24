@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'player-search';
+const BUILD = 'modal-slim';
 
 function sshExec(server, command, timeoutMs = 25000) {
   return new Promise((resolve) => {
