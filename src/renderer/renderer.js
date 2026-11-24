@@ -44,7 +44,6 @@ const kpiPlayersEl = document.getElementById('kpi-players');
 const kpiLatencyEl = document.getElementById('kpi-latency');
 const kpiTpsEl = document.getElementById('kpi-tps');
 const sparkLatencyEl = document.getElementById('spark-latency');
-const sparkTpsEl = document.getElementById('spark-tps');
 const chartMainEl = document.getElementById('chart-main');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
@@ -405,6 +404,14 @@ function drawMain(history) {
   svgText(svg, ns, w - padR, padT + 12, `${vals[vals.length - 1].toFixed(m.digits)}${m.unit} maintenant`, 'end', m.color, 11);
 }
 
+function latencyColor(ms) {
+  if (ms == null) return '';
+  if (ms < 50) return '#3fb950';
+  if (ms < 100) return '#d29922';
+  if (ms < 200) return '#f0883e';
+  return '#e5534b';
+}
+
 function drawDashboard(history, result) {
   lastHistory = history || [];
   if (result !== undefined) lastResult = result;
@@ -414,12 +421,13 @@ function drawDashboard(history, result) {
   const pMax = r.ping && r.ping.playersMax != null ? r.ping.playersMax : null;
   kpiPlayersEl.textContent = pOnline != null ? (pMax != null ? `${pOnline}/${pMax}` : `${pOnline}`) : '\u2014';
   const lat = r.ping && r.ping.latency != null ? r.ping.latency : last ? last.latency : null;
+  const latColor = latencyColor(lat);
   kpiLatencyEl.textContent = lat != null ? `${Math.round(lat)} ms` : '\u2014';
+  kpiLatencyEl.style.color = latColor;
   const tps = r.tps != null ? r.tps : last ? last.tps : null;
   kpiTpsEl.textContent = tps != null ? `${Number(tps).toFixed(1)}` : '\u2014';
   drawMain(lastHistory);
-  drawSpark(sparkLatencyEl, lastHistory, 'latency', METRICS.latency.color);
-  drawSpark(sparkTpsEl, lastHistory, 'tps', METRICS.tps.color);
+  drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
 }
 
 document.querySelectorAll('.range-btn').forEach((b) => {
