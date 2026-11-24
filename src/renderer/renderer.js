@@ -30,7 +30,6 @@ const banListEl = document.getElementById('ban-list');
 const wlForm = document.getElementById('wl-form');
 const wlInput = document.getElementById('wl-input');
 const btnRefreshPlayers = document.getElementById('btn-refresh-players');
-const btnWlOn = document.getElementById('btn-wl-on');
 const modal = document.getElementById('player-modal');
 const modalPlayerEl = document.getElementById('modal-player');
 const modalResult = document.getElementById('modal-result');
@@ -576,9 +575,9 @@ async function refreshPlayers() {
       playersOnlineEl.appendChild(li);
     }
     const wl = await runCmd('whitelist list');
-    const wlOff = /turned off/i.test(wl);
-    whitelistStatusEl.textContent = wlOff ? 'désactivée' : (parseNames(wl).length ? '' : 'activée, vide');
-    btnWlOn.hidden = !wlOff;
+    whitelistStatusEl.textContent = /turned off/i.test(wl)
+      ? '⚠ marche uniquement si la whitelist est activée (white-list=true dans server.properties)'
+      : (parseNames(wl).length ? '' : 'activée, vide');
     whitelistListEl.innerHTML = '';
     const wnames = parseNames(wl);
     if (!wnames.length) whitelistListEl.innerHTML = '<li class="muted">Vide — clique un pseudo pour retirer</li>';
@@ -636,7 +635,7 @@ document.querySelectorAll('#player-modal [data-act]').forEach((b) => {
       case 'deop': cmds = [`deop ${p}`]; break;
       case 'gm_creative': cmds = [`gamemode creative ${p}`]; break;
       case 'gm_survival': cmds = [`gamemode survival ${p}`]; break;
-      case 'wl_add': cmds = ['whitelist on', `whitelist add ${p}`]; break;
+      case 'wl_add': cmds = [`whitelist add ${p}`]; break;
       case 'wl_remove': cmds = [`whitelist remove ${p}`]; break;
     }
     if (!cmds.length) {
@@ -677,16 +676,6 @@ wlForm.addEventListener('submit', async (e) => {
 });
 
 btnRefreshPlayers.addEventListener('click', refreshPlayers);
-
-btnWlOn.addEventListener('click', async () => {
-  if (!currentServer) return;
-  try {
-    await runCmd('whitelist on');
-  } catch (err) {
-    whitelistStatusEl.textContent = `Erreur : ${err.message}`;
-  }
-  await refreshPlayers();
-});
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
