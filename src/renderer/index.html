@@ -86,7 +86,7 @@
             <ul id="players-online" class="players"></ul>
           </div>
           <div class="card">
-            <div class="card-title">Whitelist <span id="whitelist-status" class="hint"></span></div>
+            <div class="card-title">Whitelist <span id="whitelist-status" class="hint"></span> <button type="button" id="btn-wl-on" class="ghost" hidden>Activer</button></div>
             <ul id="whitelist-list" class="players"></ul>
             <form id="wl-form" class="row">
               <input id="wl-input" type="text" placeholder="pseudo à whitelister" required />
@@ -119,6 +119,8 @@
           <button type="button" data-act="deop">Retirer op</button>
           <button type="button" data-act="gm_creative">🎮 Créatif</button>
           <button type="button" data-act="gm_survival">⛏ Survie</button>
+          <button type="button" data-act="wl_add">➕ Whitelist</button>
+          <button type="button" data-act="wl_remove">➖ Retirer whitelist</button>
         </div>
         <input id="modal-extra" type="text" placeholder="Raison optionnelle (kick / ban)" />
         <div class="row" style="margin-top:10px">

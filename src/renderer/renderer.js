@@ -30,6 +30,7 @@ const banListEl = document.getElementById('ban-list');
 const wlForm = document.getElementById('wl-form');
 const wlInput = document.getElementById('wl-input');
 const btnRefreshPlayers = document.getElementById('btn-refresh-players');
+const btnWlOn = document.getElementById('btn-wl-on');
 const modal = document.getElementById('player-modal');
 const modalPlayerEl = document.getElementById('modal-player');
 const modalResult = document.getElementById('modal-result');
@@ -575,7 +576,9 @@ async function refreshPlayers() {
       playersOnlineEl.appendChild(li);
     }
     const wl = await runCmd('whitelist list');
-    whitelistStatusEl.textContent = /turned off/i.test(wl) ? 'désactivée' : '';
+    const wlOff = /turned off/i.test(wl);
+    whitelistStatusEl.textContent = wlOff ? 'désactivée' : (parseNames(wl).length ? '' : 'activée, vide');
+    btnWlOn.hidden = !wlOff;
     whitelistListEl.innerHTML = '';
     const wnames = parseNames(wl);
     if (!wnames.length) whitelistListEl.innerHTML = '<li class="muted">Vide — clique un pseudo pour retirer</li>';
@@ -625,25 +628,33 @@ document.querySelectorAll('#player-modal [data-act]').forEach((b) => {
     if (!modalPlayer || !currentServer) return;
     const p = modalPlayer;
     const extra = modalExtra.value.trim();
-    let cmd = '';
+    let cmds = [];
     switch (b.dataset.act) {
-      case 'kick': cmd = `kick ${p}${extra ? ` ${extra}` : ''}`; break;
-      case 'ban': cmd = `ban ${p}${extra ? ` ${extra}` : ''}`; break;
-      case 'op': cmd = `op ${p}`; break;
-      case 'deop': cmd = `deop ${p}`; break;
-      case 'gm_creative': cmd = `gamemode creative ${p}`; break;
-      case 'gm_survival': cmd = `gamemode survival ${p}`; break;
+      case 'kick': cmds = [`kick ${p}${extra ? ` ${extra}` : ''}`]; break;
+      case 'ban': cmds = [`ban ${p}${extra ? ` ${extra}` : ''}`]; break;
+      case 'op': cmds = [`op ${p}`]; break;
+      case 'deop': cmds = [`deop ${p}`]; break;
+      case 'gm_creative': cmds = [`gamemode creative ${p}`]; break;
+      case 'gm_survival': cmds = [`gamemode survival ${p}`]; break;
+      case 'wl_add': cmds = ['whitelist on', `whitelist add ${p}`]; break;
+      case 'wl_remove': cmds = [`whitelist remove ${p}`]; break;
     }
-    if (!cmd) {
+    if (!cmds.length) {
       modalResult.textContent = 'Mets une raison dans le champ pour kick/ban.';
       return;
     }
     modalResult.textContent = 'En cours...';
+    let allOut = '';
     try {
-      const out = await runCmd(cmd);
-      modalResult.textContent = out || 'OK';
-      addConsoleLine(`> ${cmd}`, 'cmd');
-      if (out) addConsoleLine(out, 'out');
+      for (const c of cmds) {
+        const out = await runCmd(c);
+        addConsoleLine(`> ${c}`, 'cmd');
+        if (out) {
+          addConsoleLine(out, 'out');
+          allOut += out + '\n';
+        }
+      }
+      modalResult.textContent = allOut.trim() || 'OK';
     } catch (err) {
       modalResult.textContent = `Erreur : ${err.message}`;
     }
@@ -666,6 +677,16 @@ wlForm.addEventListener('submit', async (e) => {
 });
 
 btnRefreshPlayers.addEventListener('click', refreshPlayers);
+
+btnWlOn.addEventListener('click', async () => {
+  if (!currentServer) return;
+  try {
+    await runCmd('whitelist on');
+  } catch (err) {
+    whitelistStatusEl.textContent = `Erreur : ${err.message}`;
+  }
+  await refreshPlayers();
+});
 
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
