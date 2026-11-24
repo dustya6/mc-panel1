@@ -7,7 +7,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ssh-autofill';
+const BUILD = 'save-log';
 
 function debugLog(msg) {
   try {
@@ -246,6 +246,7 @@ app.whenReady().then(() => {
     if (index >= 0) servers[index] = entry;
     else servers.push(entry);
     saveServers(servers);
+    debugLog(`saved id=${entry.id} name=${entry.name} host=${entry.host} sshUser=${entry.sshUser || '(vide)'} sshKey=${entry.sshKey || '(vide)'} hasRconPwd=${Boolean(entry.encryptedPassword)}`);
     return publicServer(entry);
   });
 
