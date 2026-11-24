@@ -407,12 +407,7 @@ async function selectServer(s) {
   if (sshBox && s.sshUser && !s.sshKey && !s.hasSshPassword) sshBox.open = true;
   if (!s.sshKey) {
     const k = await window.api.defaultSshKey();
-    if (k) {
-      document.getElementById('f-ssh-key').value = k;
-      await window.api.saveServer({ ...s, sshKey: k });
-      s.sshKey = k;
-      if (window.api.logDebug) window.api.logDebug(`sshKey auto-enregistree: ${k}`);
-    }
+    if (k) document.getElementById('f-ssh-key').value = k;
   }
   consoleOut.innerHTML = '';
   loadCmdHistory();
