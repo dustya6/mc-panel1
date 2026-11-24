@@ -203,10 +203,11 @@ button.danger:hover { background: var(--danger); color: #fff; }
 #test-result.ok { color: var(--ok); }
 #test-result.err { color: var(--danger); }
 
-.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; }
-.header h2 { margin: 0; font-size: 20px; text-transform: none; letter-spacing: 0; color: var(--text); }
-.header .row { padding-top: 4px; }
 .muted { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+#server-list li { display: flex; gap: 6px; align-items: stretch; }
+.server-item { flex: 1; }
+.server-del { padding: 0 10px; color: var(--danger); }
+.server-del:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 
 #server-view { display: block; }
 #server-view[hidden] { display: none; }

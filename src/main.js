@@ -8,7 +8,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'help-no-key';
+const BUILD = 'no-header';
 
 function cleanDir(d) {
   return (d || '~/minecraft').trim().replace(/^cd\s+/, '').replace(/^~\s*/, '~');

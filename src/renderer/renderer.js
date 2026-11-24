@@ -19,18 +19,13 @@ const listEl = document.getElementById('server-list');
 const formEl = document.getElementById('server-form');
 const testBtn = document.getElementById('btn-test');
 const testResultEl = document.getElementById('test-result');
-const headerEl = document.getElementById('server-header');
 const pageOverview = document.getElementById('page-overview');
 const pageConsole = document.getElementById('page-console');
-const nameEl = document.getElementById('srv-name');
-const hostEl = document.getElementById('srv-host');
 const statusEl = document.getElementById('status');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
 const cmdInput = document.getElementById('cmd');
 const consoleOut = document.getElementById('console-out');
-const refreshBtn = document.getElementById('btn-refresh');
-const deleteBtn = document.getElementById('btn-delete');
 const welcomeEl = document.getElementById('welcome');
 const setupEl = document.getElementById('setup');
 const btnWelcomeAdd = document.getElementById('btn-welcome-add');
@@ -51,7 +46,6 @@ function setMode(m) {
   welcomeEl.hidden = m !== 'welcome';
   setupEl.hidden = m !== 'setup';
   navEl.hidden = m !== 'app';
-  headerEl.hidden = m !== 'app';
   pageOverview.hidden = m !== 'app' || currentPage !== 'overview';
   pageConsole.hidden = m !== 'app' || currentPage !== 'console';
   document.body.classList.toggle('fullscreen', m !== 'app');
@@ -358,15 +352,28 @@ async function refreshList() {
     const btn = document.createElement('button');
     btn.className = 'server-item';
     if (currentServer && currentServer.id === s.id) btn.classList.add('active');
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = s.name;
-    const hostSpan = document.createElement('span');
-    hostSpan.className = 'host';
-    hostSpan.textContent = `${s.host}:${s.queryPort}`;
-    btn.appendChild(nameSpan);
-    btn.appendChild(hostSpan);
+    btn.textContent = s.name;
     btn.addEventListener('click', () => selectServer(s));
+    const del = document.createElement('button');
+    del.className = 'server-del';
+    del.textContent = '✕';
+    del.title = 'Supprimer ce serveur';
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Supprimer le serveur « ${s.name} » ?`)) return;
+      if (currentServer && currentServer.id === s.id) {
+        await window.api.stopLogs(s.id);
+        currentServer = null;
+        clearInterval(statusTimer);
+      }
+      await window.api.deleteServer(s.id);
+      const remaining = await window.api.listServers();
+      await refreshList();
+      if (currentServer && remaining.length === 0) setMode('welcome');
+      else if (currentServer) await selectServer(remaining.find((x) => x.id === currentServer.id) || remaining[0]);
+    });
     li.appendChild(btn);
+    li.appendChild(del);
     listEl.appendChild(li);
   }
 }
@@ -389,11 +396,6 @@ async function selectServer(s) {
   currentServer = s;
   setMode('app');
   await window.api.setSetting('lastServerId', s.id);
-  headerEl.hidden = false;
-  pageOverview.hidden = currentPage !== 'overview';
-  pageConsole.hidden = currentPage !== 'console';
-  nameEl.textContent = s.name;
-  hostEl.textContent = `${s.host}:${s.queryPort}`;
   document.getElementById('f-name').value = s.name;
   document.getElementById('f-host').value = s.host;
   document.getElementById('f-query-port').value = s.queryPort;
@@ -517,23 +519,6 @@ cmdInput.addEventListener('keydown', (e) => {
       cmdInput.value = cmdDraft;
     }
   }
-});
-
-refreshBtn.addEventListener('click', loadStatus);
-
-deleteBtn.addEventListener('click', async () => {
-  if (!currentServer) return;
-  await window.api.stopLogs(currentServer.id);
-  await window.api.deleteServer(currentServer.id);
-  currentServer = null;
-  clearInterval(statusTimer);
-  headerEl.hidden = true;
-  pageOverview.hidden = true;
-  pageConsole.hidden = true;
-  const remaining = await window.api.listServers();
-  await refreshList();
-  if (remaining.length === 0) setMode('welcome');
-  else await selectServer(remaining[0]);
 });
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
