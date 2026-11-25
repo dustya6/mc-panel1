@@ -147,25 +147,35 @@
     </main>
     <div id="player-modal" class="modal" hidden>
       <div class="card modal-box">
-        <div class="card-title">Joueur : <b id="modal-player"></b></div>
-        <div id="modal-profile" class="hint"></div>
-        <div class="modal-actions">
-          <button type="button" data-act="kick">🚪 Kick</button>
-          <button type="button" data-act="ban" class="danger">🔨 Ban</button>
-          <button type="button" data-act="unban">Débannir</button>
-          <button type="button" data-act="op">👑 Op</button>
-          <button type="button" data-act="deop">Retirer op</button>
-          <button type="button" data-act="gm_creative">🎮 Créatif</button>
-          <button type="button" data-act="gm_survival">⛏ Survie</button>
-          <button type="button" data-act="wl_add">➕ Whitelist</button>
-          <button type="button" data-act="wl_remove">➖ Retirer whitelist</button>
-          <button type="button" data-act="tell">Message privé</button>
+        <div class="modal-grid">
+          <div class="modal-left">
+            <img id="modal-avatar" class="modal-avatar" alt="" />
+            <span id="modal-avatar-fb" class="modal-avatar-fb" style="display:none"></span>
+            <div id="modal-player" class="modal-name"></div>
+          </div>
+          <div class="modal-right">
+            <div class="card-title">Profil</div>
+            <div id="modal-profile" class="hint"></div>
+            <div class="card-title">Actions</div>
+            <div class="modal-actions">
+              <button type="button" data-act="kick">🚪 Kick</button>
+              <button type="button" data-act="ban" class="danger">🔨 Ban</button>
+              <button type="button" data-act="unban">Débannir</button>
+              <button type="button" data-act="op">👑 Op</button>
+              <button type="button" data-act="deop">Retirer op</button>
+              <button type="button" data-act="gm_creative">🎮 Créatif</button>
+              <button type="button" data-act="gm_survival">⛏ Survie</button>
+              <button type="button" data-act="tell">Message privé</button>
+              <button type="button" data-act="wl_add">➕ Whitelist</button>
+              <button type="button" data-act="wl_remove">➖ Retirer whitelist</button>
+            </div>
+            <input id="modal-extra" type="text" placeholder="Raison (kick / ban) ou message (Message privé)" />
+            <div class="row" style="margin-top:10px">
+              <button type="button" id="modal-close">Fermer</button>
+            </div>
+            <p id="modal-result"></p>
+          </div>
         </div>
-        <input id="modal-extra" type="text" placeholder="Raison (kick / ban) ou message (Message privé)" />
-        <div class="row" style="margin-top:10px">
-          <button type="button" id="modal-close">Fermer</button>
-        </div>
-        <p id="modal-result"></p>
       </div>
     </div>
     <div class="card form-card" id="form-card">

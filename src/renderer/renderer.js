@@ -987,6 +987,20 @@ function openModal(name) {
   modalResult.textContent = '';
   modalExtra.value = '';
   modal.hidden = false;
+  const av = document.getElementById('modal-avatar');
+  const fb = document.getElementById('modal-avatar-fb');
+  if (fb) {
+    fb.textContent = (name[0] || '?').toUpperCase();
+    fb.style.display = 'none';
+  }
+  if (av) {
+    av.style.display = '';
+    av.onerror = () => {
+      av.style.display = 'none';
+      if (fb) fb.style.display = 'flex';
+    };
+    av.src = `https://mc-heads.net/avatar/${encodeURIComponent(name)}/128`;
+  }
   loadPlayerProfile(name);
 }
 
