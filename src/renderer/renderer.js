@@ -583,7 +583,9 @@ function drawHeatmap(history) {
   for (const h of HEAT_HOURS) {
     const lab = document.createElement('div');
     lab.className = 'hm-hour';
-    lab.textContent = `${h}h`;
+    const hi = HEAT_HOURS.indexOf(h);
+    const hnext = HEAT_HOURS[hi + 1];
+    lab.textContent = hnext ? `${h}h–${hnext}h` : `${h}h–`;
     grid.appendChild(lab);
     for (let dow = 0; dow < 7; dow++) {
       const c = document.createElement('div');
