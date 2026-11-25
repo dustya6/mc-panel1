@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'res-debug';
+const BUILD = 'aternos-choice';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -128,6 +128,7 @@ function publicServer(server) {
     hasSshPassword: Boolean(server.encryptedSshPassword),
     sshKey: server.sshKey,
     hasSshKey: Boolean(server.sshKey),
+    type: server.type === 'aternos' ? 'aternos' : 'vps',
   };
 }
 
@@ -164,7 +165,7 @@ async function runRcon({ host, port, password }, commands) {
   }
 }
 
-async function probe({ host, queryPort, rconPort, password }) {
+async function probe({ host, queryPort, rconPort, password, type }) {
   const result = { ping: null, list: null, tps: null, error: null };
   const port = Number(queryPort) || 25565;
   const tcpOk = await tcpCheck(host, port);
@@ -181,14 +182,16 @@ async function probe({ host, queryPort, rconPort, password }) {
   } catch (err) {
     result.error = `Query: ${err.message}`;
   }
-  try {
-    const out = await runRcon({ host, port: Number(rconPort) || 25575, password }, ['list', 'tps']);
-    result.list = out['list'];
-    const m = String(out['tps'] || '').match(/1m:\s*([0-9]+(?:\.[0-9]+)?)/);
-    if (m) result.tps = Number(m[1]);
-  } catch (err) {
-    const msg = `RCON: ${err.message}`;
-    result.error = result.error ? `${result.error} | ${msg}` : msg;
+  if (type !== 'aternos') {
+    try {
+      const out = await runRcon({ host, port: Number(rconPort) || 25575, password }, ['list', 'tps']);
+      result.list = out['list'];
+      const m = String(out['tps'] || '').match(/1m:\s*([0-9]+(?:\.[0-9]+)?)/);
+      if (m) result.tps = Number(m[1]);
+    } catch (err) {
+      const msg = `RCON: ${err.message}`;
+      result.error = result.error ? `${result.error} | ${msg}` : msg;
+    }
   }
   return result;
 }
@@ -335,6 +338,7 @@ app.whenReady().then(() => {
       encryptedSshPassword: encrypt(input.sshPassword) || (existing ? existing.encryptedSshPassword : null),
       sshKey: input.sshKey || (existing ? existing.sshKey : ''),
       serverDir: cleanDir(input.serverDir),
+      type: input.type === 'aternos' ? 'aternos' : 'vps',
     };
     const index = servers.findIndex((s) => s.id === entry.id);
     if (index >= 0) servers[index] = entry;
@@ -355,6 +359,7 @@ app.whenReady().then(() => {
       queryPort: input.queryPort,
       rconPort: input.rconPort,
       password: input.password,
+      type: input.type,
     })
   );
 
@@ -366,6 +371,7 @@ app.whenReady().then(() => {
       queryPort: server.queryPort,
       rconPort: server.rconPort,
       password: decrypt(server.encryptedPassword),
+      type: server.type,
     });
     if (result.ping) {
       appendHistory(server.id, {

@@ -66,6 +66,17 @@ const navEl = document.getElementById('nav');
 const formCard = document.getElementById('form-card');
 const setupFormSlot = document.getElementById('setup-form-slot');
 const serversFormSlot = document.getElementById('servers-form-slot');
+const setupChoiceEl = document.getElementById('setup-choice');
+const btnTypeAternos = document.getElementById('btn-type-aternos');
+const btnTypeVps = document.getElementById('btn-type-vps');
+const btnSetupBack = document.getElementById('btn-setup-back');
+const vpsFieldsEl = document.getElementById('vps-fields');
+const hostLabelEl = document.getElementById('host-label');
+const hostInfoEl = document.getElementById('host-info');
+const fHostInput = document.getElementById('f-host');
+const consoleNoRconEl = document.getElementById('console-norcon');
+let setupType = null;
+let lastStatus = null;
 
 let currentServer = null;
 let statusTimer = null;
@@ -114,6 +125,14 @@ function setMode(m) {
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
   else setupFormSlot.appendChild(formCard);
+  if (m === 'setup') {
+    setupType = null;
+    setupChoiceEl.hidden = false;
+    setupFormSlot.hidden = true;
+  } else {
+    setupChoiceEl.hidden = true;
+    setupFormSlot.hidden = false;
+  }
 }
 
 function showPage(page) {
@@ -140,10 +159,29 @@ function field(id) {
 }
 
 function formData() {
+  const type = mode === 'app' ? ((currentServer && currentServer.type) || 'vps') : (setupType || 'vps');
+  const rawHost = field('f-host');
+  if (type === 'aternos') {
+    const parts = rawHost.split(':');
+    return {
+      id: currentServer ? currentServer.id : undefined,
+      type,
+      name: field('f-name'),
+      host: (parts[0] || '').trim(),
+      queryPort: (parts[1] || '').trim() || '25565',
+      rconPort: '',
+      password: '',
+      sshPort: '',
+      sshUser: '',
+      sshPassword: '',
+      serverDir: '',
+    };
+  }
   return {
     id: currentServer ? currentServer.id : undefined,
+    type,
     name: field('f-name'),
-    host: field('f-host'),
+    host: rawHost,
     queryPort: field('f-query-port') || '25565',
     rconPort: field('f-rcon-port') || '25575',
     password: document.getElementById('f-password').value,
@@ -159,31 +197,33 @@ async function doConnect() {
   testResultEl.className = '';
   if (!data.name || !data.host) {
     testResultEl.className = 'err';
-    testResultEl.textContent = "Remplis le nom et l'adresse IP du serveur.";
+    testResultEl.textContent = 'Remplis le nom et l\u2019adresse du serveur.';
     return;
   }
-  if (!data.password) {
+  if (data.type === 'vps' && !data.password) {
     testResultEl.className = 'err';
     testResultEl.textContent = 'Mets le mot de passe RCON (rcon.password dans server.properties).';
     return;
   }
   testResultEl.textContent = 'Test de connexion en cours...';
   const res = await window.api.testServer(data);
-  if (!res.ping) {
+  const aternos = data.type === 'aternos';
+  const offlineProxy = /offline/i.test(res.error || '');
+  if (!res.ping && !(aternos && offlineProxy)) {
     testResultEl.className = 'err';
-    testResultEl.textContent = `Serveur injoignable : ${res.error}`;
+    testResultEl.textContent = `Serveur injoignable : ${res.error || 'ping impossible'}`;
     return;
   }
-  if (res.error && res.error.includes('RCON')) {
+  if (aternos && !res.ping) {
+    testResultEl.className = 'ok';
+    testResultEl.textContent = 'Serveur Aternos \u00e9teint pour l\u2019instant — il est enregistr\u00e9, le statut passera \u00ab En ligne \u00bb quand tu le d\u00e9marreras sur Aternos. Connexion...';
+  } else if (res.error && res.error.includes('RCON')) {
     testResultEl.className = 'ok';
     testResultEl.textContent = `OK (${res.ping.playersOnline}/${res.ping.playersMax} joueurs) — RCON non disponible : ${res.error} → pas de console/logs (normal sur Aternos gratuit). Connexion...`;
-    const saved = await window.api.saveServer(data);
-    formEl.reset();
-    await selectServer(saved);
-    return;
+  } else {
+    testResultEl.className = 'ok';
+    testResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
   }
-  testResultEl.className = 'ok';
-  testResultEl.textContent = `OK — ${res.ping.playersOnline}/${res.ping.playersMax} joueurs en ligne. Connexion...`;
   const saved = await window.api.saveServer(data);
   formEl.reset();
   await selectServer(saved);
@@ -472,7 +512,11 @@ async function refreshList() {
     const btn = document.createElement('button');
     btn.className = 'server-item';
     if (currentServer && currentServer.id === s.id) btn.classList.add('active');
-    btn.textContent = s.name;
+    btn.textContent = s.name + ' ';
+    const tb = document.createElement('span');
+    tb.className = 'type-badge';
+    tb.textContent = s.type === 'aternos' ? 'Aternos' : 'VPS';
+    btn.appendChild(tb);
     btn.addEventListener('click', () => selectServer(s));
     const del = document.createElement('button');
     del.className = 'server-del';
@@ -506,6 +550,7 @@ async function loadStatus() {
   if (!currentServer) return;
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
+  lastStatus = result;
   const history = await window.api.getHistory(currentServer.id);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
@@ -597,12 +642,16 @@ async function selectServer(s) {
   if (chartSrv) chartSrv.textContent = s.name;
   drawDashboard([], null);
   document.getElementById('f-name').value = s.name;
-  document.getElementById('f-host').value = s.host;
+  document.getElementById('f-host').value = (s.type === 'aternos') ? `${s.host}:${s.queryPort}` : s.host;
   document.getElementById('f-query-port').value = s.queryPort;
   document.getElementById('f-rcon-port').value = s.rconPort;
   document.getElementById('f-ssh-port').value = s.sshPort || 22;
   document.getElementById('f-ssh-user').value = s.sshUser || '';
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
+  applyFormType(s.type || 'vps');
+  const noRcon = (s.type === 'aternos') || !s.hasPassword;
+  consoleForm.hidden = noRcon;
+  if (consoleNoRconEl) consoleNoRconEl.hidden = !noRcon;
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';
@@ -628,7 +677,7 @@ formEl.addEventListener('submit', async (e) => {
     return;
   }
   const data = formData();
-  if (!data.password && !(currentServer && currentServer.hasPassword)) {
+  if (data.type !== 'aternos' && !data.password && !(currentServer && currentServer.hasPassword)) {
     testResultEl.className = 'err';
     testResultEl.textContent = "Mets le mot de passe RCON avant d'enregistrer, sinon la console ne marchera pas.";
     return;
@@ -738,6 +787,25 @@ async function runCmd(cmd) {
 
 async function refreshPlayers() {
   if (!currentServer) return;
+  const canRcon = currentServer.type !== 'aternos' && currentServer.hasPassword;
+  if (!canRcon) {
+    playersOnlineEl.innerHTML = '';
+    const sample = (lastStatus && lastStatus.ping && lastStatus.ping.playersSample) || [];
+    const names = [...new Set(sample.map((x) => String(x).replace(/^\*+/, '').trim()).filter(Boolean))];
+    if (!names.length) playersOnlineEl.innerHTML = '<li class="muted">Aucun joueur en ligne (d\u2019apr\u00e8s le ping)</li>';
+    for (const n of names) {
+      const li = document.createElement('li');
+      li.textContent = n;
+      playersOnlineEl.appendChild(li);
+    }
+    whitelistStatusEl.textContent = 'Whitelist : n\u00e9cessite RCON (non disponible sur Aternos gratuit)';
+    whitelistListEl.innerHTML = '<li class="muted">—</li>';
+    banListEl.innerHTML = '<li class="muted">—</li>';
+    if (banStatusEl) banStatusEl.textContent = '';
+    searchStatus.textContent = 'Recherche dans les logs : n\u00e9cessite SSH (non disponible sur Aternos gratuit)';
+    searchResults.innerHTML = '';
+    return;
+  }
   try {
     const list = await runCmd('list');
     playersOnlineEl.innerHTML = '';
@@ -915,6 +983,37 @@ searchForm.addEventListener('submit', async (e) => {
     searchResults.appendChild(li);
   }
 });
+
+function applyFormType(t) {
+  const aternos = t === 'aternos';
+  if (vpsFieldsEl) vpsFieldsEl.hidden = aternos;
+  if (hostLabelEl) hostLabelEl.textContent = aternos ? 'Adresse Aternos' : 'Adresse IP';
+  if (hostInfoEl) {
+    hostInfoEl.dataset.tip = aternos
+      ? 'Adresse compl\u00e8te affich\u00e9e sur ton panel Aternos : xxx.aternos.me:PORT (ex : abc.aternos.me:12345). Le port change \u00e0 chaque d\u00e9marrage du serveur : mets-le \u00e0 jour dans Mes serveurs.'
+      : 'IP publique de la machine qui h\u00e9berge le serveur. Pour la trouver, sur le serveur tape : curl ifconfig.me (IP publique) ou hostname -I (IP locale si m\u00eame r\u00e9seau).';
+  }
+  if (fHostInput) fHostInput.placeholder = aternos ? 'xxx.aternos.me:PORT' : '';
+  const h2 = formCard.querySelector('h2');
+  if (h2) h2.textContent = aternos ? 'Ajouter un serveur Aternos' : 'Ajouter / modifier un serveur';
+  const hb = formCard.querySelector('.help-box');
+  if (hb) hb.hidden = aternos;
+}
+
+btnTypeAternos.addEventListener('click', () => {
+  setupType = 'aternos';
+  applyFormType('aternos');
+  setupChoiceEl.hidden = true;
+  setupFormSlot.hidden = false;
+  if (fHostInput) fHostInput.focus();
+});
+btnTypeVps.addEventListener('click', () => {
+  setupType = 'vps';
+  applyFormType('vps');
+  setupChoiceEl.hidden = true;
+  setupFormSlot.hidden = false;
+});
+btnSetupBack.addEventListener('click', () => setMode('welcome'));
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 

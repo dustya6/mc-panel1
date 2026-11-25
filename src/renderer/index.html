@@ -22,7 +22,13 @@
       </section>
       <section id="setup" hidden>
         <div class="setup-grid">
-        <div id="setup-form-slot"></div>
+        <div id="setup-choice">
+          <h2>Quel type de serveur ?</h2>
+          <button type="button" id="btn-type-aternos" class="primary big type-btn">Aternos (gratuit)<span class="hint">Adresse xxx.aternos.me:PORT — pas besoin de RCON ni SSH</span></button>
+          <button type="button" id="btn-type-vps" class="big type-btn">Mon VPS / serveur avec RCON<span class="hint">IP + ports + mot de passe RCON + SSH optionnel (logs en direct)</span></button>
+          <button type="button" id="btn-setup-back" class="ghost">&larr; Retour</button>
+        </div>
+        <div id="setup-form-slot" hidden></div>
         </div>
       </section>
       <section id="page-overview" hidden>
@@ -78,6 +84,7 @@
         <div class="card console-card">
           <div class="card-title">Console (RCON + logs en direct) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
           <div id="console-out"></div>
+          <p id="console-norcon" class="hint" hidden>Pas de console RCON sur ce serveur (Aternos gratuit) — envoie les commandes depuis le panel Aternos ou la console du serveur.</p>
           <form id="console-form" class="row">
             <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />
             <button type="submit" class="primary">Envoyer</button>
@@ -148,9 +155,10 @@
         <label>Nom du serveur <span class="info" data-tip="Juste un nom pour reconnaître ton serveur dans la liste (ex : DustySMP).">i</span>
           <input id="f-name" type="text" placeholder="" required />
         </label>
-        <label>Adresse IP <span class="info" data-tip="IP publique de la machine qui héberge le serveur. Pour la trouver, sur le serveur tape : curl ifconfig.me (IP publique) ou hostname -I (IP locale si même réseau).">i</span>
+        <label><span id="host-label">Adresse IP</span> <span class="info" id="host-info" data-tip="IP publique de la machine qui héberge le serveur. Pour la trouver, sur le serveur tape : curl ifconfig.me (IP publique) ou hostname -I (IP locale si même réseau).">i</span>
           <input id="f-host" type="text" placeholder="" required />
         </label>
+        <div id="vps-fields">
         <div class="grid2">
           <label>Port query <span class="info" data-tip="Port du jeu : dans server.properties, ligne server-port (25565 par défaut). Sert à voir les joueurs en ligne sans mot de passe.">i</span>
             <input id="f-query-port" type="number" value="25565" />
@@ -177,6 +185,7 @@
             <input id="f-server-dir" type="text" placeholder="" />
           </label>
         </details>
+        </div>
         <div class="row">
           <button type="submit" class="primary" id="btn-submit">Enregistrer</button>
           <button type="button" id="btn-test" class="ghost">Tester la connexion</button>
