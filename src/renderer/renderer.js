@@ -1516,6 +1516,12 @@ const ABOUT_FIELDS = [
   ['about-addr', 'editorAddress'],
   ['about-mail', 'editorEmail'],
 ];
+// Infos legales affichees a tous les clients : remplacer par les vraies valeurs avant de generer le .exe
+const EDITOR_DEFAULTS = {
+  editorName: 'À REMPLIR — ton nom ou ta société',
+  editorAddress: 'À REMPLIR — adresse postale (Suisse)',
+  editorEmail: 'À REMPLIR — email de contact',
+};
 
 if (btnAbout) {
   btnAbout.addEventListener('click', async () => {
@@ -1523,7 +1529,7 @@ if (btnAbout) {
     if (b) b.textContent = await window.api.getBuild();
     for (const [id, key] of ABOUT_FIELDS) {
       const el = document.getElementById(id);
-      if (el) el.value = (await window.api.getSetting(key)) || '';
+      if (el) el.value = (await window.api.getSetting(key)) || EDITOR_DEFAULTS[key] || '';
     }
     if (aboutModal) aboutModal.hidden = false;
   });
