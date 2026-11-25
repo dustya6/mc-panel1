@@ -153,7 +153,7 @@
       </section>
       <section id="page-players" hidden>
         <div class="card" id="card-stats">
-          <div class="card-title">Statistiques des joueurs</div>
+          <div class="card-title">Statistiques des joueurs <button type="button" id="btn-hm-open" class="ghost" style="float:right">Fréquentation</button></div>
           <div class="stat-big-row">
             <div class="stat-big"><span class="pl">Heure de pic moyenne</span><span class="pv-big" id="stat-peak">—</span></div>
             <div class="stat-big" id="stat-avg-cell"><span class="pl">Session moyenne par joueur (logs)</span><span class="pv-big" id="stat-avg">—</span></div>
@@ -191,19 +191,6 @@
           <ul id="search-results" class="players"></ul>
         </div>
       
-        <div class="card">
-          <div class="card-title">Fréquentation — <span id="chart-srv3"></span> <span class="hint">joueurs moyens par jour de semaine et par heure, toutes semaines cumulées (vert clair = peu, rouge foncé = beaucoup, vs moyenne)</span></div>
-          <div class="heatmap-legend">
-            <span class="hm-swatch g0"></span> <span id="lg0">0</span>
-            <span class="hm-swatch c1"></span> <span id="lg1"></span>
-            <span class="hm-swatch c2"></span> <span id="lg2"></span>
-            <span class="hm-swatch c3"></span> <span id="lg3"></span>
-            <span class="hm-swatch c5"></span> <span id="lg4"></span>
-            <span class="hm-swatch c6"></span> <span id="lg5"></span>
-            <span class="hint" id="lg-hint">(joueurs, selon la limite max du serveur)</span>
-          </div>
-          <div id="heatmap" class="heatmap"></div>
-        </div>
         </section>
     </main>
     <div id="player-modal" class="modal" hidden>
@@ -257,6 +244,22 @@
         <div class="row" style="margin-top:10px">
           <button type="button" id="about-close">Fermer</button>
         </div>
+      </div>
+    </div>
+    <div id="hm-modal" class="modal" hidden>
+      <div class="card modal-box hm-box">
+        <div class="card-title">Fréquentation — <span id="chart-srv3"></span> <button type="button" id="hm-close" class="ghost" style="float:right">Fermer</button></div>
+          <div class="heatmap-legend">
+            <span class="hm-swatch g0"></span> <span id="lg0">0</span>
+            <span class="hm-swatch c1"></span> <span id="lg1"></span>
+            <span class="hm-swatch c2"></span> <span id="lg2"></span>
+            <span class="hm-swatch c3"></span> <span id="lg3"></span>
+            <span class="hm-swatch c5"></span> <span id="lg4"></span>
+            <span class="hm-swatch c6"></span> <span id="lg5"></span>
+            <span class="hint" id="lg-hint">(joueurs, selon la limite max du serveur)</span>
+          </div>
+          <div id="heatmap" class="heatmap"></div>
+        
       </div>
     </div>
     <div class="card form-card" id="form-card">

@@ -1793,6 +1793,18 @@ function hideHmTip() {
   if (hmTip) hmTip.hidden = true;
 }
 
+const hmModal = document.getElementById('hm-modal');
+const btnHmOpen = document.getElementById('btn-hm-open');
+const hmCloseBtn = document.getElementById('hm-close');
+if (btnHmOpen) {
+  btnHmOpen.addEventListener('click', () => {
+    drawHeatmap(lastHistory);
+    if (hmModal) hmModal.hidden = false;
+  });
+}
+if (hmCloseBtn) hmCloseBtn.addEventListener('click', () => { if (hmModal) hmModal.hidden = true; });
+if (hmModal) hmModal.addEventListener('click', (e) => { if (e.target === hmModal) hmModal.hidden = true; });
+
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
 window.api.getBuild().then((b) => {
