@@ -554,8 +554,8 @@ function drawHeatmap(history) {
   const el = document.getElementById('heatmap');
   if (!el) return;
   el.innerHTML = '';
-  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
-  const pts = (history || []).filter((p) => p.ts >= since && p.players != null);
+  // toute l'historique cumulee (30 jours) : le tableau ne recommence pas chaque semaine
+  const pts = (history || []).filter((p) => p.players != null);
   const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const grid = el;
   grid.style.gridTemplateColumns = `36px repeat(7, 1fr)`;
