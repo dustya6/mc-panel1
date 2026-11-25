@@ -23,6 +23,15 @@ const pageOverview = document.getElementById('page-overview');
 const pageConsole = document.getElementById('page-console');
 const pageServers = document.getElementById('page-servers');
 const pagePlayers = document.getElementById('page-players');
+const pageServer = document.getElementById('page-server');
+const srvCtlStatus = document.getElementById('srv-ctl-status');
+const srvStateEl = document.getElementById('srv-state');
+const srvUptimeEl = document.getElementById('srv-uptime');
+const srvPidEl = document.getElementById('srv-pid');
+const srvDirEl = document.getElementById('srv-dir');
+const btnSrvStart = document.getElementById('btn-srv-start');
+const btnSrvStop = document.getElementById('btn-srv-stop');
+const btnSrvRestart = document.getElementById('btn-srv-restart');
 const playersOnlineEl = document.getElementById('players-online');
 const whitelistListEl = document.getElementById('whitelist-list');
 const whitelistStatusEl = document.getElementById('whitelist-status');
@@ -121,6 +130,7 @@ function setMode(m) {
   pageConsole.hidden = m !== 'app' || currentPage !== 'console';
   pageServers.hidden = m !== 'app' || currentPage !== 'servers';
   pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
+  pageServer.hidden = m !== 'app' || currentPage !== 'server';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -144,7 +154,9 @@ function showPage(page) {
   pageConsole.hidden = page !== 'console';
   pageServers.hidden = page !== 'servers';
   pagePlayers.hidden = page !== 'players';
+  pageServer.hidden = page !== 'server';
   if (page === 'players') refreshPlayers();
+  if (page === 'server') loadServerCtl();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -189,6 +201,7 @@ function formData() {
     sshUser: field('f-ssh-user'),
     sshPassword: document.getElementById('f-ssh-pass').value,
     serverDir: field('f-server-dir') || '~/minecraft',
+    startCmd: field('f-start-cmd'),
   };
 }
 
@@ -648,6 +661,7 @@ async function selectServer(s) {
   document.getElementById('f-ssh-port').value = s.sshPort || 22;
   document.getElementById('f-ssh-user').value = s.sshUser || '';
   document.getElementById('f-server-dir').value = s.serverDir || '~/minecraft';
+  document.getElementById('f-start-cmd').value = s.startCmd || '';
   applyFormType(s.type || 'vps');
   const noRcon = (s.type === 'aternos') || !s.hasPassword;
   consoleForm.hidden = noRcon;
@@ -669,6 +683,12 @@ async function selectServer(s) {
   if (plLimited) plLimited.hidden = hasRcon;
   const resCard = document.getElementById('res-card');
   if (resCard) resCard.hidden = !hasSsh;
+  const navServer = document.getElementById('nav-server');
+  if (navServer) {
+    navServer.hidden = !hasSsh;
+    if (navServer.hidden && currentPage === 'server') showPage('overview');
+  }
+  if (currentPage === 'server') loadServerCtl();
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';
@@ -1031,6 +1051,101 @@ btnTypeVps.addEventListener('click', () => {
   setupFormSlot.hidden = false;
 });
 btnSetupBack.addEventListener('click', () => setMode('welcome'));
+
+function fmtUptime(sec) {
+  if (sec == null || isNaN(sec) || sec < 0) return '—';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d} j ${h} h`;
+  if (h > 0) return `${h} h ${m} min`;
+  return `${m} min`;
+}
+
+async function loadServerCtl() {
+  if (!currentServer || !currentServer.sshUser) return;
+  if (srvDirEl) srvDirEl.textContent = `Dossier : ${currentServer.serverDir || '—'}`;
+  const cmd = "p=$(pgrep -f 'server\.jar' | head -1); if [ -n \"$p\" ]; then echo \"PID=$p\"; ps -o etimes= -p \"$p\" | tr -d ' '; else echo STOPPED; fi";
+  let res;
+  try {
+    res = await window.api.sshExec(currentServer.id, cmd);
+  } catch (err) {
+    if (srvStateEl) srvStateEl.textContent = `Erreur SSH : ${err.message}`;
+    return;
+  }
+  if (res.error) {
+    if (srvStateEl) srvStateEl.textContent = `Erreur SSH : ${res.error}`;
+    return;
+  }
+  const out = (res.out || '').trim();
+  if (out === 'STOPPED' || !out) {
+    if (srvStateEl) srvStateEl.textContent = 'Processus du serveur arrêté (hors ligne).';
+    if (srvPidEl) srvPidEl.textContent = 'PID : —';
+    if (srvUptimeEl) srvUptimeEl.textContent = 'Uptime : —';
+  } else {
+    const m = out.match(/PID=(\d+)/);
+    const sec = Number(out.split('\n').pop());
+    if (srvStateEl) srvStateEl.textContent = 'Processus du serveur en cours d\u2019exécution.';
+    if (srvPidEl) srvPidEl.textContent = `PID : ${m ? m[1] : '?'}`;
+    if (srvUptimeEl) srvUptimeEl.textContent = `Uptime : ${fmtUptime(sec)}`;
+  }
+}
+
+async function srvStop() {
+  const hasRcon = currentServer.type !== 'aternos' && currentServer.hasPassword;
+  if (hasRcon) {
+    const out = await runCmd('stop');
+    addConsoleLine('> stop', 'cmd');
+    if (out) addConsoleLine(out, 'out');
+  } else {
+    await window.api.sshExec(currentServer.id, "pkill -f 'server\.jar'");
+  }
+}
+
+async function srvStart() {
+  if (!currentServer.startCmd) {
+    if (srvCtlStatus) srvCtlStatus.textContent = 'Mets la « commande de démarrage » dans Mes serveurs (section SSH) pour activer ce bouton.';
+    return;
+  }
+  const r = await window.api.sshExec(currentServer.id, currentServer.startCmd);
+  if (srvCtlStatus) srvCtlStatus.textContent = r.error ? `Erreur : ${r.error}` : 'Commande de démarrage envoyée.';
+}
+
+btnSrvStart.addEventListener('click', () => withRefresh(btnSrvStart, async () => {
+  await srvStart();
+  await new Promise((r) => setTimeout(r, 3000));
+  await loadServerCtl();
+  await loadStatus();
+}));
+
+btnSrvStop.addEventListener('click', () => withRefresh(btnSrvStop, async () => {
+  if (srvCtlStatus) srvCtlStatus.textContent = 'Arrêt demandé (stop)...';
+  try {
+    await srvStop();
+  } catch (err) {
+    if (srvCtlStatus) srvCtlStatus.textContent = `Erreur : ${err.message}`;
+  }
+  await new Promise((r) => setTimeout(r, 3000));
+  await loadServerCtl();
+  await loadStatus();
+}));
+
+btnSrvRestart.addEventListener('click', () => withRefresh(btnSrvRestart, async () => {
+  if (srvCtlStatus) srvCtlStatus.textContent = 'Redémarrage : arrêt en cours...';
+  try {
+    await srvStop();
+  } catch (err) { /* le serveur est peut-être déjà arrêté */ }
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const st = await window.api.getStatus(currentServer.id);
+    if (!st.ping) break;
+  }
+  if (srvCtlStatus) srvCtlStatus.textContent = 'Démarrage...';
+  await srvStart();
+  await new Promise((r) => setTimeout(r, 5000));
+  await loadServerCtl();
+  await loadStatus();
+}));
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 

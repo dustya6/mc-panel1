@@ -11,6 +11,7 @@
       <nav id="nav" hidden>
         <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
         <button type="button" class="nav-btn" data-page="console" id="nav-console">Console</button>
+        <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <span id="build-tag" class="muted"></span>
@@ -89,6 +90,24 @@
             <input id="cmd" type="text" placeholder="Commande (ex : list, say bonjour)" required />
             <button type="submit" class="primary">Envoyer</button>
           </form>
+        </div>
+      </section>
+      <section id="page-server" hidden>
+        <div class="card">
+          <div class="card-title">Contrôle du serveur <span id="srv-ctl-status" class="hint"></span></div>
+          <p id="srv-state" class="hint">…</p>
+          <div class="row">
+            <button type="button" id="btn-srv-start" class="primary">Démarrer</button>
+            <button type="button" id="btn-srv-stop" class="danger">Arrêter</button>
+            <button type="button" id="btn-srv-restart">Redémarrer</button>
+          </div>
+          <p class="hint">Arrêter / Redémarrer envoient <code>stop</code> par RCON (arrêt propre). Démarrer exécute la « commande de démarrage » renseignée dans Mes serveurs (section SSH).</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Infos</div>
+          <p id="srv-uptime" class="hint">Uptime : —</p>
+          <p id="srv-pid" class="hint">PID : —</p>
+          <p id="srv-dir" class="hint">Dossier : —</p>
         </div>
       </section>
       <section id="page-servers" hidden>
@@ -184,6 +203,9 @@
           </label>
           <label>Mot de passe SSH <span class="info" data-tip="Mot de passe de cet utilisateur pour se connecter en SSH au serveur.">i</span>
             <input id="f-ssh-pass" type="password" placeholder="laisser vide = garder l'actuel" />
+          </label>
+          <label>Commande de démarrage (bouton Démarrer, page Serveur) <span class="info" data-tip="Commande exécutée en SSH pour lancer le serveur, ex : cd ~/minecraft && screen -dmS mc java -Xmx4G -jar server.jar nogui. Adapte-la à ton installation. Laisse vide si tu démarres ton serveur autrement.">i</span>
+            <input id="f-start-cmd" type="text" placeholder="laisser vide = bouton Démarrer désactivé" />
           </label>
           <label>Dossier du serveur <span class="info" data-tip="Chemin du dossier où se trouve server.jar. Pour le trouver : en SSH sur le serveur, place-toi dans le dossier puis tape pwd (ex : /home/leon/minecraft). Ne mets pas de commande, juste le chemin.">i</span>
             <input id="f-server-dir" type="text" placeholder="" />

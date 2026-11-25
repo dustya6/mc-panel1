@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'res-card-hide';
+const BUILD = 'page-server';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -128,6 +128,7 @@ function publicServer(server) {
     hasSshPassword: Boolean(server.encryptedSshPassword),
     sshKey: server.sshKey,
     hasSshKey: Boolean(server.sshKey),
+    startCmd: server.startCmd || '',
     type: server.type === 'aternos' ? 'aternos' : 'vps',
   };
 }
@@ -338,6 +339,7 @@ app.whenReady().then(() => {
       encryptedSshPassword: encrypt(input.sshPassword) || (existing ? existing.encryptedSshPassword : null),
       sshKey: input.sshKey || (existing ? existing.sshKey : ''),
       serverDir: cleanDir(input.serverDir),
+      startCmd: input.startCmd || (existing ? existing.startCmd : ''),
       type: input.type === 'aternos' ? 'aternos' : 'vps',
     };
     const index = servers.findIndex((s) => s.id === entry.id);
