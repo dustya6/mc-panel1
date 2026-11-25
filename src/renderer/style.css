@@ -365,13 +365,15 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 
 .set-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 body.light {
-  --bg: #f2f4f8;
-  --panel: #ffffff;
-  --panel-2: #e9edf3;
-  --border: #d3dae4;
-  --text: #1a2330;
-  --muted: #5b6675;
+  --bg: #e7ebf1;
+  --panel: #f6f8fb;
+  --panel-2: #e2e7ee;
+  --border: #ccd4df;
+  --text: #232b38;
+  --muted: #6a7482;
 }
-body.light .chart, body.light .spark { background: #ffffff; }
+body.light .chart, body.light .spark { background: #f6f8fb; }
 body.light #console-out { background: #0a0d12; }
-body.light .code { background: #ffffff; color: #1a2330; }
+body.light .code { background: #e2e7ee; color: #232b38; }
+body.light input { background: #ffffff; }
+body.light .modal { background: rgba(30, 38, 50, .45); }
