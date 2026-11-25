@@ -26,7 +26,6 @@ const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
 const pageSettings = document.getElementById('page-settings');
 const pageNews = document.getElementById('page-news');
-const pageAi = document.getElementById('page-ai');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -104,8 +103,6 @@ let currentRange = 86400000;
 let refreshSec = 15;
 let prevPing = undefined;
 let lastPlayersMax = 20;
-let lastPlayerStats = null;
-let lastRes = null;
 const activeAlerts = {};
 const logAlertAt = {};
 const pluginErrCount = {};
@@ -153,7 +150,6 @@ function setMode(m) {
   pageServer.hidden = m !== 'app' || currentPage !== 'server';
   pageSettings.hidden = m !== 'app' || currentPage !== 'settings';
   pageNews.hidden = m !== 'app' || currentPage !== 'news';
-  pageAi.hidden = m !== 'app' || currentPage !== 'ai';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -180,12 +176,10 @@ function showPage(page) {
   pageServer.hidden = page !== 'server';
   pageSettings.hidden = page !== 'settings';
   pageNews.hidden = page !== 'news';
-  pageAi.hidden = page !== 'ai';
   if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
-  if (page === 'ai') initAiPage();
   if (page === 'news') {
     renderNews();
     window.api.setSetting('newsLastSeen', Date.now()).then(() => updateNewsDot());
@@ -827,7 +821,6 @@ async function loadResources() {
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
-  lastRes = { cpu, ramPct, diskPct };
   await checkAlert('disk', !isNaN(diskPct) && diskPct >= 90, `Disque presque plein : ${isNaN(diskPct) ? '?' : Math.round(diskPct)}%`);
   await checkAlert('ram', !isNaN(ramPct) && ramPct >= 90, `RAM presque pleine : ${isNaN(ramPct) ? '?' : Math.round(ramPct)}%`);
   await checkAlert('cpu', !isNaN(cpu) && cpu >= 95, `CPU très haut : ${isNaN(cpu) ? '?' : Math.round(cpu)}%`);
@@ -868,7 +861,6 @@ async function loadResources() {
     }
     let totalSec = 0;
     for (const v of perPlayer.values()) totalSec += v;
-    lastPlayerStats = Object.fromEntries(perPlayer);
     if (perPlayer.size > 0 && sessions > 0) {
       resAvgEl.textContent = `${fmtDur(totalSec / sessions)} · ${sessions} sessions, ${perPlayer.size} joueurs`;
     } else {
@@ -1812,117 +1804,6 @@ if (btnHmOpen) {
 }
 if (hmCloseBtn) hmCloseBtn.addEventListener('click', () => { if (hmModal) hmModal.hidden = true; });
 if (hmModal) hmModal.addEventListener('click', (e) => { if (e.target === hmModal) hmModal.hidden = true; });
-
-const AI_PROVIDERS = {
-  mistral: { url: 'https://api.mistral.ai/v1/chat/completions', model: 'mistral-small-latest' },
-  openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
-  groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
-};
-
-function aiAddMsg(text, who) {
-  const box = document.getElementById('ai-messages');
-  if (!box) return;
-  const div = document.createElement('div');
-  div.className = 'ai-msg ' + who;
-  div.textContent = text;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-function aiContext() {
-  const s = currentServer || {};
-  const st = lastStatus || {};
-  const ping = st.ping || {};
-  const hist = lastHistory || [];
-  const day = 86400000;
-  const last24 = hist.filter((p) => p.ts > Date.now() - day && p.players != null);
-  const avg = (arr, k) => (arr.length ? arr.reduce((a, p) => a + (Number(p[k]) || 0), 0) / arr.length : null);
-  const maxP = last24.length ? Math.max(...last24.map((p) => Number(p.players) || 0)) : null;
-  const tpsPts = hist.filter((p) => p.tps != null);
-  const minTps = tpsPts.length ? Math.min(...tpsPts.map((p) => Number(p.tps))) : null;
-  const playersStats = lastPlayerStats
-    ? Object.entries(lastPlayerStats).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n, v]) => `${n} (${fmtDur(v)} au total)`).join(', ')
-    : 'inconnu (SSH non configuré)';
-  const res = lastRes || {};
-  return [
-    `Serveur : ${s.name || '?'} (${s.host || '?'}:${s.queryPort || '?'}, type ${s.type || 'vps'})`,
-    `Statut actuel : ${ping.playersOnline != null ? `${ping.playersOnline}/${ping.playersMax} joueurs, latence ${ping.latency} ms` : 'hors ligne'} — version ${ping.version || '?'} — TPS actuel ${st.tps != null ? st.tps : '?'}`,
-    `Joueurs en ligne maintenant : ${((ping.playersSample) || []).join(', ') || 'personne'}`,
-    `Dernières 24h : joueurs moyen ${avg(last24, 'players') != null ? avg(last24, 'players').toFixed(1) : '?'}, max ${maxP != null ? maxP : '?'} ; latence moyenne ${avg(last24, 'latency') != null ? avg(last24, 'latency').toFixed(0) + ' ms' : '?'}`,
-    `TPS minimum sur l'historique : ${minTps != null ? minTps : '?'}`,
-    `Ressources VPS : CPU ${res.cpu != null && !isNaN(res.cpu) ? Math.round(res.cpu) + '%' : '?'} — RAM ${res.ramPct != null && !isNaN(res.ramPct) ? Math.round(res.ramPct) + '%' : '?'} — disque ${res.diskPct != null && !isNaN(res.diskPct) ? Math.round(res.diskPct) + '%' : '?'}`,
-    `Temps de jeu total par joueur (top 8) : ${playersStats}`,
-    `Historique : ${hist.length} points sur ${hist.length ? Math.round((Date.now() - hist[0].ts) / day) : 0} jour(s)`,
-  ].join('\n');
-}
-
-async function initAiPage() {
-  const keyEl = document.getElementById('ai-key');
-  const provEl = document.getElementById('ai-provider');
-  const statusEl = document.getElementById('ai-key-status');
-  try {
-    const k = await window.api.getSecret('aiKey');
-    if (keyEl && k) keyEl.value = k;
-    const prov = await window.api.getSetting('aiProvider');
-    if (provEl && prov && AI_PROVIDERS[prov]) provEl.value = prov;
-    if (statusEl) statusEl.textContent = k ? 'Clé enregistrée ✓' : 'Aucune clé enregistrée — colle ta clé API puis Enregistrer.';
-  } catch { }
-}
-
-const aiSaveBtn = document.getElementById('ai-save-key');
-if (aiSaveBtn) {
-  aiSaveBtn.addEventListener('click', async () => {
-    const keyEl = document.getElementById('ai-key');
-    const provEl = document.getElementById('ai-provider');
-    const statusEl = document.getElementById('ai-key-status');
-    await window.api.setSecret('aiKey', keyEl.value.trim());
-    await window.api.setSetting('aiProvider', provEl.value);
-    if (statusEl) statusEl.textContent = 'Enregistré ✓ (chiffré en local)';
-  });
-}
-
-const aiForm = document.getElementById('ai-form');
-if (aiForm) {
-  aiForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('ai-input');
-    const q = input.value.trim();
-    if (!q) return;
-    input.value = '';
-    aiAddMsg(q, 'user');
-    const key = (document.getElementById('ai-key').value || '').trim();
-    if (!key) {
-      aiAddMsg('Enregistre d’abord ta clé API en haut (chiffrée en local).', 'bot err');
-      return;
-    }
-    const prov = AI_PROVIDERS[document.getElementById('ai-provider').value] || AI_PROVIDERS.mistral;
-    aiAddMsg('Réflexion...', 'bot');
-    const box = document.getElementById('ai-messages');
-    const waitEl = box.lastChild;
-    try {
-      const sys = 'Tu es l’assistant IA de MC Panel, un panel de gestion de serveurs Minecraft. Tu réponds en français, court et concret, UNIQUEMENT à partir des données fournies ci-dessous sur le serveur de l’utilisateur. Si une info manque, dis-le. Données du serveur :\n' + aiContext();
-      const resp = await fetch(prov.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({
-          model: prov.model,
-          messages: [
-            { role: 'system', content: sys },
-            { role: 'user', content: q },
-          ],
-        }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error((data.error && data.error.message) || ('HTTP ' + resp.status));
-      const answer = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Pas de réponse.';
-      if (waitEl) waitEl.remove();
-      aiAddMsg(answer, 'bot');
-    } catch (err) {
-      if (waitEl) waitEl.remove();
-      aiAddMsg('Erreur : ' + err.message, 'bot err');
-    }
-  });
-}
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 

@@ -431,9 +431,3 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
   box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
 }
 .chart-btn:active { transform: translateY(0); box-shadow: none; }
-
-.ai-messages { height: 340px; overflow-y: auto; background: #0a0d12; border: 1px solid var(--border); padding: 10px; margin-bottom: 10px; }
-.ai-msg { max-width: 80%; padding: 8px 12px; margin: 6px 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
-.ai-msg.user { margin-left: auto; background: var(--primary); color: #fff; }
-.ai-msg.bot { margin-right: auto; background: var(--panel-2); border: 1px solid var(--border); }
-.ai-msg.err { border-color: var(--danger); color: var(--danger); }

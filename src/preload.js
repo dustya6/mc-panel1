@@ -6,8 +6,6 @@ contextBridge.exposeInMainWorld('api', {
   defaultSshKey: () => ipcRenderer.invoke('ssh:default-key'),
   getSetting: (key) => ipcRenderer.invoke('settings:get', key),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
-  getSecret: (key) => ipcRenderer.invoke('secret:get', key),
-  setSecret: (key, value) => ipcRenderer.invoke('secret:set', { key, value }),
   addHistoryPoint: (id, point) => ipcRenderer.invoke('server:hist-add', { id, point }),
   newsList: () => ipcRenderer.invoke('news:list'),
   newsAdd: (item) => ipcRenderer.invoke('news:add', item),
