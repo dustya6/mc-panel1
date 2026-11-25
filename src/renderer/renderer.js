@@ -585,15 +585,18 @@ function drawHeatmap(history) {
       const c = document.createElement('div');
       c.className = 'hm-cell';
       const cell = cells[dow + '-' + h];
+      let tip;
       if (cell) {
         const v = cell.sum / cell.n;
         const r = avg ? v / avg : 0;
         c.style.background = heatColor(r);
-        c.title = `${days[dow]} ${h}h — ${Math.round(v)} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
+        tip = `${days[dow]} ${h}h — ${Math.round(v)} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
       } else {
         c.style.background = 'var(--panel-2)';
-        c.title = `${days[dow]} ${h}h : pas de données`;
+        tip = `${days[dow]} ${h}h : pas de données`;
       }
+      c.addEventListener('mouseenter', (e) => showHmTip(tip, e));
+      c.addEventListener('mouseleave', hideHmTip);
       grid.appendChild(c);
     }
   }
@@ -1753,6 +1756,24 @@ async function updateNewsDot() {
   } catch {
     newsDot.hidden = true;
   }
+}
+
+const hmTip = document.getElementById('hm-tip');
+
+function showHmTip(text, e) {
+  if (!hmTip) return;
+  hmTip.textContent = text;
+  hmTip.hidden = false;
+  const ww = window.innerWidth || 1200;
+  const wh = window.innerHeight || 800;
+  const x = Math.min(ww - 280, (e.clientX || 0) + 14);
+  const y = Math.min(wh - 50, (e.clientY || 0) + 14);
+  hmTip.style.left = x + 'px';
+  hmTip.style.top = y + 'px';
+}
+
+function hideHmTip() {
+  if (hmTip) hmTip.hidden = true;
 }
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
