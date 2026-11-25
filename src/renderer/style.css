@@ -462,3 +462,16 @@ select:focus { outline: none; border-color: var(--primary); }
 .plug-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
 .plug-desc { font-size: 13px; margin-top: 4px; }
 .plug-vers { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.plug-actions { margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plug-btn { font-size: 12px; padding: 5px 10px; }
+.plug-status { font-size: 12px; }
+.plug-status.ok { color: var(--ok); }
+.plug-status.err { color: var(--danger); }
+#plug-installed { list-style: none; margin: 8px 0 0; padding: 0; }
+#plug-installed li {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  border: 1px solid var(--border); background: var(--panel-2);
+  padding: 6px 10px; margin-top: 6px;
+  font-family: var(--mono); font-size: 12px;
+}
+.plug-del { font-size: 11px; padding: 3px 8px; }

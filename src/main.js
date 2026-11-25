@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'page-plugins';
+const BUILD = 'plugins-install';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -271,6 +271,7 @@ function startLogStream(server) {
 
 // ---------- Hangar (recherche de plugins + compatibilite version) ----------
 const HANGAR_API = 'https://hangar.papermc.io/api/v1';
+const PAPERMC_URL_RE = /^https:\/\/([A-Za-z0-9-]+\.)*papermc\.io\//;
 const HANGAR_PLATFORMS = {
   paper: 'PAPER', purpur: 'PAPER', spigot: 'SPIGOT', fabric: 'FABRIC', quilt: 'QUILT',
   forge: 'FORGE', neoforge: 'NEOFORGE', velocity: 'VELOCITY', bungeecord: 'BUNGEECORD',
@@ -303,6 +304,20 @@ function verCovers(a, b) {
   if (!A.length || !B.length || A.length > B.length) return false;
   for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) return false;
   return true;
+}
+
+function safeFileName(s) {
+  return String(s || 'plugin').replace(/[^A-Za-z0-9._-]/g, '_');
+}
+
+function makeInstall(owner, slug, v) {
+  if (!v) return null;
+  const url = v.downloadUrl || `${HANGAR_API}/projects/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/versions/${encodeURIComponent(v.name || '')}/download`;
+  return {
+    version: v.name || '',
+    url,
+    fileName: safeFileName(`${slug}-${v.name || 'latest'}.jar`),
+  };
 }
 
 async function hangarVersions(owner, slug) {
@@ -366,12 +381,24 @@ async function searchPlugins(query, platform, version) {
       url: `https://hangar.papermc.io/${owner}/${slug}`,
       compatible: null,
       versions: [],
+      install: null,
     };
     try {
       const vs = await hangarVersions(owner, slug);
       const mine = vs.filter((v) => Array.isArray(v.platforms) && v.platforms.some((x) => String(x).toUpperCase() === platCode));
       if (mine.length) {
-        out.compatible = mine.some((v) => (v.gameVersions || []).some((g) => verCovers(version, g)));
+        let pool = mine;
+        if (version) {
+          const covering = mine.filter((v) => (v.gameVersions || []).some((g) => verCovers(version, g)));
+          out.compatible = covering.length > 0;
+          pool = covering;
+        } else {
+          out.compatible = null;
+        }
+        if (pool.length) {
+          const sorted = [...pool].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          out.install = makeInstall(owner, slug, sorted[0]);
+        }
         const set = [];
         for (const v of mine.slice(0, 8)) for (const g of (v.gameVersions || [])) if (!set.includes(g)) set.push(g);
         out.versions = set.slice(0, 12);
@@ -577,6 +604,59 @@ app.whenReady().then(() => {
       return true;
     }
     return false;
+  });
+
+  // Telecharge le .jar du plugin directement dans plugins/ du serveur via SSH (VPS)
+  ipcMain.handle('plugins:install', async (event, { id, url, fileName }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server) return { ok: false, error: 'Serveur introuvable' };
+    if (!server.sshUser) return { ok: false, error: 'Pas de SSH sur ce serveur (Aternos gratuit) — utilise « Télécharger le .jar » puis upload-le toi-même.' };
+    if (typeof url !== 'string' || !PAPERMC_URL_RE.test(url)) return { ok: false, error: 'URL de téléchargement invalide' };
+    let file = safeFileName(fileName || 'plugin.jar');
+    if (!file.endsWith('.jar')) file += '.jar';
+    const dir = cleanDir(server.serverDir);
+    const cmd = `cd "${dir}" && mkdir -p plugins && (curl -sSL --fail -o "plugins/${file}" "${url}" || wget -q -O "plugins/${file}" "${url}") && ls -l "plugins/${file}"`;
+    const r = await sshExec(server, cmd, 90000);
+    if (r.error) return { ok: false, error: r.error };
+    return { ok: true, out: r.out || '', file };
+  });
+
+  // Telecharge le .jar sur le PC du client (sans SSH, ex Aternos)
+  ipcMain.handle('plugins:download', async (event, { url, fileName }) => {
+    if (typeof url !== 'string' || !PAPERMC_URL_RE.test(url)) return { ok: false, error: 'URL de téléchargement invalide' };
+    let file = safeFileName(fileName || 'plugin.jar');
+    if (!file.endsWith('.jar')) file += '.jar';
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'mc-panel/1.0' } });
+      clearTimeout(timer);
+      if (!r.ok) return { ok: false, error: 'HTTP ' + r.status };
+      const buf = Buffer.from(await r.arrayBuffer());
+      const win = BrowserWindow.getAllWindows()[0];
+      const dlg = await dialog.showSaveDialog(win, {
+        title: 'Enregistrer le plugin',
+        defaultPath: file,
+        filters: [{ name: 'Plugin Minecraft (.jar)', extensions: ['jar'] }],
+      });
+      if (dlg.canceled || !dlg.filePath) return { ok: false, canceled: true };
+      await fs.promises.writeFile(dlg.filePath, buf);
+      return { ok: true, path: dlg.filePath, size: buf.length };
+    } catch (err) {
+      return { ok: false, error: String((err && err.message) || err) };
+    }
+  });
+
+  // Liste les .jar deja presents dans plugins/ du serveur (via SSH)
+  ipcMain.handle('plugins:installed', async (event, id) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server) return { ok: false, error: 'Serveur introuvable' };
+    if (!server.sshUser) return { ok: false, noSsh: true };
+    const dir = cleanDir(server.serverDir);
+    const r = await sshExec(server, `cd "${dir}" 2>/dev/null; ls -1 plugins/*.jar 2>/dev/null | xargs -r -n1 basename`, 20000);
+    if (r.error) return { ok: false, error: r.error };
+    const files = String(r.out || '').split('\n').map((s) => s.trim()).filter((s) => s.endsWith('.jar'));
+    return { ok: true, files };
   });
 
   createWindow();

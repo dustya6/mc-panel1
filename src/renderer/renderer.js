@@ -33,6 +33,10 @@ const plugSavedEl = document.getElementById('plug-saved');
 const plugForm = document.getElementById('plug-form');
 const plugQEl = document.getElementById('plug-q');
 const plugResultsEl = document.getElementById('plug-results');
+const cardPlugInstalled = document.getElementById('card-plug-installed');
+const plugInstalledEl = document.getElementById('plug-installed');
+const plugInstalledHint = document.getElementById('plug-installed-hint');
+const btnPlugInstalled = document.getElementById('btn-plug-installed');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -942,6 +946,7 @@ async function selectServer(s) {
   await refreshList();
   await loadStatus();
   if (currentPage === 'players') refreshPlayers();
+  if (currentPage === 'plugins') loadInstalledPlugins();
   clearInterval(statusTimer);
   statusTimer = setInterval(loadStatus, refreshSec * 1000);
   if (window.api.logDebug) window.api.logDebug(`selectServer id=${s.id} sshUser=${s.sshUser || '(vide)'}`);
@@ -1757,6 +1762,7 @@ async function initPluginsPage() {
     });
   }
   if (plugResultsEl && !plugResultsEl.children.length) doPluginSearch('');
+  loadInstalledPlugins();
 }
 
 function fmtCount(n) {
@@ -1843,9 +1849,120 @@ function renderPluginRow(pl, version) {
     vers.textContent = 'Versions : ' + pl.versions.join(', ');
     row.appendChild(vers);
   }
+  const actions = document.createElement('div');
+  actions.className = 'plug-actions';
+  const status = document.createElement('div');
+  status.className = 'plug-status';
+  if (pl.install) {
+    const hasSsh = Boolean(currentServer && currentServer.sshUser);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'plug-btn' + (hasSsh ? ' primary' : '');
+    b.textContent = hasSsh ? `Installer sur le serveur (v${pl.install.version})` : 'Télécharger le .jar';
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      b.disabled = true;
+      status.className = 'plug-status';
+      status.textContent = hasSsh ? 'Installation dans plugins/...' : 'Téléchargement...';
+      try {
+        if (hasSsh) {
+          const r = await window.api.pluginsInstall({ id: currentServer.id, url: pl.install.url, fileName: pl.install.fileName });
+          if (r.ok) {
+            status.className = 'plug-status ok';
+            status.textContent = `Installé : plugins/${r.file} — redémarre le serveur pour charger le plugin.`;
+            loadInstalledPlugins();
+          } else {
+            status.className = 'plug-status err';
+            status.textContent = `Erreur : ${r.error}`;
+            b.disabled = false;
+          }
+        } else {
+          const r = await window.api.pluginsDownload({ url: pl.install.url, fileName: pl.install.fileName });
+          if (r.ok) {
+            status.className = 'plug-status ok';
+            status.textContent = `Téléchargé : ${r.path}`;
+          } else if (r.canceled) {
+            status.textContent = '';
+            b.disabled = false;
+          } else {
+            status.className = 'plug-status err';
+            status.textContent = `Erreur : ${r.error}`;
+            b.disabled = false;
+          }
+        }
+      } catch (err) {
+        status.className = 'plug-status err';
+        status.textContent = `Erreur : ${err.message}`;
+        b.disabled = false;
+      }
+    });
+    actions.appendChild(b);
+  } else {
+    const span = document.createElement('span');
+    span.className = 'plug-vers';
+    span.textContent = 'Pas de version téléchargeable trouvée pour cette plateforme.';
+    actions.appendChild(span);
+  }
+  actions.appendChild(status);
+  row.appendChild(actions);
   row.addEventListener('click', () => { if (pl.url && window.api.openUrl) window.api.openUrl(pl.url); });
   return row;
 }
+
+async function loadInstalledPlugins() {
+  if (!plugInstalledEl) return;
+  const noSsh = !currentServer || !currentServer.sshUser;
+  if (plugInstalledHint) {
+    plugInstalledHint.textContent = noSsh
+      ? 'Pas de SSH sur ce serveur (Aternos gratuit) : on peut seulement télécharger le .jar sur ton PC, puis l\u2019uploader toi-même (chez Aternos : onglet « Plugins » du panel Aternos).'
+      : 'Plugins déjà présents dans le dossier plugins/ du serveur (lus via SSH).';
+  }
+  plugInstalledEl.innerHTML = '';
+  if (noSsh) return;
+  let r;
+  try { r = await window.api.pluginsInstalled(currentServer.id); } catch (err) {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = `Erreur : ${err.message}`;
+    plugInstalledEl.appendChild(li);
+    return;
+  }
+  if (!r.ok) {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = r.noSsh ? 'Pas de SSH configuré sur ce serveur.' : `Erreur : ${r.error}`;
+    plugInstalledEl.appendChild(li);
+    return;
+  }
+  if (!r.files.length) {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = 'Aucun .jar dans plugins/ pour l\u2019instant.';
+    plugInstalledEl.appendChild(li);
+    return;
+  }
+  for (const f of r.files) {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = f;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'ghost plug-del';
+    del.textContent = 'Supprimer';
+    del.title = 'Supprimer ce .jar du serveur (retiré au prochain démarrage)';
+    del.addEventListener('click', async () => {
+      if (!confirm(`Supprimer plugins/${f} du serveur ?`)) return;
+      const dir = currentServer.serverDir || '~/minecraft';
+      const r2 = await window.api.sshExec(currentServer.id, `cd "${dir}" && rm -f "plugins/${f}"`);
+      if (r2 && r2.error) { alert('Erreur : ' + r2.error); return; }
+      loadInstalledPlugins();
+    });
+    li.appendChild(name);
+    li.appendChild(del);
+    plugInstalledEl.appendChild(li);
+  }
+}
+if (btnPlugInstalled) btnPlugInstalled.addEventListener('click', () => loadInstalledPlugins());
 
 const aboutModal = document.getElementById('about-modal');
 const btnAbout = document.getElementById('btn-about');
