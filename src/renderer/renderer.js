@@ -699,11 +699,13 @@ async function loadResources() {
   if (resAvgEl) {
     const perPlayer = new Map();
     const openMap = new Map();
+    let sessions = 0;
     for (const l of lines.slice(4)) {
       const m = l.match(/^(\d{4}-\d{2}-\d{2}) ([0-9:]{8}) (\S+) (joined|left)$/);
       if (!m) continue;
       const ts = new Date(`${m[1]}T${m[2]}`).getTime();
       if (m[4] === 'joined') {
+        sessions++;
         if (!perPlayer.has(m[3])) perPlayer.set(m[3], 0);
         if (!openMap.has(m[3])) openMap.set(m[3], ts);
       } else {
@@ -719,8 +721,8 @@ async function loadResources() {
     }
     let totalSec = 0;
     for (const v of perPlayer.values()) totalSec += v;
-    if (perPlayer.size > 0) {
-      resAvgEl.textContent = `${fmtDur(totalSec / perPlayer.size)} (${perPlayer.size} joueurs)`;
+    if (perPlayer.size > 0 && sessions > 0) {
+      resAvgEl.textContent = `${fmtDur(totalSec / sessions)} · ${sessions} sessions, ${perPlayer.size} joueurs`;
     } else {
       resAvgEl.textContent = '—';
     }
