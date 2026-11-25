@@ -554,6 +554,7 @@ async function loadResources() {
     "awk -v a=\"$a\" -v b=\"$b\" 'BEGIN{split(a,A,\" \"); split(b,B,\" \"); d=B[1]-A[1]; if(d>0) printf \"%.1f\\n\", 100*((d-(B[2]-A[2]))/d); else print \"0\"}'",
     "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\\n\", $3, $2, $3*100/$2}'",
     "df -h / | tail -1 | awk '{gsub(/%/,\"\",$5); print $5, $3, $2}'",
+    "echo \"raw:$a|$b\"",
   ].join('; ');
   let res;
   try {
