@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'tps-fix';
+const BUILD = 'tps-fix2';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -187,9 +187,11 @@ async function probe({ host, queryPort, rconPort, password, type }) {
     try {
       const out = await runRcon({ host, port: Number(rconPort) || 25575, password }, ['list', 'tps']);
       result.list = out['list'];
-      const tpsRaw = String(out['tps'] || '');
+      const tpsRaw = String(out['tps'] || '').replace(/\u00a7[0-9a-fk-or]/gi, '');
       debugLog(`tps raw: ${tpsRaw.slice(0, 120)}`);
-      const m = tpsRaw.match(/1m:\s*([0-9]+(?:\.[0-9]+)?)/) || tpsRaw.match(/:\s*([0-9]+(?:\.[0-9]+)?)/);
+      const m = tpsRaw.match(/1m:?\s*([0-9]+(?:\.[0-9]+)?)/)
+        || tpsRaw.match(/:\s*([0-9]+(?:\.[0-9]+)?)/)
+        || tpsRaw.match(/tps\D*([0-9]+(?:\.[0-9]+)?)/i);
       if (m) result.tps = Number(m[1]);
     } catch (err) {
       const msg = `RCON: ${err.message}`;
