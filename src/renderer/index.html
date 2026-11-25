@@ -194,13 +194,13 @@
         <div class="card">
           <div class="card-title">Fréquentation — <span id="chart-srv3"></span> <span class="hint">joueurs moyens par jour de semaine et par heure, toutes semaines cumulées (vert clair = peu, rouge foncé = beaucoup, vs moyenne)</span></div>
           <div class="heatmap-legend">
-            <span class="hm-swatch g0"></span> 0
-            <span class="hm-swatch c1"></span> 1–10%
-            <span class="hm-swatch c2"></span> 11–25%
-            <span class="hm-swatch c3"></span> 26–45%
-            <span class="hm-swatch c5"></span> 46–75%
-            <span class="hm-swatch c6"></span> 76–100%
-            <span class="hint">(% de la limite max du serveur)</span>
+            <span class="hm-swatch g0"></span> <span id="lg0">0</span>
+            <span class="hm-swatch c1"></span> <span id="lg1"></span>
+            <span class="hm-swatch c2"></span> <span id="lg2"></span>
+            <span class="hm-swatch c3"></span> <span id="lg3"></span>
+            <span class="hm-swatch c5"></span> <span id="lg4"></span>
+            <span class="hm-swatch c6"></span> <span id="lg5"></span>
+            <span class="hint" id="lg-hint">(joueurs, selon la limite max du serveur)</span>
           </div>
           <div id="heatmap" class="heatmap"></div>
         </div>

@@ -524,6 +524,21 @@ function drawDashboard(history, result) {
   drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
 }
 
+function renderHeatLegend(maxP) {
+  const ceil = (f) => Math.ceil(maxP * f);
+  const b1 = ceil(0.10);
+  const b2 = ceil(0.25);
+  const b3 = ceil(0.45);
+  const b4 = ceil(0.75);
+  const labels = ['0', `1–${b1}`, `${b1 + 1}–${b2}`, `${b2 + 1}–${b3}`, `${b3 + 1}–${b4}`, `${b4 + 1}–${maxP}`];
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById('lg' + i);
+    if (el) el.textContent = labels[i] + (i === 0 ? '' : ' joueurs');
+  }
+  const hint = document.getElementById('lg-hint');
+  if (hint) hint.textContent = `joueurs (limite max du serveur : ${maxP})`;
+}
+
 function heatColorAbs(v, max) {
   // seuils en % de la limite max du serveur : 0 = gris, 1-10% vert clair, 11-25% vert fonce, 26-45% jaune, 46-75% rouge clair, 76-100% rouge fonce
   if (v < 0.05) return null;
@@ -555,6 +570,8 @@ function drawHeatmap(history) {
   }
   const allPts = (history || []).filter((p) => p.players != null);
   const avg = allPts.length ? allPts.reduce((a, p) => a + Number(p.players), 0) / allPts.length : null;
+  const maxP = lastPlayersMax || 20;
+  renderHeatLegend(maxP);
   const cells = {};
   for (const p of pts) {
     const d = new Date(p.ts);
@@ -575,7 +592,6 @@ function drawHeatmap(history) {
       let tip;
       const v = cell ? cell.sum / cell.n : 0;
       const label = String(Math.round(v));
-      const maxP = lastPlayersMax || 20;
       const color = cell ? heatColorAbs(v, maxP) : null;
       if (color) {
         c.style.background = color;
