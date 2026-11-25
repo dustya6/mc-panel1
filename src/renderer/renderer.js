@@ -47,6 +47,13 @@ const kpiLatencyEl = document.getElementById('kpi-latency');
 const kpiTpsEl = document.getElementById('kpi-tps');
 const sparkLatencyEl = document.getElementById('spark-latency');
 const chartMainEl = document.getElementById('chart-main');
+const resStatusEl = document.getElementById('res-status');
+const resCpuFill = document.getElementById('res-cpu-fill');
+const resCpuTxt = document.getElementById('res-cpu-txt');
+const resRamFill = document.getElementById('res-ram-fill');
+const resRamTxt = document.getElementById('res-ram-txt');
+const resDiskFill = document.getElementById('res-disk-fill');
+const resDiskTxt = document.getElementById('res-disk-txt');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
 const cmdInput = document.getElementById('cmd');
@@ -506,6 +513,59 @@ async function loadStatus() {
   } catch (err) {
     if (window.api.logDebug) window.api.logDebug(`draw error: ${err.message}`);
   }
+  loadResources();
+}
+
+function resColor(pct) {
+  if (pct == null || isNaN(pct)) return '';
+  if (pct < 60) return '#3fb950';
+  if (pct < 80) return '#d29922';
+  if (pct < 90) return '#f0883e';
+  return '#e5534b';
+}
+
+function setRes(fill, txt, pct, label) {
+  const color = resColor(pct);
+  fill.style.width = `${Math.max(0, Math.min(100, pct || 0))}%`;
+  fill.style.background = color || 'var(--ok)';
+  txt.style.color = color;
+  txt.textContent = label;
+}
+
+async function loadResources() {
+  if (!currentServer) return;
+  if (!currentServer.sshUser) {
+    resStatusEl.textContent = 'SSH non configur\u00e9 (voir Mes serveurs)';
+    return;
+  }
+  const cmd = [
+    "vmstat 1 2 | tail -1 | awk '{print 100-$15}'",
+    "free -m | awk '/^Mem:/ {printf \"%.0f %.0f\", $3, $2}'",
+    "df -h / | tail -1 | awk '{gsub(/%/, \"\", $5); print $5, $3, $2}'",
+  ].join('; ');
+  let res;
+  try {
+    res = await window.api.sshExec(currentServer.id, cmd);
+  } catch (err) {
+    resStatusEl.textContent = `Erreur SSH : ${err.message}`;
+    return;
+  }
+  if (res.error) {
+    resStatusEl.textContent = `Erreur SSH : ${res.error}`;
+    return;
+  }
+  resStatusEl.textContent = '';
+  const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const cpu = Number(lines[0]);
+  setRes(resCpuFill, resCpuTxt, cpu, `${isNaN(cpu) ? '?' : Math.round(cpu) + '%'}`);
+  const ram = (lines[1] || '').split(/\s+/);
+  const ramUsed = Number(ram[0]);
+  const ramTotal = Number(ram[1]);
+  const ramPct = ramTotal ? (ramUsed / ramTotal) * 100 : NaN;
+  setRes(resRamFill, resRamTxt, ramPct, `${isNaN(ramPct) ? '?' : Math.round(ramPct) + '%'} (${ramUsed || '?'} / ${ramTotal || '?'} Mo)`);
+  const disk = (lines[2] || '').split(/\s+/);
+  const diskPct = Number(disk[0]);
+  setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
 }
 
 async function selectServer(s) {
@@ -804,6 +864,7 @@ btnRefreshPlayers.addEventListener('click', () => withRefresh(btnRefreshPlayers,
 btnRefresh.addEventListener('click', () => withRefresh(btnRefresh, async () => {
   await refreshList();
   await loadStatus();
+  await loadResources();
   if (currentPage === 'players') await refreshPlayers();
 }));
 
