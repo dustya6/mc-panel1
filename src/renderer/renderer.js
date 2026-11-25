@@ -24,6 +24,8 @@ const pageConsole = document.getElementById('page-console');
 const pageServers = document.getElementById('page-servers');
 const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
+const pageSettings = document.getElementById('page-settings');
+const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
 const srvStateEl = document.getElementById('srv-state');
 const srvUptimeEl = document.getElementById('srv-uptime');
@@ -96,6 +98,7 @@ let currentServer = null;
 let statusTimer = null;
 let currentPage = 'overview';
 let currentRange = 86400000;
+let refreshSec = 15;
 let currentMetric = 'players';
 let lastHistory = [];
 let lastResult = null;
@@ -136,6 +139,7 @@ function setMode(m) {
   pageServers.hidden = m !== 'app' || currentPage !== 'servers';
   pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
   pageServer.hidden = m !== 'app' || currentPage !== 'server';
+  pageSettings.hidden = m !== 'app' || currentPage !== 'settings';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -160,9 +164,11 @@ function showPage(page) {
   pageServers.hidden = page !== 'servers';
   pagePlayers.hidden = page !== 'players';
   pageServer.hidden = page !== 'server';
+  pageSettings.hidden = page !== 'settings';
   if (page === 'players') refreshPlayers();
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
+  if (page === 'settings') renderSettings();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -791,7 +797,7 @@ async function selectServer(s) {
   await loadStatus();
   if (currentPage === 'players') refreshPlayers();
   clearInterval(statusTimer);
-  statusTimer = setInterval(loadStatus, 15000);
+  statusTimer = setInterval(loadStatus, refreshSec * 1000);
   if (window.api.logDebug) window.api.logDebug(`selectServer id=${s.id} sshUser=${s.sshUser || '(vide)'}`);
   if (s.sshUser) {
     const r = await window.api.startLogs(s.id);
@@ -1455,6 +1461,42 @@ if (quickForm) {
   });
 }
 
+function applyTheme(t) {
+  document.body.classList.toggle('light', t === 'light');
+}
+
+function renderSettings() {
+  document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
+    b.classList.toggle('active', Number(b.dataset.sec) === refreshSec);
+  });
+  const theme = document.body.classList.contains('light') ? 'light' : 'dark';
+  document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.theme === theme);
+  });
+}
+
+document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
+  b.addEventListener('click', async () => {
+    refreshSec = Number(b.dataset.sec);
+    await window.api.setSetting('refreshSec', refreshSec);
+    if (statusTimer) {
+      clearInterval(statusTimer);
+      statusTimer = setInterval(loadStatus, refreshSec * 1000);
+    }
+    if (settingsStatusEl) settingsStatusEl.textContent = 'Enregistré ✓';
+    renderSettings();
+  });
+});
+
+document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
+  b.addEventListener('click', async () => {
+    applyTheme(b.dataset.theme);
+    await window.api.setSetting('theme', b.dataset.theme);
+    if (settingsStatusEl) settingsStatusEl.textContent = 'Enregistré ✓';
+    renderSettings();
+  });
+});
+
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
 window.api.getBuild().then((b) => {
@@ -1463,6 +1505,12 @@ window.api.getBuild().then((b) => {
 });
 
 (async () => {
+  try {
+    const t = await window.api.getSetting('theme');
+    if (t === 'light') applyTheme('light');
+    const r = await window.api.getSetting('refreshSec');
+    if (r === 30 || r === 60) refreshSec = r;
+  } catch { }
   const servers = await window.api.listServers();
   await refreshList();
   if (servers.length === 0) {

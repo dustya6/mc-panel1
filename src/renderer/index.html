@@ -14,6 +14,7 @@
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
+        <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
         <span id="build-tag" class="muted"></span>
         <button type="button" id="btn-refresh" class="ghost">Rafraîchir</button>
       </nav>
@@ -115,6 +116,25 @@
           </div>
           <p class="hint">Arrêter / Redémarrer envoient <code>stop</code> par RCON (arrêt propre). Démarrer exécute la « commande de démarrage » renseignée dans Mes serveurs (section SSH).</p>
         </div>
+      </section>
+      <section id="page-settings" hidden>
+        <div class="card">
+          <div class="card-title">Rafraîchissement automatique</div>
+          <div class="row" id="refresh-row">
+            <button type="button" class="set-btn" data-sec="15">15 s</button>
+            <button type="button" class="set-btn" data-sec="30">30 s</button>
+            <button type="button" class="set-btn" data-sec="60">1 min</button>
+          </div>
+          <p class="hint">Intervalle entre chaque mise à jour : statut, graphiques, ressources, joueurs.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Apparence</div>
+          <div class="row" id="theme-row">
+            <button type="button" class="set-btn" data-theme="dark">Sombre</button>
+            <button type="button" class="set-btn" data-theme="light">Clair</button>
+          </div>
+        </div>
+        <p id="settings-status" class="hint"></p>
       </section>
       <section id="page-servers" hidden>
         <div class="card">
