@@ -1465,6 +1465,18 @@ function applyTheme(t) {
   document.body.classList.toggle('light', t === 'light');
 }
 
+let settingsStatusTimer = null;
+
+function showSettingsSaved() {
+  if (!settingsStatusEl) return;
+  settingsStatusEl.textContent = 'Enregistré ✓';
+  if (settingsStatusTimer) clearTimeout(settingsStatusTimer);
+  settingsStatusTimer = setTimeout(() => {
+    settingsStatusEl.textContent = '';
+    settingsStatusTimer = null;
+  }, 3000);
+}
+
 function renderSettings() {
   document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
     b.classList.toggle('active', Number(b.dataset.sec) === refreshSec);
@@ -1483,7 +1495,7 @@ document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
       clearInterval(statusTimer);
       statusTimer = setInterval(loadStatus, refreshSec * 1000);
     }
-    if (settingsStatusEl) settingsStatusEl.textContent = 'Enregistré ✓';
+    showSettingsSaved();
     renderSettings();
   });
 });
@@ -1492,7 +1504,7 @@ document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
   b.addEventListener('click', async () => {
     applyTheme(b.dataset.theme);
     await window.api.setSetting('theme', b.dataset.theme);
-    if (settingsStatusEl) settingsStatusEl.textContent = 'Enregistré ✓';
+    showSettingsSaved();
     renderSettings();
   });
 });
