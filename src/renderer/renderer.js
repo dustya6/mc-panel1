@@ -604,7 +604,7 @@ function drawHeatmap(history) {
       const cell = cells[dow + '-' + h];
       let tip;
       const v = cell ? cell.sum / cell.n : 0;
-      const label = String(Math.round(v));
+      const label = String(v > 0 ? Math.ceil(v) : 0);
       const color = cell ? heatColorAbs(v, maxP) : null;
       const hi2 = HEAT_HOURS.indexOf(h);
       const hnext2 = HEAT_HOURS[hi2 + 1] || 24;
