@@ -606,18 +606,11 @@ function drawHeatmap(history) {
       const v = cell ? cell.sum / cell.n : 0;
       const label = String(Math.round(v));
       const color = cell ? heatColorAbs(v, maxP) : null;
-      if (color) {
-        c.style.background = color;
-        const pct = maxP > 0 ? Math.round((v / maxP) * 100) : 0;
-        const hi2 = HEAT_HOURS.indexOf(h);
-        const hnext2 = HEAT_HOURS[hi2 + 1] || 24;
-        tip = `${days[dow]} ${h}h–${hnext2}h — ${label} joueur(s) en moyenne (${pct}% de la limite ${maxP})`;
-      } else {
-        c.style.background = 'var(--panel-2)';
-        const hi3 = HEAT_HOURS.indexOf(h);
-        const hnext3 = HEAT_HOURS[hi3 + 1] || 24;
-        tip = `${days[dow]} ${h}h–${hnext3}h — ${cell ? label + ' joueur(s)' : 'pas de données'} (aucun joueur sur cette case)`;
-      }
+      const hi2 = HEAT_HOURS.indexOf(h);
+      const hnext2 = HEAT_HOURS[hi2 + 1] || 24;
+      if (color) c.style.background = color;
+      else c.style.background = 'var(--panel-2)';
+      tip = `${days[dow]} ${h}h–${hnext2}h : ${label} joueur${Number(label) > 1 ? 's' : ''}`;
       c.addEventListener('mouseenter', (e) => showHmTip(tip, e));
       c.addEventListener('mouseleave', hideHmTip);
       grid.appendChild(c);
