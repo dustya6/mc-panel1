@@ -528,6 +528,20 @@ function drawHourly(history) {
   }
   const vals = hours.map((x) => (x ? x.sum / x.n : 0));
   const max = Math.max(...vals, 1);
+  let peakHour = 0;
+  vals.forEach((v, i) => { if (v === max) peakHour = i; });
+  let maxPt = null;
+  for (const p of pts) {
+    if (!maxPt || Number(p.players) > Number(maxPt.players)) maxPt = p;
+  }
+  const pb = document.getElementById('peak-badge');
+  if (pb && maxPt) {
+    const d = new Date(maxPt.ts);
+    const p2 = (n) => String(n).padStart(2, '0');
+    pb.textContent = `Record : ${maxPt.players} joueur(s) le ${p2(d.getDate())}/${p2(d.getMonth() + 1)} à ${p2(d.getHours())}h${p2(d.getMinutes())}`;
+  } else if (pb) {
+    pb.textContent = '';
+  }
   const pw = w - padL - padR;
   const ph = h - padT - padB;
   const bw = pw / 24;
@@ -547,13 +561,14 @@ function drawHourly(history) {
     r.setAttribute('y', String(padT + ph - bh));
     r.setAttribute('width', String(Math.max(1, bw - 2)));
     r.setAttribute('height', String(bh));
-    r.setAttribute('fill', '#3b82f6');
-    r.setAttribute('fill-opacity', '0.75');
+    r.setAttribute('fill', hh === peakHour ? '#f0883e' : '#3b82f6');
+    r.setAttribute('fill-opacity', hh === peakHour ? '1' : '0.75');
     const t = document.createElementNS(ns, 'title');
     t.textContent = `${hh}h : ${v.toFixed(1)} joueur(s) en moyenne`;
     r.appendChild(t);
     svg.appendChild(r);
-    if (hh % 3 === 0) svgText(svg, ns, padL + hh * bw + bw / 2, h - 6, `${hh}h`, 'middle');
+    if (hh % 3 === 0 || hh === peakHour) svgText(svg, ns, padL + hh * bw + bw / 2, h - 6, `${hh}h`, 'middle', hh === peakHour ? '#f0883e' : undefined, hh === peakHour ? 11 : undefined);
+    if (hh === peakHour) svgText(svg, ns, padL + hh * bw + bw / 2, padT + ph - (max / max) * ph - 6, `${vals[hh].toFixed(1)}`, 'middle', '#f0883e', 11);
   }
 }
 
