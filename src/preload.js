@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('api', {
   getSetting: (key) => ipcRenderer.invoke('settings:get', key),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   addHistoryPoint: (id, point) => ipcRenderer.invoke('server:hist-add', { id, point }),
+  newsList: () => ipcRenderer.invoke('news:list'),
+  newsAdd: (item) => ipcRenderer.invoke('news:add', item),
   listServers: () => ipcRenderer.invoke('servers:list'),
   saveServer: (server) => ipcRenderer.invoke('servers:save', server),
   deleteServer: (id) => ipcRenderer.invoke('servers:delete', id),

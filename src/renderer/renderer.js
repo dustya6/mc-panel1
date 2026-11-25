@@ -25,6 +25,7 @@ const pageServers = document.getElementById('page-servers');
 const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
 const pageSettings = document.getElementById('page-settings');
+const pageNews = document.getElementById('page-news');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
 const srvStateEl = document.getElementById('srv-state');
@@ -99,6 +100,8 @@ let statusTimer = null;
 let currentPage = 'overview';
 let currentRange = 86400000;
 let refreshSec = 15;
+let prevPing = undefined;
+const lastNewsAt = {};
 let currentMetric = 'players';
 let lastHistory = [];
 let lastResult = null;
@@ -140,6 +143,7 @@ function setMode(m) {
   pagePlayers.hidden = m !== 'app' || currentPage !== 'players';
   pageServer.hidden = m !== 'app' || currentPage !== 'server';
   pageSettings.hidden = m !== 'app' || currentPage !== 'settings';
+  pageNews.hidden = m !== 'app' || currentPage !== 'news';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -165,10 +169,12 @@ function showPage(page) {
   pagePlayers.hidden = page !== 'players';
   pageServer.hidden = page !== 'server';
   pageSettings.hidden = page !== 'settings';
+  pageNews.hidden = page !== 'news';
   if (page === 'players') refreshPlayers();
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
+  if (page === 'news') renderNews();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -610,6 +616,12 @@ async function loadStatus() {
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
   lastStatus = result;
+  if (prevPing !== undefined) {
+    if (prevPing && !result.ping) addNews('serveur', 'Le serveur est passé hors ligne.');
+    else if (!prevPing && result.ping) addNews('serveur', 'Le serveur est de retour en ligne.');
+  }
+  prevPing = result.ping || null;
+  if (result.tps != null && result.tps < 18) addNews('alerte', `TPS bas : ${result.tps}`);
   const history = await window.api.getHistory(currentServer.id);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
@@ -690,6 +702,9 @@ async function loadResources() {
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
+  if (!isNaN(diskPct) && diskPct >= 90) addNews('alerte', `Disque presque plein : ${Math.round(diskPct)}%`);
+  if (!isNaN(ramPct) && ramPct >= 90) addNews('alerte', `RAM presque pleine : ${Math.round(ramPct)}%`);
+  if (!isNaN(cpu) && cpu >= 95) addNews('alerte', `CPU très haut : ${Math.round(cpu)}%`);
   if (!isNaN(cpu) || !isNaN(ramPct) || !isNaN(diskPct)) {
     window.api.addHistoryPoint(currentServer.id, {
       ts: Date.now(),
@@ -867,6 +882,8 @@ window.api.onLogs((data) => {
     addConsoleLine(`[SSH] ${data.error}`, 'err', false);
   } else if (data.line) {
     addConsoleLine(data.line, logClass(data.line), false);
+    const lm = data.line.match(/(\S+) (was banned by|was kicked by|was banned|was kicked)/i);
+    if (lm) addNews('joueur', `${lm[1]} ${/banned/i.test(lm[2]) ? 'a été banni' : 'a été expulsé (kick)'}`);
   }
 });
 
@@ -1540,6 +1557,44 @@ if (aboutModal) aboutModal.addEventListener('click', (e) => { if (e.target === a
 for (const [id, key] of ABOUT_FIELDS) {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', async () => { await window.api.setSetting(key, el.value.trim()); });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function addNews(type, msg) {
+  const key = type + '|' + msg;
+  const now = Date.now();
+  if (lastNewsAt[key] && now - lastNewsAt[key] < 30 * 60000) return;
+  lastNewsAt[key] = now;
+  try {
+    await window.api.newsAdd({ ts: now, type, msg });
+  } catch { }
+  if (currentPage === 'news') renderNews();
+}
+
+async function renderNews() {
+  const el = document.getElementById('news-list');
+  if (!el) return;
+  let list = [];
+  try { list = await window.api.newsList(); } catch { }
+  el.innerHTML = '';
+  if (!list.length) {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = 'Aucune actualité pour l\u2019instant — les alertes (disque, RAM, CPU, TPS), les passages en ligne/hors ligne et les bans/kicks apparaîtront ici.';
+    el.appendChild(li);
+    return;
+  }
+  const p2 = (n) => String(n).padStart(2, '0');
+  for (const n of list.slice(0, 100)) {
+    const d = new Date(n.ts);
+    const li = document.createElement('li');
+    const badge = n.type === 'alerte' ? 'offline' : n.type === 'serveur' ? 'info' : 'online';
+    li.innerHTML = `<span class="badge ${badge}">${escapeHtml(n.type)}</span> <span class="news-time">${p2(d.getDate())}/${p2(d.getMonth() + 1)} ${p2(d.getHours())}h${p2(d.getMinutes())}</span> — ${escapeHtml(n.msg)}`;
+    el.appendChild(li);
+  }
 }
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));

@@ -13,6 +13,7 @@
         <button type="button" class="nav-btn" data-page="console" id="nav-console">Console</button>
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
+        <button type="button" class="nav-btn" data-page="news" id="nav-news">Actualités</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
         <span id="build-tag" class="muted"></span>
@@ -136,6 +137,12 @@
         </div>
         <p id="settings-status" class="hint"></p>
         <button type="button" id="btn-about" class="ghost">À propos</button>
+      </section>
+      <section id="page-news" hidden>
+        <div class="card">
+          <div class="card-title">Actualités <span class="hint">alertes (disque / RAM / CPU / TPS), serveur en ligne / hors ligne, joueurs (ban / kick)</span></div>
+          <ul id="news-list" class="news-list"></ul>
+        </div>
       </section>
       <section id="page-servers" hidden>
         <div class="card">

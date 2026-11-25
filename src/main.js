@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'editor-info';
+const BUILD = 'news-page';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -305,6 +305,18 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('settings:get', (event, key) => loadSettings()[key]);
+
+  function newsFile() { return path.join(app.getPath('userData'), 'news.json'); }
+  function loadNews() {
+    try { return JSON.parse(fs.readFileSync(newsFile(), 'utf8')); } catch { return []; }
+  }
+  ipcMain.handle('news:list', () => loadNews());
+  ipcMain.handle('news:add', (event, item) => {
+    const n = loadNews();
+    n.unshift({ ts: item.ts || Date.now(), type: item.type || 'info', msg: String(item.msg || '') });
+    fs.writeFileSync(newsFile(), JSON.stringify(n.slice(0, 300)));
+    return true;
+  });
 
   ipcMain.handle('settings:set', (event, key, value) => {
     const s = loadSettings();
