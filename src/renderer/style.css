@@ -327,3 +327,7 @@ button.loading::before {
 .nav-btn[hidden], #page-players .card[hidden] { display: none; }
 
 #page-overview .card[hidden] { display: none; }
+
+.ctl-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.ctl-btns button { padding: 14px 10px; font-size: 15px; font-weight: 600; }
+button:disabled { opacity: .35; cursor: not-allowed; }

@@ -688,6 +688,8 @@ async function selectServer(s) {
     navServer.hidden = !hasSsh;
     if (navServer.hidden && currentPage === 'server') showPage('overview');
   }
+  srvRunning = false;
+  updateSrvButtons();
   if (currentPage === 'server') loadServerCtl();
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
@@ -1062,6 +1064,19 @@ function fmtUptime(sec) {
   return `${m} min`;
 }
 
+let srvRunning = false;
+
+function updateSrvButtons() {
+  if (!btnSrvStart) return;
+  const hasStartCmd = Boolean(currentServer && currentServer.startCmd);
+  btnSrvStart.disabled = srvRunning || !hasStartCmd;
+  btnSrvStop.disabled = !srvRunning;
+  btnSrvRestart.disabled = !srvRunning;
+  if (btnSrvStart) btnSrvStart.title = srvRunning ? 'Le serveur est déjà démarré' : (hasStartCmd ? 'Lancer le serveur' : 'Renseigne la commande de démarrage dans Mes serveurs');
+  if (btnSrvStop) btnSrvStop.title = srvRunning ? 'Arrêter le serveur (stop)' : 'Le serveur est déjà arrêté';
+  if (btnSrvRestart) btnSrvRestart.title = srvRunning ? 'Arrêter puis relancer le serveur' : 'Le serveur est déjà arrêté';
+}
+
 async function loadServerCtl() {
   if (!currentServer || !currentServer.sshUser) return;
   if (srvDirEl) srvDirEl.textContent = `Dossier : ${currentServer.serverDir || '—'}`;
@@ -1079,16 +1094,19 @@ async function loadServerCtl() {
   }
   const out = (res.out || '').trim();
   if (out === 'STOPPED' || !out) {
+    srvRunning = false;
     if (srvStateEl) srvStateEl.textContent = 'Processus du serveur arrêté (hors ligne).';
     if (srvPidEl) srvPidEl.textContent = 'PID : —';
     if (srvUptimeEl) srvUptimeEl.textContent = 'Uptime : —';
   } else {
+    srvRunning = true;
     const m = out.match(/PID=(\d+)/);
     const sec = Number(out.split('\n').pop());
     if (srvStateEl) srvStateEl.textContent = 'Processus du serveur en cours d\u2019exécution.';
     if (srvPidEl) srvPidEl.textContent = `PID : ${m ? m[1] : '?'}`;
     if (srvUptimeEl) srvUptimeEl.textContent = `Uptime : ${fmtUptime(sec)}`;
   }
+  updateSrvButtons();
 }
 
 async function srvStop() {
