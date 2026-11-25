@@ -26,6 +26,7 @@ const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
 const pageSettings = document.getElementById('page-settings');
 const pageNews = document.getElementById('page-news');
+const pageFiles = document.getElementById('page-files');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -150,6 +151,7 @@ function setMode(m) {
   pageServer.hidden = m !== 'app' || currentPage !== 'server';
   pageSettings.hidden = m !== 'app' || currentPage !== 'settings';
   pageNews.hidden = m !== 'app' || currentPage !== 'news';
+  pageFiles.hidden = m !== 'app' || currentPage !== 'files';
   btnSubmit.textContent = m === 'setup' ? 'Se connecter' : 'Enregistrer';
   formCard.hidden = false;
   if (m === 'app') serversFormSlot.appendChild(formCard);
@@ -176,10 +178,12 @@ function showPage(page) {
   pageServer.hidden = page !== 'server';
   pageSettings.hidden = page !== 'settings';
   pageNews.hidden = page !== 'news';
+  pageFiles.hidden = page !== 'files';
   if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
+  if (page === 'files') loadFiles();
   if (page === 'news') {
     renderNews();
     window.api.setSetting('newsLastSeen', Date.now()).then(() => updateNewsDot());
@@ -917,6 +921,11 @@ async function selectServer(s) {
   document.querySelectorAll('.metric-btn').forEach((b) => {
     if (['cpu', 'ram', 'disk'].includes(b.dataset.metric)) b.hidden = !hasSsh;
   });
+  const navFiles = document.getElementById('nav-files');
+  if (navFiles) {
+    navFiles.hidden = !hasSsh;
+    if (navFiles.hidden && currentPage === 'files') showPage('overview');
+  }
   const navServer = document.getElementById('nav-server');
   if (navServer) {
     navServer.hidden = !hasSsh;
@@ -1804,6 +1813,63 @@ if (btnHmOpen) {
 }
 if (hmCloseBtn) hmCloseBtn.addEventListener('click', () => { if (hmModal) hmModal.hidden = true; });
 if (hmModal) hmModal.addEventListener('click', (e) => { if (e.target === hmModal) hmModal.hidden = true; });
+
+async function loadFiles() {
+  const diskEl = document.getElementById('files-disk');
+  const worldEl = document.getElementById('files-world');
+  const plugEl = document.getElementById('files-plugins');
+  const statusEl = document.getElementById('files-status');
+  if (!currentServer || !currentServer.sshUser) {
+    if (statusEl) statusEl.textContent = 'SSH non configuré';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Chargement...';
+  const dir = currentServer.serverDir || '~/minecraft';
+  const cmd = `D=${dir}; cd "$D" 2>/dev/null; echo '---DISK---'; df -h / | tail -1; echo '---WORLD---'; du -sh world world_nether world_the_end 2>/dev/null; echo '---PLUGINS---'; for f in plugins/*.jar; do [ -e "$f" ] || continue; v=$(unzip -p "$f" plugin.yml 2>/dev/null | grep -E '^(name|version):' | tr '\\n' ' '); echo "$(basename "$f") | $(du -h "$f" | cut -f1) | $v"; done; echo '---END---'`;
+  let res;
+  try {
+    res = await window.api.sshExec(currentServer.id, cmd);
+  } catch (err) {
+    if (statusEl) statusEl.textContent = `Erreur SSH : ${err.message}`;
+    return;
+  }
+  if (res.error) {
+    if (statusEl) statusEl.textContent = `Erreur SSH : ${res.error}`;
+    return;
+  }
+  if (statusEl) statusEl.textContent = '';
+  const out = res.out || '';
+  const sec = (name) => {
+    const m = out.match(new RegExp('---' + name + '---\\n([\\s\\S]*?)(?=---|\\u0000|$)'));
+    return m ? m[1].trim() : '';
+  };
+  if (diskEl) diskEl.textContent = sec('DISK') || '—';
+  if (worldEl) {
+    worldEl.innerHTML = '';
+    const w = sec('WORLD');
+    if (!w) worldEl.innerHTML = '<li class="muted">Aucun dossier world trouvé</li>';
+    for (const line of w.split('\n').filter(Boolean)) {
+      const parts = line.split(/\s+/);
+      const li = document.createElement('li');
+      li.textContent = `${parts.slice(1).join(' ')} — ${parts[0]}`;
+      worldEl.appendChild(li);
+    }
+  }
+  if (plugEl) {
+    plugEl.innerHTML = '';
+    const p = sec('PLUGINS');
+    if (!p) plugEl.innerHTML = '<li class="muted">Aucun plugin (.jar) trouvé</li>';
+    for (const line of p.split('\n').filter(Boolean)) {
+      const [file, size, meta] = line.split('|').map((x) => (x || '').trim());
+      const li = document.createElement('li');
+      const mm = (meta || '').match(/name:\s*(\S+)[\s\S]*?version:\s*(\S+)/) || (meta || '').match(/version:\s*(\S+)[\s\S]*?name:\s*(\S+)/);
+      const label = mm ? `${mm[1]} v${mm[2]}` : file.replace(/\.jar$/i, '');
+      li.textContent = `${label} — ${size || '?'}`;
+      li.title = file;
+      plugEl.appendChild(li);
+    }
+  }
+}
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
