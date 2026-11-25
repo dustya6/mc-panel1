@@ -175,7 +175,7 @@ function showPage(page) {
   pageServer.hidden = page !== 'server';
   pageSettings.hidden = page !== 'settings';
   pageNews.hidden = page !== 'news';
-  if (page === 'players') refreshPlayers();
+  if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
@@ -583,7 +583,7 @@ function drawHeatmap(history) {
   for (let h = 0; h < 24; h++) {
     const lab = document.createElement('div');
     lab.className = 'hm-hour';
-    lab.textContent = (h % 2 === 0) ? `${h}h` : '';
+    lab.textContent = [9, 11, 16, 18, 20, 22].includes(h) ? `${h}h` : '';
     grid.appendChild(lab);
     for (let dow = 0; dow < 7; dow++) {
       const c = document.createElement('div');
