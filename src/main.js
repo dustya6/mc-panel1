@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'modal-big';
+const BUILD = 'profile-alllogs';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {

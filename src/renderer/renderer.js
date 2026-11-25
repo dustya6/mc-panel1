@@ -929,23 +929,22 @@ async function loadPlayerProfile(name) {
   const parts = [];
   if (hasSsh) {
     const dir = currentServer.serverDir || '~/minecraft';
-    const cmd = `D=${dir}; cd "$D" 2>/dev/null; date +%F; date +%s; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E 's/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/\\1 \\2 \\3/' | grep -F " ${name} "`;
+    const cmd = `D=${dir}; cd "$D" 2>/dev/null; date +%F; date +%s; { for f in logs/*.log.gz logs/*.log; do [ -e "$f" ] || continue; b=$(basename "$f"); [ "$b" = "latest.log" ] && continue; d=$(echo "$b" | cut -d- -f1-3); if [[ "$f" == *.gz ]]; then zcat "$f"; else cat "$f"; fi | grep -hE 'joined the game|left the game' | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$d \\1 \\2 \\3/"; done; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$(date +%F) \\1 \\2 \\3/"; } | grep -F " ${name} "`;
     try {
       const res = await window.api.sshExec(currentServer.id, cmd);
       if (res.error) {
         parts.push(`Logs : ${res.error}`);
       } else {
         const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
-        const day = lines[0] || '';
         const now = Number(lines[1]) * 1000;
         let total = 0;
         let lastJoin = null;
         let openTs = null;
         for (const l of lines.slice(2)) {
-          const m = l.match(/^([0-9:]{8}) (\S+) (joined|left)$/);
+          const m = l.match(/^(\d{4}-\d{2}-\d{2}) ([0-9:]{8}) (\S+) (joined|left)$/);
           if (!m) continue;
-          const ts = new Date(`${day}T${m[1]}`).getTime();
-          if (m[3] === 'joined') {
+          const ts = new Date(`${m[1]}T${m[2]}`).getTime();
+          if (m[4] === 'joined') {
             if (openTs == null) openTs = ts;
             lastJoin = ts;
           } else if (openTs != null) {
@@ -954,13 +953,13 @@ async function loadPlayerProfile(name) {
           }
         }
         if (openTs != null && now) total += (now - openTs) / 1000;
-        parts.push(`Temps de jeu total : ${fmtDur(total)} (d'après latest.log)`);
+        parts.push(`Temps de jeu total : ${fmtDur(total)} (d'après tous les logs)`);
         if (lastJoin) {
           const d = new Date(lastJoin);
           const p = (n) => String(n).padStart(2, '0');
-          parts.push(`Dernière connexion : ${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}h${p(d.getMinutes())}`);
+          parts.push(`Dernière connexion : ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}h${p(d.getMinutes())}`);
         } else {
-          parts.push('Aucune connexion trouvée dans latest.log');
+          parts.push('Aucune connexion trouvée dans les logs');
         }
       }
     } catch (err) {
