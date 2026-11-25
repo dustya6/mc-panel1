@@ -411,3 +411,23 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
 .hm-swatch.g0 { background: #2a3342; }
 
 .hm-box { width: 560px; max-width: 94vw; }
+
+.chart-btns { gap: 10px; flex-wrap: wrap; }
+.chart-btn {
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+}
+.chart-btn:hover {
+  transform: translateY(-2px);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
+}
+.chart-btn:active { transform: translateY(0); box-shadow: none; }
