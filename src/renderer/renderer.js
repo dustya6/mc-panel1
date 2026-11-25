@@ -102,6 +102,10 @@ let currentRange = 86400000;
 let refreshSec = 15;
 let prevPing = undefined;
 const activeAlerts = {};
+const logAlertAt = {};
+const pluginErrCount = {};
+const restartTimes = [];
+let restartAlerted = false;
 let currentMetric = 'players';
 let lastHistory = [];
 let lastResult = null;
@@ -623,6 +627,10 @@ async function loadStatus() {
   prevPing = result.ping || null;
   await checkAlert('tps', result.tps != null && result.tps < 18, `TPS bas : ${result.tps}`);
   const history = await window.api.getHistory(currentServer.id);
+  const hist = (history || []).filter((p) => p.players != null);
+  const avgP = hist.length ? hist.reduce((a, p) => a + Number(p.players), 0) / hist.length : null;
+  const curP = result.ping ? result.ping.playersOnline : 0;
+  await checkAlert('picjoueurs', avgP != null && curP >= 3 && curP > Math.max(2 * avgP, avgP + 5), `Pic de joueurs inhabituel : ${curP} en ligne (moyenne ${avgP.toFixed(1)})`);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
     drawDashboard(history, result);
@@ -884,6 +892,35 @@ window.api.onLogs((data) => {
     addConsoleLine(data.line, logClass(data.line), false);
     const lm = data.line.match(/(\S+) (was banned by|was kicked by|was banned|was kicked)/i);
     if (lm) addNews('joueur', `${lm[1]} ${/banned/i.test(lm[2]) ? 'a été banni' : 'a été expulsé (kick)'}`);
+    const line = data.line;
+    if (/\b(SEVERE|ERROR)\b/.test(line) || /Exception/.test(line)) {
+      const msg = 'Erreur dans les logs : ' + line.replace(/^\[[^\]]*\]\s*/, '').slice(0, 100);
+      const key = 'log|' + msg;
+      if (!logAlertAt[key] || Date.now() - logAlertAt[key] > 10 * 60000) {
+        logAlertAt[key] = Date.now();
+        addNews('alerte', msg);
+      }
+    }
+    const pm = line.match(/Plugin (\S+)\S* .*generated an exception/i) || line.match(/Could not load ['"]?plugins\/([\w.-]+)/i);
+    if (pm) {
+      const pname = pm[1];
+      pluginErrCount[pname] = (pluginErrCount[pname] || 0) + 1;
+      if (pluginErrCount[pname] >= 3 && !pluginErrCount[pname + '!flag']) {
+        pluginErrCount[pname + '!flag'] = true;
+        addNews('alerte', `Le plugin ${pname} rencontre des erreurs répétées (${pluginErrCount[pname]} fois)`);
+      }
+    }
+    if (/Starting minecraft server|Done \(/.test(line)) {
+      const now = Date.now();
+      restartTimes.push(now);
+      while (restartTimes.length && now - restartTimes[0] > 3600000) restartTimes.shift();
+      if (restartTimes.length >= 2 && !restartAlerted) {
+        restartAlerted = true;
+        addNews('alerte', `Redémarrages anormaux : ${restartTimes.length} redémarrages détectés dans la dernière heure`);
+      } else if (restartTimes.length < 2) {
+        restartAlerted = false;
+      }
+    }
   }
 });
 
