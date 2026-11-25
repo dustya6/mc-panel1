@@ -102,6 +102,7 @@ let currentPage = 'overview';
 let currentRange = 86400000;
 let refreshSec = 15;
 let prevPing = undefined;
+let lastPlayersMax = 20;
 const activeAlerts = {};
 const logAlertAt = {};
 const pluginErrCount = {};
@@ -523,29 +524,15 @@ function drawDashboard(history, result) {
   drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
 }
 
-function heatColor(r) {
-  // 6 niveaux, relatif a la moyenne : vert clair -> vert fonce -> jaune -> orange -> rouge clair -> rouge fonce
-  const stops = [
-    [0, [168, 230, 161]],
-    [0.5, [46, 125, 50]],
-    [1, [227, 179, 65]],
-    [1.5, [239, 125, 26]],
-    [2, [239, 83, 80]],
-    [2.5, [164, 14, 38]],
-  ];
-  const rr = Math.max(0, Math.min(2.5, r));
-  let a = stops[0];
-  let b = stops[stops.length - 1];
-  for (let i = 0; i < stops.length - 1; i++) {
-    if (rr >= stops[i][0] && rr <= stops[i + 1][0]) {
-      a = stops[i];
-      b = stops[i + 1];
-      break;
-    }
-  }
-  const t = b[0] === a[0] ? 0 : (rr - a[0]) / (b[0] - a[0]);
-  const c = a[1].map((v, i) => Math.round(v + (b[1][i] - v) * t));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
+function heatColorAbs(v, max) {
+  // seuils en % de la limite max du serveur : 0 = gris, 1-10% vert clair, 11-25% vert fonce, 26-45% jaune, 46-75% rouge clair, 76-100% rouge fonce
+  if (v < 0.05) return null;
+  const pct = max > 0 ? (v / max) * 100 : 0;
+  if (pct <= 10) return '#a8e6a1';
+  if (pct <= 25) return '#2e7d32';
+  if (pct <= 45) return '#e3b341';
+  if (pct <= 75) return '#ef5350';
+  return '#a40e26';
 }
 
 const HEAT_HOURS = [9, 11, 16, 18, 20, 22];
@@ -568,7 +555,6 @@ function drawHeatmap(history) {
   }
   const allPts = (history || []).filter((p) => p.players != null);
   const avg = allPts.length ? allPts.reduce((a, p) => a + Number(p.players), 0) / allPts.length : null;
-  const denom = Math.max(avg || 0, 1); // minimum 1 joueur pour eviter les ratios explosifs
   const cells = {};
   for (const p of pts) {
     const d = new Date(p.ts);
@@ -589,10 +575,12 @@ function drawHeatmap(history) {
       let tip;
       const v = cell ? cell.sum / cell.n : 0;
       const label = v >= 1 ? String(Math.round(v)) : v.toFixed(1);
-      if (cell && v >= 0.05) {
-        const r = v / denom;
-        c.style.background = heatColor(r);
-        tip = `${days[dow]} ${h}h — ${label} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
+      const maxP = lastPlayersMax || 20;
+      const color = cell ? heatColorAbs(v, maxP) : null;
+      if (color) {
+        c.style.background = color;
+        const pct = maxP > 0 ? Math.round((v / maxP) * 100) : 0;
+        tip = `${days[dow]} ${h}h — ${label} joueur(s) en moyenne (${pct}% de la limite ${maxP})`;
       } else {
         c.style.background = 'var(--panel-2)';
         tip = `${days[dow]} ${h}h — ${cell ? label + ' joueur(s)' : 'pas de données'} (aucun joueur sur cette case)`;
@@ -721,6 +709,7 @@ async function loadStatus() {
     else if (!prevPing && result.ping) addNews('serveur', 'Le serveur est de retour en ligne.');
   }
   prevPing = result.ping || null;
+  if (result.ping && result.ping.playersMax) lastPlayersMax = result.ping.playersMax;
   await checkAlert('tps', result.tps != null && result.tps < 18, `TPS bas : ${result.tps}`);
   const history = await window.api.getHistory(currentServer.id);
   const hist = (history || []).filter((p) => p.players != null);

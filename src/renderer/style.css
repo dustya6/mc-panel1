@@ -407,3 +407,5 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
 .hm-swatch.c6 { background: #a40e26; }
 
 .hm-tip { position: fixed; z-index: 60; background: var(--panel); border: 1px solid var(--border); padding: 6px 10px; font-size: 12px; pointer-events: none; max-width: 280px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+
+.hm-swatch.g0 { background: #2a3342; }
