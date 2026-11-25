@@ -58,10 +58,9 @@
           <div class="res-row"><span class="res-label">CPU</span><div class="res-bar"><div id="res-cpu-fill" class="res-fill"></div></div><span id="res-cpu-txt" class="res-txt">&mdash;</span></div>
           <div class="res-row"><span class="res-label">RAM</span><div class="res-bar"><div id="res-ram-fill" class="res-fill"></div></div><span id="res-ram-txt" class="res-txt">&mdash;</span></div>
           <div class="res-row"><span class="res-label">Disque</span><div class="res-bar"><div id="res-disk-fill" class="res-fill"></div></div><span id="res-disk-txt" class="res-txt">&mdash;</span></div>
-          <p id="res-avg" class="hint" style="margin:10px 0 0"></p>
         </div>
         <div class="card">
-          <div class="card-title"><span>Historique &mdash; <span id="chart-srv"></span> <span id="peak-avg" class="hint"></span></span>
+          <div class="card-title"><span>Historique &mdash; <span id="chart-srv"></span></span>
             <span class="title-bars">
               <span class="range-bar" id="range-bar">
                 <button type="button" class="range-btn" data-range="3600000">1 h</button>
@@ -125,6 +124,13 @@
         <div id="servers-form-slot"></div>
       </section>
       <section id="page-players" hidden>
+        <div class="card" id="card-stats">
+          <div class="card-title">Statistiques des joueurs</div>
+          <div class="stat-big-row">
+            <div class="stat-big"><span class="pl">Heure de pic moyenne</span><span class="pv-big" id="stat-peak">—</span></div>
+            <div class="stat-big" id="stat-avg-cell"><span class="pl">Temps de jeu moyen par joueur (logs)</span><span class="pv-big" id="stat-avg">—</span></div>
+          </div>
+        </div>
         <div class="top-cards">
           <div class="card">
             <div class="card-title">En ligne <button type="button" id="btn-refresh-players" class="ghost">Rafraîchir</button></div>

@@ -526,7 +526,10 @@ function updatePeakAvg(history) {
       peak = i;
     }
   });
+  const txt = `${peak}h — ${peakV.toFixed(1)} joueurs en moyenne`;
   el.textContent = `pic moyen : ${peak}h (${peakV.toFixed(1)} joueurs)`;
+  const big = document.getElementById('stat-peak');
+  if (big) big.textContent = txt;
 }
 
 document.querySelectorAll('.range-btn').forEach((b) => {
@@ -692,7 +695,7 @@ async function loadResources() {
   if (isNaN(cpu) && isNaN(ramPct) && isNaN(diskPct)) {
     resStatusEl.textContent = `Reçu du serveur : ${JSON.stringify(res.out || '').slice(0, 120)}`;
   }
-  const resAvgEl = document.getElementById('res-avg');
+  const resAvgEl = document.getElementById('stat-avg');
   if (resAvgEl) {
     const perPlayer = new Map();
     const openMap = new Map();
@@ -717,9 +720,9 @@ async function loadResources() {
     let totalSec = 0;
     for (const v of perPlayer.values()) totalSec += v;
     if (perPlayer.size > 0) {
-      resAvgEl.textContent = `Temps de jeu moyen par joueur : ${fmtDur(totalSec / perPlayer.size)} (${perPlayer.size} joueur(s) dans les logs)`;
+      resAvgEl.textContent = `${fmtDur(totalSec / perPlayer.size)} (${perPlayer.size} joueurs)`;
     } else {
-      resAvgEl.textContent = '';
+      resAvgEl.textContent = '—';
     }
   }
 }
@@ -753,6 +756,8 @@ async function selectServer(s) {
     navConsole.hidden = !(hasRcon || hasSsh);
     if (navConsole.hidden && currentPage === 'console') showPage('overview');
   }
+  const statAvgCell = document.getElementById('stat-avg-cell');
+  if (statAvgCell) statAvgCell.hidden = !hasSsh;
   const cardQuick = document.getElementById('card-quick');
   if (cardQuick) cardQuick.hidden = !hasRcon;
   const cardWl = document.getElementById('card-whitelist');

@@ -356,3 +356,9 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 #page-console .card[hidden] { display: none; }
 
 .metric-btn[hidden] { display: none; }
+
+.stat-big-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat-big { background: var(--panel-2); border: 1px solid var(--border); padding: 14px 16px; }
+.stat-big .pl { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+.pv-big { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-big[hidden] { display: none; }
