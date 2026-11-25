@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'plugins-install';
+const BUILD = 'plugins-install-fix';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -59,6 +59,12 @@ function sshExec(server, command, timeoutMs = 25000) {
 
 function cleanDir(d) {
   return (d || '~/minecraft').trim().replace(/^cd\s+/, '').replace(/^~\s*/, '~');
+}
+
+// Expression shell pour cd : developpe ~ en $HOME (entre guillemets, ~ ne se developpe PAS)
+function dirExprFor(d) {
+  const raw = cleanDir(d);
+  return raw.startsWith('~') ? `"$HOME${raw.slice(1)}"` : `"${raw}"`;
 }
 
 function debugLog(msg) {
@@ -614,10 +620,13 @@ app.whenReady().then(() => {
     if (typeof url !== 'string' || !PAPERMC_URL_RE.test(url)) return { ok: false, error: 'URL de téléchargement invalide' };
     let file = safeFileName(fileName || 'plugin.jar');
     if (!file.endsWith('.jar')) file += '.jar';
-    const dir = cleanDir(server.serverDir);
-    const cmd = `cd "${dir}" && mkdir -p plugins && (curl -sSL --fail -o "plugins/${file}" "${url}" || wget -q -O "plugins/${file}" "${url}") && ls -l "plugins/${file}"`;
+    const cmd = `cd ${dirExprFor(server.serverDir)} && mkdir -p plugins && (curl -sSL --fail -o "plugins/${file}" "${url}" || wget -q -O "plugins/${file}" "${url}") && test -s "plugins/${file}" && echo "OK $(wc -c < "plugins/${file}")"`;
     const r = await sshExec(server, cmd, 90000);
     if (r.error) return { ok: false, error: r.error };
+    if (!String(r.out || '').startsWith('OK')) {
+      debugLog(`plugins:install echec dir=${cleanDir(server.serverDir)} out=${JSON.stringify(r.out)}`);
+      return { ok: false, error: 'Échec du téléchargement ou dossier introuvable — vérifie « Dossier du serveur » dans Mes serveurs.' };
+    }
     return { ok: true, out: r.out || '', file };
   });
 
@@ -652,10 +661,11 @@ app.whenReady().then(() => {
     const server = loadServers().find((s) => s.id === id);
     if (!server) return { ok: false, error: 'Serveur introuvable' };
     if (!server.sshUser) return { ok: false, noSsh: true };
-    const dir = cleanDir(server.serverDir);
-    const r = await sshExec(server, `cd "${dir}" 2>/dev/null; ls -1 plugins/*.jar 2>/dev/null | xargs -r -n1 basename`, 20000);
+    const r = await sshExec(server, `cd ${dirExprFor(server.serverDir)} 2>/dev/null && ls -1 plugins/*.jar 2>/dev/null | xargs -r -n1 basename || echo CDERR`, 20000);
     if (r.error) return { ok: false, error: r.error };
-    const files = String(r.out || '').split('\n').map((s) => s.trim()).filter((s) => s.endsWith('.jar'));
+    const out = String(r.out || '');
+    if (out.includes('CDERR')) return { ok: false, error: `Dossier introuvable sur le serveur : ${cleanDir(server.serverDir)} — vérifie « Dossier du serveur » dans Mes serveurs.` };
+    const files = out.split('\n').map((s) => s.trim()).filter((s) => s.endsWith('.jar'));
     return { ok: true, files };
   });
 

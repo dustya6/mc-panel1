@@ -1952,9 +1952,11 @@ async function loadInstalledPlugins() {
     del.title = 'Supprimer ce .jar du serveur (retiré au prochain démarrage)';
     del.addEventListener('click', async () => {
       if (!confirm(`Supprimer plugins/${f} du serveur ?`)) return;
-      const dir = currentServer.serverDir || '~/minecraft';
-      const r2 = await window.api.sshExec(currentServer.id, `cd "${dir}" && rm -f "plugins/${f}"`);
+      const raw = String(currentServer.serverDir || '~/minecraft').trim();
+      const dirE = raw.startsWith('~') ? `"$HOME${raw.slice(1)}"` : `"${raw}"`;
+      const r2 = await window.api.sshExec(currentServer.id, `cd ${dirE} && rm -f "plugins/${f}" && echo RMOK`);
       if (r2 && r2.error) { alert('Erreur : ' + r2.error); return; }
+      if (!String((r2 && r2.out) || '').includes('RMOK')) { alert('Suppression échouée — dossier du serveur introuvable ?'); return; }
       loadInstalledPlugins();
     });
     li.appendChild(name);
