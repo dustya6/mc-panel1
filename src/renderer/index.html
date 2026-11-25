@@ -137,11 +137,6 @@
         </div>
         <p id="settings-status" class="hint"></p>
         <button type="button" id="btn-about" class="ghost">À propos</button>
-        <div class="card">
-          <div class="card-title">Fréquentation — <span id="chart-srv3"></span> <span class="hint">joueurs moyens par jour de semaine et par heure (vert clair = peu, rouge foncé = beaucoup, vs moyenne)</span></div>
-          <div id="heatmap" class="heatmap"></div>
-          <div class="heatmap-legend"><span class="hm-swatch" style="background:#7ee787"></span> peu de joueurs <span class="hm-swatch" style="background:#e3b341"></span> ~moyenne <span class="hm-swatch" style="background:#a40e26"></span> beaucoup</div>
-        </div>
       </section>
       <section id="page-news" hidden>
         <div class="card">
@@ -195,7 +190,13 @@
           <p id="search-status" class="hint"></p>
           <ul id="search-results" class="players"></ul>
         </div>
-      </section>
+      
+        <div class="card">
+          <div class="card-title">Fréquentation — <span id="chart-srv3"></span> <span class="hint">joueurs moyens par jour de semaine et par heure (vert clair = peu, rouge foncé = beaucoup, vs moyenne)</span></div>
+          <div id="heatmap" class="heatmap"></div>
+          <div class="heatmap-legend"><span class="hm-swatch" style="background:#7ee787"></span> peu de joueurs <span class="hm-swatch" style="background:#e3b341"></span> ~moyenne <span class="hm-swatch" style="background:#a40e26"></span> beaucoup</div>
+        </div>
+        </section>
     </main>
     <div id="player-modal" class="modal" hidden>
       <div class="card modal-box">
