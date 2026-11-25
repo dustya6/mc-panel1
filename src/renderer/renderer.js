@@ -66,6 +66,10 @@ const resDiskFill = document.getElementById('res-disk-fill');
 const resDiskTxt = document.getElementById('res-disk-txt');
 const playersEl = document.getElementById('players');
 const consoleForm = document.getElementById('console-form');
+const quickCmdsEl = document.getElementById('quick-cmds');
+const quickForm = document.getElementById('quick-form');
+const qcLabel = document.getElementById('qc-label');
+const qcCmd = document.getElementById('qc-cmd');
 const cmdInput = document.getElementById('cmd');
 const consoleOut = document.getElementById('console-out');
 const welcomeEl = document.getElementById('welcome');
@@ -158,6 +162,7 @@ function showPage(page) {
   pageServer.hidden = page !== 'server';
   if (page === 'players') refreshPlayers();
   if (page === 'server') loadServerCtl();
+  if (page === 'console') renderQuickCmds();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -674,6 +679,8 @@ async function selectServer(s) {
     navConsole.hidden = !(hasRcon || hasSsh);
     if (navConsole.hidden && currentPage === 'console') showPage('overview');
   }
+  const cardQuick = document.getElementById('card-quick');
+  if (cardQuick) cardQuick.hidden = !hasRcon;
   const cardWl = document.getElementById('card-whitelist');
   const cardBans = document.getElementById('card-bans');
   const cardSearch = document.getElementById('card-search');
@@ -1291,6 +1298,78 @@ btnSrvRestart.addEventListener('click', () => withRefresh(btnSrvRestart, async (
   await loadServerCtl();
   await loadStatus();
 }));
+
+const DEFAULT_QUICK = [
+  { label: 'Sauvegarder', cmd: 'save-all' },
+  { label: 'Jour', cmd: 'time set day' },
+  { label: 'Soleil', cmd: 'weather clear' },
+  { label: 'Maintenance 5 min', cmd: 'say Maintenance dans 5 minutes' },
+];
+
+async function getQuickCmds() {
+  try {
+    const v = await window.api.getSetting('quickCmds');
+    if (Array.isArray(v) && v.length) return v;
+  } catch { }
+  return DEFAULT_QUICK;
+}
+
+async function renderQuickCmds() {
+  if (!quickCmdsEl) return;
+  const list = await getQuickCmds();
+  quickCmdsEl.innerHTML = '';
+  for (const q of list) {
+    const wrap = document.createElement('span');
+    wrap.className = 'quick-item';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'quick-btn';
+    b.textContent = q.label;
+    b.title = q.cmd;
+    b.addEventListener('click', async () => {
+      if (!currentServer) return;
+      const canRcon = currentServer.type !== 'aternos' && currentServer.hasPassword;
+      if (!canRcon) {
+        addConsoleLine('Pas de RCON sur ce serveur (Aternos gratuit) — commande non envoyée.', 'err', false);
+        return;
+      }
+      try {
+        const out = await runCmd(q.cmd);
+        addConsoleLine(`> ${q.cmd}`, 'cmd');
+        if (out) addConsoleLine(out, 'out');
+      } catch (err) {
+        addConsoleLine(`Erreur : ${err.message}`, 'err', false);
+      }
+    });
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'quick-del';
+    x.textContent = '✕';
+    x.title = 'Supprimer cette commande rapide';
+    x.addEventListener('click', async () => {
+      const cur = await getQuickCmds();
+      await window.api.setSetting('quickCmds', cur.filter((c) => !(c.cmd === q.cmd && c.label === q.label)));
+      renderQuickCmds();
+    });
+    wrap.appendChild(b);
+    wrap.appendChild(x);
+    quickCmdsEl.appendChild(wrap);
+  }
+}
+
+if (quickForm) {
+  quickForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const label = qcLabel.value.trim();
+    const cmd = qcCmd.value.trim();
+    if (!label || !cmd) return;
+    const cur = await getQuickCmds();
+    await window.api.setSetting('quickCmds', [...cur, { label, cmd }]);
+    qcLabel.value = '';
+    qcCmd.value = '';
+    renderQuickCmds();
+  });
+}
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 

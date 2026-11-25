@@ -348,3 +348,9 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 .profile-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .badge.info { color: var(--primary); background: rgba(88, 166, 255, .12); }
 .modal-actions button { padding: 10px 14px; font-size: 14px; }
+
+.quick-cmds { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.quick-item { display: inline-flex; }
+.quick-btn { padding: 8px 14px; font-size: 13px; border-radius: 0; }
+.quick-del { padding: 8px 10px; border-left: none; color: var(--danger); }
+#page-console .card[hidden] { display: none; }

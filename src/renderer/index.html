@@ -82,6 +82,15 @@
         </div>
       </section>
       <section id="page-console" hidden>
+        <div class="card" id="card-quick">
+          <div class="card-title">Commandes rapides</div>
+          <div id="quick-cmds" class="quick-cmds"></div>
+          <form id="quick-form" class="row">
+            <input id="qc-label" type="text" placeholder="Nom du bouton (ex : Jour)" required />
+            <input id="qc-cmd" type="text" placeholder="commande (ex : time set day)" required />
+            <button type="submit" class="primary">Ajouter</button>
+          </form>
+        </div>
         <div class="card console-card">
           <div class="card-title">Console (RCON + logs en direct) <span class="hint">↑ ↓ rappelle l'historique des commandes</span></div>
           <div id="console-out"></div>
