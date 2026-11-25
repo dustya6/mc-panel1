@@ -135,6 +135,7 @@
           </div>
         </div>
         <p id="settings-status" class="hint"></p>
+        <button type="button" id="btn-about" class="ghost">À propos</button>
       </section>
       <section id="page-servers" hidden>
         <div class="card">
@@ -214,6 +215,26 @@
             </div>
             <p id="modal-result"></p>
           </div>
+        </div>
+      </div>
+    </div>
+    <div id="about-modal" class="modal" hidden>
+      <div class="card modal-box">
+        <div class="card-title">À propos — MC Panel</div>
+        <p class="hint">Version : <b id="about-build"></b></p>
+        <label>Éditeur (nom / société)
+          <input id="about-name" type="text" placeholder="Ton nom ou ta société" />
+        </label>
+        <label>Adresse postale (Suisse)
+          <input id="about-addr" type="text" placeholder="Rue, NPA Ville, Suisse" />
+        </label>
+        <label>Email de contact (support / remboursements)
+          <input id="about-mail" type="email" placeholder="toi@exemple.ch" />
+        </label>
+        <p class="hint"><b>Confidentialité :</b> toutes les données restent sur ton PC, en local (mots de passe chiffrés). Les avatars des joueurs sont chargés depuis mc-heads.net. Le paiement se fait sur le site du vendeur via Worldline, en dehors de cette appli. Aucune autre donnée n'est envoyée.</p>
+        <p class="hint"><b>Conditions :</b> logiciel vendu tel quel. Remboursement sous 14 jours si le logiciel ne fonctionne pas chez toi (contact : email ci-dessus). CGU complètes sur la page de vente. Produit non officiel — non affilié à Mojang / Microsoft.</p>
+        <div class="row" style="margin-top:10px">
+          <button type="button" id="about-close">Fermer</button>
         </div>
       </div>
     </div>

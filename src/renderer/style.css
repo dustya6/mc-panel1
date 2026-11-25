@@ -377,3 +377,6 @@ body.light #console-out { background: #0a0d12; }
 body.light .code { background: #e2e7ee; color: #232b38; }
 body.light input { background: #ffffff; }
 body.light .modal { background: rgba(30, 38, 50, .45); }
+
+#page-settings #btn-about { font-size: 12px; padding: 6px 10px; }
+#about-modal label { font-size: 12px; color: var(--muted); }

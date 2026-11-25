@@ -1509,6 +1509,33 @@ document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
   });
 });
 
+const aboutModal = document.getElementById('about-modal');
+const btnAbout = document.getElementById('btn-about');
+const ABOUT_FIELDS = [
+  ['about-name', 'editorName'],
+  ['about-addr', 'editorAddress'],
+  ['about-mail', 'editorEmail'],
+];
+
+if (btnAbout) {
+  btnAbout.addEventListener('click', async () => {
+    const b = document.getElementById('about-build');
+    if (b) b.textContent = await window.api.getBuild();
+    for (const [id, key] of ABOUT_FIELDS) {
+      const el = document.getElementById(id);
+      if (el) el.value = (await window.api.getSetting(key)) || '';
+    }
+    if (aboutModal) aboutModal.hidden = false;
+  });
+}
+const aboutClose = document.getElementById('about-close');
+if (aboutClose) aboutClose.addEventListener('click', () => { aboutModal.hidden = true; });
+if (aboutModal) aboutModal.addEventListener('click', (e) => { if (e.target === aboutModal) aboutModal.hidden = true; });
+for (const [id, key] of ABOUT_FIELDS) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', async () => { await window.api.setSetting(key, el.value.trim()); });
+}
+
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
 window.api.getBuild().then((b) => {
