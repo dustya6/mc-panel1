@@ -538,18 +538,20 @@ function fmtSize(used, total) {
   return `${Math.round(used)} / ${Math.round(total)} Mo`;
 }
 
+let resLoading = false;
+
 async function loadResources() {
-  if (!currentServer) return;
+  if (!currentServer || resLoading) return;
   if (!currentServer.sshUser) {
     resStatusEl.textContent = 'SSH non configur\u00e9 (voir Mes serveurs)';
     return;
   }
+  resLoading = true;
   const cmd = [
-    "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_a",
+    "a=$(awk '/^cpu / {print $2+$3+$4+$5+$6+$7+$8+$9, $5+$6}' /proc/stat)",
     "sleep 2",
-    "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_b",
-    "awk 'NR==FNR{a=$1;b=$2;next}{d=$1-a; if(d>0) printf \"%.1f\\n\", 100*((d-($2-b))/d); else print \"0\"}' /tmp/.mcp_a /tmp/.mcp_b",
-    "rm -f /tmp/.mcp_a /tmp/.mcp_b",
+    "b=$(awk '/^cpu / {print $2+$3+$4+$5+$6+$7+$8+$9, $5+$6}' /proc/stat)",
+    "awk -v a=\"$a\" -v b=\"$b\" 'BEGIN{split(a,A,\" \"); split(b,B,\" \"); d=B[1]-A[1]; if(d>0) printf \"%.1f\\n\", 100*((d-(B[2]-A[2]))/d); else print \"0\"}'",
     "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\\n\", $3, $2, $3*100/$2}'",
     "df -h / | tail -1 | awk '{gsub(/%/,\"\",$5); print $5, $3, $2}'",
   ].join('; ');
@@ -558,8 +560,10 @@ async function loadResources() {
     res = await window.api.sshExec(currentServer.id, cmd);
   } catch (err) {
     resStatusEl.textContent = `Erreur SSH : ${err.message}`;
+    resLoading = false;
     return;
   }
+  resLoading = false;
   if (res.error) {
     resStatusEl.textContent = `Erreur SSH : ${res.error}`;
     return;
