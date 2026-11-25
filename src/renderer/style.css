@@ -331,3 +331,5 @@ button.loading::before {
 .ctl-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
 .ctl-btns button { padding: 14px 10px; font-size: 15px; font-weight: 600; }
 button:disabled { opacity: .35; cursor: not-allowed; }
+
+#modal-profile { margin-bottom: 10px; line-height: 1.6; }

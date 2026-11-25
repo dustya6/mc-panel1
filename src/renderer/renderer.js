@@ -45,6 +45,7 @@ const modal = document.getElementById('player-modal');
 const modalPlayerEl = document.getElementById('modal-player');
 const modalResult = document.getElementById('modal-result');
 const modalExtra = document.getElementById('modal-extra');
+const modalProfileEl = document.getElementById('modal-profile');
 const searchForm = document.getElementById('search-form');
 const searchInput = document.getElementById('search-input');
 const searchStatus = document.getElementById('search-status');
@@ -906,12 +907,87 @@ async function refreshPlayers() {
   }
 }
 
+function fmtDur(sec) {
+  if (sec == null || isNaN(sec)) return '—';
+  const m = Math.floor(sec / 60);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d} j ${h % 24} h`;
+  if (h > 0) return `${h} h ${m % 60} min`;
+  return `${m} min`;
+}
+
+async function loadPlayerProfile(name) {
+  if (!modalProfileEl) return;
+  const hasSsh = Boolean(currentServer && currentServer.sshUser);
+  const hasRcon = Boolean(currentServer && currentServer.type !== 'aternos' && currentServer.hasPassword);
+  if (!hasSsh && !hasRcon) {
+    modalProfileEl.textContent = 'Profil détaillé : nécessite SSH et/ou RCON (non dispo sur Aternos gratuit).';
+    return;
+  }
+  modalProfileEl.textContent = 'Chargement du profil...';
+  const parts = [];
+  if (hasSsh) {
+    const dir = currentServer.serverDir || '~/minecraft';
+    const cmd = `D=${dir}; cd "$D" 2>/dev/null; date +%F; date +%s; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E 's/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/\\1 \\2 \\3/' | grep -F " ${name} "`;
+    try {
+      const res = await window.api.sshExec(currentServer.id, cmd);
+      if (res.error) {
+        parts.push(`Logs : ${res.error}`);
+      } else {
+        const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
+        const day = lines[0] || '';
+        const now = Number(lines[1]) * 1000;
+        let total = 0;
+        let lastJoin = null;
+        let openTs = null;
+        for (const l of lines.slice(2)) {
+          const m = l.match(/^([0-9:]{8}) (\S+) (joined|left)$/);
+          if (!m) continue;
+          const ts = new Date(`${day}T${m[1]}`).getTime();
+          if (m[3] === 'joined') {
+            if (openTs == null) openTs = ts;
+            lastJoin = ts;
+          } else if (openTs != null) {
+            total += (ts - openTs) / 1000;
+            openTs = null;
+          }
+        }
+        if (openTs != null && now) total += (now - openTs) / 1000;
+        parts.push(`Temps de jeu total : ${fmtDur(total)} (d'après latest.log)`);
+        if (lastJoin) {
+          const d = new Date(lastJoin);
+          const p = (n) => String(n).padStart(2, '0');
+          parts.push(`Dernière connexion : ${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}h${p(d.getMinutes())}`);
+        } else {
+          parts.push('Aucune connexion trouvée dans latest.log');
+        }
+      }
+    } catch (err) {
+      parts.push(`Logs : ${err.message}`);
+    }
+  }
+  if (hasRcon) {
+    try {
+      const bans = parseNames(await runCmd('banlist players'));
+      const wl = parseNames(await runCmd('whitelist list'));
+      parts.push(`Statut : ${bans.includes(name) ? 'BANNI' : 'pas banni'}${wl.includes(name) ? ' · whitelist' : ''}`);
+    } catch (err) {
+      parts.push(`RCON : ${err.message}`);
+    }
+  }
+  const sample = (lastStatus && lastStatus.ping && lastStatus.ping.playersSample) || [];
+  if (sample.map((x) => String(x).replace(/^\*+/, '').trim()).includes(name)) parts.push('EN LIGNE maintenant');
+  modalProfileEl.textContent = parts.join(' — ');
+}
+
 function openModal(name) {
   modalPlayer = name;
   modalPlayerEl.textContent = name;
   modalResult.textContent = '';
   modalExtra.value = '';
   modal.hidden = false;
+  loadPlayerProfile(name);
 }
 
 document.getElementById('modal-close').addEventListener('click', () => { modal.hidden = true; });
@@ -932,6 +1008,14 @@ document.querySelectorAll('#player-modal [data-act]').forEach((b) => {
       case 'gm_survival': cmds = [`gamemode survival ${p}`]; break;
       case 'wl_add': cmds = [`whitelist add ${p}`]; break;
       case 'wl_remove': cmds = [`whitelist remove ${p}`]; break;
+      case 'unban': cmds = [`unban ${p}`]; break;
+      case 'tell':
+        if (!extra) {
+          modalResult.textContent = 'Mets le message dans le champ.';
+          return;
+        }
+        cmds = [`tell ${p} ${extra}`];
+        break;
     }
     if (!cmds.length) {
       modalResult.textContent = 'Mets une raison dans le champ pour kick/ban.';

@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'srv-no-infos';
+const BUILD = 'player-profile';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {

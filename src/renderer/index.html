@@ -147,18 +147,21 @@
     </main>
     <div id="player-modal" class="modal" hidden>
       <div class="card modal-box">
-        <div class="card-title">Actions pour <b id="modal-player"></b></div>
+        <div class="card-title">Joueur : <b id="modal-player"></b></div>
+        <div id="modal-profile" class="hint"></div>
         <div class="modal-actions">
           <button type="button" data-act="kick">🚪 Kick</button>
           <button type="button" data-act="ban" class="danger">🔨 Ban</button>
+          <button type="button" data-act="unban">Débannir</button>
           <button type="button" data-act="op">👑 Op</button>
           <button type="button" data-act="deop">Retirer op</button>
           <button type="button" data-act="gm_creative">🎮 Créatif</button>
           <button type="button" data-act="gm_survival">⛏ Survie</button>
           <button type="button" data-act="wl_add">➕ Whitelist</button>
           <button type="button" data-act="wl_remove">➖ Retirer whitelist</button>
+          <button type="button" data-act="tell">Message privé</button>
         </div>
-        <input id="modal-extra" type="text" placeholder="Raison optionnelle (kick / ban)" />
+        <input id="modal-extra" type="text" placeholder="Raison (kick / ban) ou message (Message privé)" />
         <div class="row" style="margin-top:10px">
           <button type="button" id="modal-close">Fermer</button>
         </div>
