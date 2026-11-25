@@ -574,7 +574,7 @@ function drawHeatmap(history) {
       const cell = cells[dow + '-' + h];
       let tip;
       const v = cell ? cell.sum / cell.n : 0;
-      const label = v >= 1 ? String(Math.round(v)) : v.toFixed(1);
+      const label = String(Math.round(v));
       const maxP = lastPlayersMax || 20;
       const color = cell ? heatColorAbs(v, maxP) : null;
       if (color) {
