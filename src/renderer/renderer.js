@@ -667,6 +667,8 @@ async function selectServer(s) {
   if (cardBans) cardBans.hidden = !hasRcon;
   if (cardSearch) cardSearch.hidden = !hasSsh;
   if (plLimited) plLimited.hidden = hasRcon;
+  const resCard = document.getElementById('res-card');
+  if (resCard) resCard.hidden = !hasSsh;
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';

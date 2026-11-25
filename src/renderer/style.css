@@ -325,3 +325,5 @@ button.loading::before {
 #setup-form-slot[hidden], #setup-choice[hidden] { display: none; }
 
 .nav-btn[hidden], #page-players .card[hidden] { display: none; }
+
+#page-overview .card[hidden] { display: none; }
