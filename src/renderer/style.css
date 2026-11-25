@@ -207,7 +207,7 @@ li.player-action { cursor: pointer; }
 li.player-action:hover { border-color: var(--primary); }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; z-index: 50; }
 .modal[hidden] { display: none; }
-.modal-box { width: 660px; }
+.modal-box { width: 880px; max-width: 94vw; min-height: 480px; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 #modal-result { font-size: 12px; margin-top: 10px; white-space: pre-wrap; word-break: break-word; color: var(--ok); }
 
@@ -334,9 +334,11 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 
 #modal-profile { margin-bottom: 10px; line-height: 1.6; }
 
-.modal-grid { display: grid; grid-template-columns: 170px 1fr; gap: 18px; }
-.modal-left { display: flex; flex-direction: column; align-items: center; gap: 10px; border-right: 1px solid var(--border); padding-right: 18px; }
-.modal-avatar { width: 128px; height: 128px; image-rendering: pixelated; background: var(--panel-2); border: 1px solid var(--border); }
-.modal-avatar-fb { width: 128px; height: 128px; align-items: center; justify-content: center; font-size: 56px; font-weight: 700; background: var(--primary); color: #fff; }
-.modal-name { font-size: 16px; font-weight: 700; text-align: center; word-break: break-all; }
+.modal-grid { display: grid; grid-template-columns: 220px 1fr; gap: 22px; height: 100%; }
+.modal-left { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border-right: 1px solid var(--border); padding-right: 22px; }
+.modal-avatar { width: 160px; height: 160px; image-rendering: pixelated; background: var(--panel-2); border: 1px solid var(--border); }
+.modal-avatar-fb { width: 160px; height: 160px; align-items: center; justify-content: center; font-size: 72px; font-weight: 700; background: var(--primary); color: #fff; }
+.modal-name { font-size: 20px; font-weight: 700; text-align: center; word-break: break-all; }
 .modal-right { min-width: 0; }
+#modal-profile { font-size: 14px; line-height: 1.8; }
+.modal-actions button { padding: 10px 14px; font-size: 14px; }
