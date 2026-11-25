@@ -10,7 +10,7 @@
     <main>
       <nav id="nav" hidden>
         <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
-        <button type="button" class="nav-btn" data-page="console">Console</button>
+        <button type="button" class="nav-btn" data-page="console" id="nav-console">Console</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <span id="build-tag" class="muted"></span>
@@ -104,7 +104,7 @@
             <div class="card-title">En ligne <button type="button" id="btn-refresh-players" class="ghost">Rafraîchir</button></div>
             <ul id="players-online" class="players"></ul>
           </div>
-          <div class="card">
+          <div class="card" id="card-whitelist">
             <div class="card-title">Whitelist <span id="whitelist-status" class="hint"></span></div>
             <ul id="whitelist-list" class="players"></ul>
             <form id="wl-form" class="row">
@@ -113,11 +113,15 @@
             </form>
           </div>
         </div>
-        <div class="card">
+        <div class="card" id="players-limited" hidden>
+          <div class="card-title">Fonctions limitées sur Aternos gratuit</div>
+          <p class="hint">Pas de RCON ni de SSH sur Aternos gratuit : tu vois ici le statut, les joueurs en ligne et les graphiques. La console, la whitelist, les bannis et la recherche demandent un serveur VPS avec RCON/SSH.</p>
+        </div>
+        <div class="card" id="card-bans">
           <div class="card-title">Bannis (clique un pseudo pour débannir) <span id="ban-status" class="hint"></span></div>
           <ul id="ban-list" class="players"></ul>
         </div>
-        <div class="card">
+        <div class="card" id="card-search">
           <div class="card-title">Rechercher un joueur déjà venu sur le serveur (via les logs)</div>
           <form id="search-form" class="row">
             <input id="search-input" type="text" placeholder="pseudo (même partiel)" required />

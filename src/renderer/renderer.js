@@ -652,6 +652,21 @@ async function selectServer(s) {
   const noRcon = (s.type === 'aternos') || !s.hasPassword;
   consoleForm.hidden = noRcon;
   if (consoleNoRconEl) consoleNoRconEl.hidden = !noRcon;
+  const hasRcon = !noRcon;
+  const hasSsh = Boolean(s.sshUser);
+  const navConsole = document.getElementById('nav-console');
+  if (navConsole) {
+    navConsole.hidden = !(hasRcon || hasSsh);
+    if (navConsole.hidden && currentPage === 'console') showPage('overview');
+  }
+  const cardWl = document.getElementById('card-whitelist');
+  const cardBans = document.getElementById('card-bans');
+  const cardSearch = document.getElementById('card-search');
+  const plLimited = document.getElementById('players-limited');
+  if (cardWl) cardWl.hidden = !hasRcon;
+  if (cardBans) cardBans.hidden = !hasRcon;
+  if (cardSearch) cardSearch.hidden = !hasSsh;
+  if (plLimited) plLimited.hidden = hasRcon;
   const sshBox = document.querySelector('.ssh-box');
   if (sshBox && s.sshUser && !s.hasSshPassword) sshBox.open = true;
   consoleOut.innerHTML = '';

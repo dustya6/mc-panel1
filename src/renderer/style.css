@@ -323,3 +323,5 @@ button.loading::before {
 .type-badge { font-size: 10px; border: 1px solid var(--border); padding: 1px 6px; margin-left: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 #console-norcon { margin: 8px 0; }
 #setup-form-slot[hidden], #setup-choice[hidden] { display: none; }
+
+.nav-btn[hidden], #page-players .card[hidden] { display: none; }
