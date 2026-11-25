@@ -1518,9 +1518,9 @@ const ABOUT_FIELDS = [
 ];
 // Infos legales affichees a tous les clients : remplacer par les vraies valeurs avant de generer le .exe
 const EDITOR_DEFAULTS = {
-  editorName: 'À REMPLIR — ton nom ou ta société',
-  editorAddress: 'À REMPLIR — adresse postale (Suisse)',
-  editorEmail: 'À REMPLIR — email de contact',
+  editorName: 'Capt',
+  editorAddress: 'Rue de la gare, 1350, Suisse',
+  editorEmail: 'leon.capt@eduvd.ch',
 };
 
 if (btnAbout) {

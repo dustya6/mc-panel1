@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'editor-defaults';
+const BUILD = 'editor-info';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
