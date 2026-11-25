@@ -498,25 +498,17 @@ function drawDashboard(history, result) {
   const tps = r.tps != null ? r.tps : last ? last.tps : null;
   kpiTpsEl.textContent = tps != null ? `${Number(tps).toFixed(1)}` : '\u2014';
   drawMain(lastHistory);
-  drawHourly(lastHistory);
+  updatePeakAvg(lastHistory);
   drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
 }
 
-function drawHourly(history) {
-  const svg = document.getElementById('chart-hours');
-  if (!svg) return;
-  svg.innerHTML = '';
-  const ns = 'http://www.w3.org/2000/svg';
+function updatePeakAvg(history) {
+  const el = document.getElementById('peak-avg');
+  if (!el) return;
   const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
   const pts = (history || []).filter((p) => p.ts >= since && p.players != null);
-  const w = 600;
-  const h = 200;
-  const padL = 30;
-  const padR = 8;
-  const padT = 10;
-  const padB = 20;
   if (!pts.length) {
-    svgText(svg, ns, w / 2, h / 2, 'Pas de données sur cette période.', 'middle', '#8b96a8', 13);
+    el.textContent = '';
     return;
   }
   const hours = new Array(24).fill(null);
@@ -526,50 +518,15 @@ function drawHourly(history) {
     hours[hh].sum += Number(p.players);
     hours[hh].n++;
   }
-  const vals = hours.map((x) => (x ? x.sum / x.n : 0));
-  const max = Math.max(...vals, 1);
-  let peakHour = 0;
-  vals.forEach((v, i) => { if (v === max) peakHour = i; });
-  let maxPt = null;
-  for (const p of pts) {
-    if (!maxPt || Number(p.players) > Number(maxPt.players)) maxPt = p;
-  }
-  const pb = document.getElementById('peak-badge');
-  if (pb && maxPt) {
-    const d = new Date(maxPt.ts);
-    const p2 = (n) => String(n).padStart(2, '0');
-    pb.textContent = `Record : ${maxPt.players} joueur(s) le ${p2(d.getDate())}/${p2(d.getMonth() + 1)} à ${p2(d.getHours())}h${p2(d.getMinutes())}`;
-  } else if (pb) {
-    pb.textContent = '';
-  }
-  const pw = w - padL - padR;
-  const ph = h - padT - padB;
-  const bw = pw / 24;
-  svgLine(svg, ns, padL, padT, padL, padT + ph, '#2a3342');
-  svgLine(svg, ns, padL, padT + ph, padL + pw, padT + ph, '#2a3342');
-  for (const f of [0, 0.5, 1]) {
-    const v = max * f;
-    const yy = padT + ph - (v / max) * ph;
-    svgLine(svg, ns, padL, yy, padL + pw, yy, '#1c2330');
-    svgText(svg, ns, padL - 4, yy + 3, v.toFixed(0), 'end');
-  }
-  for (let hh = 0; hh < 24; hh++) {
-    const v = vals[hh];
-    const bh = (v / max) * ph;
-    const r = document.createElementNS(ns, 'rect');
-    r.setAttribute('x', String(padL + hh * bw + 1));
-    r.setAttribute('y', String(padT + ph - bh));
-    r.setAttribute('width', String(Math.max(1, bw - 2)));
-    r.setAttribute('height', String(bh));
-    r.setAttribute('fill', hh === peakHour ? '#f0883e' : '#3b82f6');
-    r.setAttribute('fill-opacity', hh === peakHour ? '1' : '0.75');
-    const t = document.createElementNS(ns, 'title');
-    t.textContent = `${hh}h : ${v.toFixed(1)} joueur(s) en moyenne`;
-    r.appendChild(t);
-    svg.appendChild(r);
-    if (hh % 3 === 0 || hh === peakHour) svgText(svg, ns, padL + hh * bw + bw / 2, h - 6, `${hh}h`, 'middle', hh === peakHour ? '#f0883e' : undefined, hh === peakHour ? 11 : undefined);
-    if (hh === peakHour) svgText(svg, ns, padL + hh * bw + bw / 2, padT + ph - (max / max) * ph - 6, `${vals[hh].toFixed(1)}`, 'middle', '#f0883e', 11);
-  }
+  let peak = 0;
+  let peakV = -1;
+  hours.forEach((x, i) => {
+    if (x && x.sum / x.n > peakV) {
+      peakV = x.sum / x.n;
+      peak = i;
+    }
+  });
+  el.textContent = `pic moyen : ${peak}h (${peakV.toFixed(1)} joueurs)`;
 }
 
 document.querySelectorAll('.range-btn').forEach((b) => {
