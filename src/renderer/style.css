@@ -431,5 +431,3 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
   box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
 }
 .chart-btn:active { transform: translateY(0); box-shadow: none; }
-
-#page-files .card[hidden] { display: none; }
