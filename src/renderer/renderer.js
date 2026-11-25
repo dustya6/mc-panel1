@@ -548,9 +548,9 @@ async function loadResources() {
     "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_a",
     "sleep 2",
     "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_b",
-    "awk 'NR==FNR{a=$1;b=$2;next}{d=$1-a; if(d>0) printf \"%.1f\", 100*((d-($2-b))/d); else print \"0\"}' /tmp/.mcp_a /tmp/.mcp_b",
+    "awk 'NR==FNR{a=$1;b=$2;next}{d=$1-a; if(d>0) printf \"%.1f\\n\", 100*((d-($2-b))/d); else print \"0\"}' /tmp/.mcp_a /tmp/.mcp_b",
     "rm -f /tmp/.mcp_a /tmp/.mcp_b",
-    "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\", $3, $2, $3*100/$2}'",
+    "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\\n\", $3, $2, $3*100/$2}'",
     "df -h / | tail -1 | awk '{gsub(/%/,\"\",$5); print $5, $3, $2}'",
   ].join('; ');
   let res;
@@ -578,6 +578,9 @@ async function loadResources() {
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
+  if (isNaN(cpu) && isNaN(ramPct) && isNaN(diskPct)) {
+    resStatusEl.textContent = `Re\u00e7u du serveur : ${JSON.stringify(res.out || '').slice(0, 120)}`;
+  }
 }
 
 async function selectServer(s) {
