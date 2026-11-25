@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'no-files';
+const BUILD = 'ai-assistant';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -320,6 +320,18 @@ app.whenReady().then(() => {
     n.unshift({ ts: item.ts || Date.now(), type: item.type || 'info', msg: String(item.msg || '') });
     fs.writeFileSync(newsFile(), JSON.stringify(n.slice(0, 300)));
     return true;
+  });
+
+  ipcMain.handle('secret:set', (event, { key, value }) => {
+    const st = loadSettings();
+    st[key] = value ? safeStorage.encryptString(value).toString('base64') : null;
+    fs.writeFileSync(settingsFile(), JSON.stringify(st, null, 2));
+    return true;
+  });
+  ipcMain.handle('secret:get', (event, key) => {
+    const v = loadSettings()[key];
+    if (!v) return null;
+    try { return safeStorage.decryptString(Buffer.from(v, 'base64')); } catch { return null; }
   });
 
   ipcMain.handle('settings:set', (event, key, value) => {

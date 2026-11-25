@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self'; connect-src 'self' https:" />
     <title>MC Panel</title>
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -14,6 +14,7 @@
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="news" id="nav-news">Actualités<span id="news-dot" class="news-dot" hidden></span></button>
+        <button type="button" class="nav-btn" data-page="ai" id="nav-ai">Assistant IA</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
         <span id="build-tag" class="muted"></span>
@@ -142,6 +143,29 @@
         <div class="card">
           <div class="card-title">Actualités <span class="hint">alertes (disque / RAM / CPU / TPS), serveur en ligne / hors ligne, joueurs (ban / kick)</span> <button type="button" id="btn-news-clear" class="ghost" style="float:right">Tout effacer</button></div>
           <ul id="news-list" class="news-list"></ul>
+        </div>
+      </section>
+      <section id="page-ai" hidden>
+        <div class="card">
+          <div class="card-title">Clé API <span class="hint">stockée chiffrée en local, envoyée uniquement à l'API choisie — jamais ailleurs</span></div>
+          <div class="row">
+            <select id="ai-provider">
+              <option value="mistral">Mistral (recommandé, français)</option>
+              <option value="openai">OpenAI</option>
+              <option value="groq">Groq (rapide)</option>
+            </select>
+            <input id="ai-key" type="password" placeholder="clé API" style="flex:1" />
+            <button type="button" id="ai-save-key" class="primary">Enregistrer</button>
+          </div>
+          <p class="hint" id="ai-key-status"></p>
+        </div>
+        <div class="card console-card">
+          <div class="card-title">Assistant IA — pose tes questions sur ton serveur</div>
+          <div id="ai-messages" class="ai-messages"></div>
+          <form id="ai-form" class="row">
+            <input id="ai-input" type="text" placeholder="Ex : pourquoi mon serveur lag à 20h ?" required />
+            <button type="submit" class="primary">Envoyer</button>
+          </form>
         </div>
       </section>
       <section id="page-servers" hidden>
