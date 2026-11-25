@@ -101,7 +101,7 @@ let currentPage = 'overview';
 let currentRange = 86400000;
 let refreshSec = 15;
 let prevPing = undefined;
-const lastNewsAt = {};
+const activeAlerts = {};
 let currentMetric = 'players';
 let lastHistory = [];
 let lastResult = null;
@@ -621,7 +621,7 @@ async function loadStatus() {
     else if (!prevPing && result.ping) addNews('serveur', 'Le serveur est de retour en ligne.');
   }
   prevPing = result.ping || null;
-  if (result.tps != null && result.tps < 18) addNews('alerte', `TPS bas : ${result.tps}`);
+  await checkAlert('tps', result.tps != null && result.tps < 18, `TPS bas : ${result.tps}`);
   const history = await window.api.getHistory(currentServer.id);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
@@ -702,9 +702,9 @@ async function loadResources() {
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
-  if (!isNaN(diskPct) && diskPct >= 90) addNews('alerte', `Disque presque plein : ${Math.round(diskPct)}%`);
-  if (!isNaN(ramPct) && ramPct >= 90) addNews('alerte', `RAM presque pleine : ${Math.round(ramPct)}%`);
-  if (!isNaN(cpu) && cpu >= 95) addNews('alerte', `CPU très haut : ${Math.round(cpu)}%`);
+  await checkAlert('disk', !isNaN(diskPct) && diskPct >= 90, `Disque presque plein : ${isNaN(diskPct) ? '?' : Math.round(diskPct)}%`);
+  await checkAlert('ram', !isNaN(ramPct) && ramPct >= 90, `RAM presque pleine : ${isNaN(ramPct) ? '?' : Math.round(ramPct)}%`);
+  await checkAlert('cpu', !isNaN(cpu) && cpu >= 95, `CPU très haut : ${isNaN(cpu) ? '?' : Math.round(cpu)}%`);
   if (!isNaN(cpu) || !isNaN(ramPct) || !isNaN(diskPct)) {
     window.api.addHistoryPoint(currentServer.id, {
       ts: Date.now(),
@@ -1564,14 +1564,21 @@ function escapeHtml(str) {
 }
 
 async function addNews(type, msg) {
-  const key = type + '|' + msg;
-  const now = Date.now();
-  if (lastNewsAt[key] && now - lastNewsAt[key] < 30 * 60000) return;
-  lastNewsAt[key] = now;
   try {
-    await window.api.newsAdd({ ts: now, type, msg });
+    await window.api.newsAdd({ ts: Date.now(), type, msg });
   } catch { }
   if (currentPage === 'news') renderNews();
+}
+
+// Alerte a front montant : on loggue quand le probleme commence, et "— résolu" quand il s'arrete
+async function checkAlert(key, condition, msg) {
+  if (condition && !activeAlerts[key]) {
+    activeAlerts[key] = true;
+    await addNews('alerte', msg);
+  } else if (!condition && activeAlerts[key]) {
+    delete activeAlerts[key];
+    await addNews('alerte', msg + ' — résolu');
+  }
 }
 
 async function renderNews() {
@@ -1595,6 +1602,15 @@ async function renderNews() {
     li.innerHTML = `<span class="badge ${badge}">${escapeHtml(n.type)}</span> <span class="news-time">${p2(d.getDate())}/${p2(d.getMonth() + 1)} ${p2(d.getHours())}h${p2(d.getMinutes())}</span> — ${escapeHtml(n.msg)}`;
     el.appendChild(li);
   }
+}
+
+const btnNewsClear = document.getElementById('btn-news-clear');
+if (btnNewsClear) {
+  btnNewsClear.addEventListener('click', async () => {
+    if (!confirm('Supprimer toutes les actualités ?')) return;
+    await window.api.newsClear();
+    renderNews();
+  });
 }
 
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
