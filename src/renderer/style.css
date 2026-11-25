@@ -398,3 +398,10 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
 .hm-empty { grid-column: 1 / -1; color: var(--muted); font-size: 12px; padding: 10px 0; }
 .heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 11px; color: var(--muted); }
 .hm-swatch { display: inline-block; width: 14px; height: 14px; flex: 0 0 auto; border: 1px solid var(--border); }
+
+.hm-swatch.c1 { background: #a8e6a1; }
+.hm-swatch.c2 { background: #2e7d32; }
+.hm-swatch.c3 { background: #e3b341; }
+.hm-swatch.c4 { background: #ef7d1a; }
+.hm-swatch.c5 { background: #ef5350; }
+.hm-swatch.c6 { background: #a40e26; }

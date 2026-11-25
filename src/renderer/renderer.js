@@ -589,7 +589,7 @@ function drawHeatmap(history) {
         const v = cell.sum / cell.n;
         const r = avg ? v / avg : 0;
         c.style.background = heatColor(r);
-        c.title = `${days[dow]} ${h}h : ${v.toFixed(1)} joueurs en moyenne (moyenne globale du serveur ${avg == null ? '?' : avg.toFixed(1)})`;
+        c.title = `${days[dow]} ${h}h — ${Math.round(v)} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
       } else {
         c.style.background = 'var(--panel-2)';
         c.title = `${days[dow]} ${h}h : pas de données`;
