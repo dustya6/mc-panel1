@@ -917,23 +917,53 @@ function fmtDur(sec) {
   return `${m} min`;
 }
 
+function setProfileCells(cells) {
+  if (!modalProfileEl) return;
+  modalProfileEl.innerHTML = '';
+  for (const c of cells) {
+    const div = document.createElement('div');
+    div.className = 'profile-cell' + (c.full ? ' full' : '');
+    const l = document.createElement('span');
+    l.className = 'pl';
+    l.textContent = c.label;
+    div.appendChild(l);
+    if (c.badges) {
+      const b = document.createElement('div');
+      b.className = 'profile-badges';
+      for (const bd of c.badges) {
+        const sp = document.createElement('span');
+        sp.className = `badge ${bd.cls || ''}`;
+        sp.textContent = bd.text;
+        b.appendChild(sp);
+      }
+      div.appendChild(b);
+    } else {
+      const v = document.createElement('span');
+      v.className = 'pv';
+      v.textContent = c.value;
+      div.appendChild(v);
+    }
+    modalProfileEl.appendChild(div);
+  }
+}
+
 async function loadPlayerProfile(name) {
   if (!modalProfileEl) return;
   const hasSsh = Boolean(currentServer && currentServer.sshUser);
   const hasRcon = Boolean(currentServer && currentServer.type !== 'aternos' && currentServer.hasPassword);
   if (!hasSsh && !hasRcon) {
-    modalProfileEl.textContent = 'Profil détaillé : nécessite SSH et/ou RCON (non dispo sur Aternos gratuit).';
+    setProfileCells([{ label: 'Profil', full: true, value: 'Profil détaillé : nécessite SSH et/ou RCON (non dispo sur Aternos gratuit).' }]);
     return;
   }
-  modalProfileEl.textContent = 'Chargement du profil...';
-  const parts = [];
+  setProfileCells([{ label: 'Profil', full: true, value: 'Chargement...' }]);
+  const cells = [];
   if (hasSsh) {
     const dir = currentServer.serverDir || '~/minecraft';
     const cmd = `D=${dir}; cd "$D" 2>/dev/null; date +%F; date +%s; { for f in logs/*.log.gz logs/*.log; do [ -e "$f" ] || continue; b=$(basename "$f"); [ "$b" = "latest.log" ] && continue; d=$(echo "$b" | cut -d- -f1-3); if [[ "$f" == *.gz ]]; then zcat "$f"; else cat "$f"; fi | grep -hE 'joined the game|left the game' | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$d \\1 \\2 \\3/"; done; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$(date +%F) \\1 \\2 \\3/"; } | grep -F " ${name} "`;
     try {
       const res = await window.api.sshExec(currentServer.id, cmd);
       if (res.error) {
-        parts.push(`Logs : ${res.error}`);
+        cells.push({ label: 'Logs', full: true, value: res.error });
       } else {
         const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
         const now = Number(lines[1]) * 1000;
@@ -953,31 +983,34 @@ async function loadPlayerProfile(name) {
           }
         }
         if (openTs != null && now) total += (now - openTs) / 1000;
-        parts.push(`Temps de jeu total : ${fmtDur(total)} (d'après tous les logs)`);
+        cells.push({ label: 'Temps de jeu total', value: `${fmtDur(total)} (tous les logs)` });
         if (lastJoin) {
           const d = new Date(lastJoin);
           const p = (n) => String(n).padStart(2, '0');
-          parts.push(`Dernière connexion : ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}h${p(d.getMinutes())}`);
+          cells.push({ label: 'Dernière connexion', value: `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}h${p(d.getMinutes())}` });
         } else {
-          parts.push('Aucune connexion trouvée dans les logs');
+          cells.push({ label: 'Dernière connexion', value: 'jamais (dans les logs)' });
         }
       }
     } catch (err) {
-      parts.push(`Logs : ${err.message}`);
+      cells.push({ label: 'Logs', full: true, value: err.message });
     }
   }
   if (hasRcon) {
     try {
       const bans = parseNames(await runCmd('banlist players'));
       const wl = parseNames(await runCmd('whitelist list'));
-      parts.push(`Statut : ${bans.includes(name) ? 'BANNI' : 'pas banni'}${wl.includes(name) ? ' · whitelist' : ''}`);
+      const badges = [];
+      const sample = (lastStatus && lastStatus.ping && lastStatus.ping.playersSample) || [];
+      if (sample.map((x) => String(x).replace(/^\*+/, '').trim()).includes(name)) badges.push({ text: 'En ligne', cls: 'online' });
+      if (bans.includes(name)) badges.push({ text: 'Banni', cls: 'offline' });
+      if (wl.includes(name)) badges.push({ text: 'Whitelist', cls: 'info' });
+      cells.push(badges.length ? { label: 'Statut', full: true, badges } : { label: 'Statut', full: true, value: 'pas banni' });
     } catch (err) {
-      parts.push(`RCON : ${err.message}`);
+      cells.push({ label: 'Statut', full: true, value: `RCON : ${err.message}` });
     }
   }
-  const sample = (lastStatus && lastStatus.ping && lastStatus.ping.playersSample) || [];
-  if (sample.map((x) => String(x).replace(/^\*+/, '').trim()).includes(name)) parts.push('EN LIGNE maintenant');
-  modalProfileEl.textContent = parts.join(' — ');
+  setProfileCells(cells);
 }
 
 function openModal(name) {

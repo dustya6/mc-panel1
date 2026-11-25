@@ -340,5 +340,11 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 .modal-avatar-fb { width: 160px; height: 160px; align-items: center; justify-content: center; font-size: 72px; font-weight: 700; background: var(--primary); color: #fff; }
 .modal-name { font-size: 20px; font-weight: 700; text-align: center; word-break: break-all; }
 .modal-right { min-width: 0; }
-#modal-profile { font-size: 14px; line-height: 1.8; }
+#modal-profile { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 14px; }
+.profile-cell { background: var(--panel-2); border: 1px solid var(--border); padding: 8px 10px; }
+.profile-cell.full { grid-column: 1 / -1; }
+.profile-cell .pl { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+.profile-cell .pv { font-size: 14px; font-weight: 600; }
+.profile-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge.info { color: var(--primary); background: rgba(88, 166, 255, .12); }
 .modal-actions button { padding: 10px 14px; font-size: 14px; }
