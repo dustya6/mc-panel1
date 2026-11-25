@@ -26,6 +26,7 @@ const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
 const pageSettings = document.getElementById('page-settings');
 const pageNews = document.getElementById('page-news');
+const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
 const srvStateEl = document.getElementById('srv-state');
@@ -178,7 +179,10 @@ function showPage(page) {
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
-  if (page === 'news') renderNews();
+  if (page === 'news') {
+    renderNews();
+    window.api.setSetting('newsLastSeen', Date.now()).then(() => updateNewsDot());
+  }
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -630,7 +634,7 @@ async function loadStatus() {
   const hist = (history || []).filter((p) => p.players != null);
   const avgP = hist.length ? hist.reduce((a, p) => a + Number(p.players), 0) / hist.length : null;
   const curP = result.ping ? result.ping.playersOnline : 0;
-  await checkAlert('picjoueurs', avgP != null && curP >= 3 && curP > Math.max(2 * avgP, avgP + 5), `Pic de joueurs inhabituel : ${curP} en ligne (moyenne ${avgP.toFixed(1)})`);
+  await checkAlert('picjoueurs', avgP != null && curP >= 3 && curP > Math.max(2 * avgP, avgP + 5), `Pic de joueurs inhabituel : ${curP} en ligne (moyenne ${avgP == null ? '?' : avgP.toFixed(1)})`);
   if (window.api.logDebug) window.api.logDebug(`status: ping=${result.ping ? 'ok' : 'ko'} err=${result.error} histPoints=${history.length}`);
   try {
     drawDashboard(history, result);
@@ -1604,6 +1608,7 @@ async function addNews(type, msg) {
   try {
     await window.api.newsAdd({ ts: Date.now(), type, msg });
   } catch { }
+  updateNewsDot();
   if (currentPage === 'news') renderNews();
 }
 
@@ -1650,6 +1655,17 @@ if (btnNewsClear) {
   });
 }
 
+async function updateNewsDot() {
+  if (!newsDot) return;
+  try {
+    const list = await window.api.newsList();
+    const lastSeen = Number(await window.api.getSetting('newsLastSeen')) || 0;
+    newsDot.hidden = !list.some((n) => n.type === 'alerte' && n.ts > lastSeen);
+  } catch {
+    newsDot.hidden = true;
+  }
+}
+
 btnWelcomeAdd.addEventListener('click', () => setMode('setup'));
 
 window.api.getBuild().then((b) => {
@@ -1664,6 +1680,7 @@ window.api.getBuild().then((b) => {
     const r = await window.api.getSetting('refreshSec');
     if (r === 30 || r === 60) refreshSec = r;
   } catch { }
+  updateNewsDot();
   const servers = await window.api.listServers();
   await refreshList();
   if (servers.length === 0) {
