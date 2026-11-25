@@ -552,6 +552,15 @@ function heatColorAbs(v, max) {
 
 const HEAT_HOURS = [9, 11, 16, 18, 20, 22];
 
+function heatRowHour(hour) {
+  let r = null;
+  for (const h of HEAT_HOURS) {
+    if (hour >= h) r = h;
+    else break;
+  }
+  return r;
+}
+
 function drawHeatmap(history) {
   const el = document.getElementById('heatmap');
   if (!el) return;
@@ -575,7 +584,9 @@ function drawHeatmap(history) {
   const cells = {};
   for (const p of pts) {
     const d = new Date(p.ts);
-    const key = ((d.getDay() + 6) % 7) + '-' + d.getHours();
+    const rh = heatRowHour(d.getHours());
+    if (rh == null) continue;
+    const key = ((d.getDay() + 6) % 7) + '-' + rh;
     if (!cells[key]) cells[key] = { sum: 0, n: 0 };
     cells[key].sum += Number(p.players);
     cells[key].n++;
@@ -598,10 +609,14 @@ function drawHeatmap(history) {
       if (color) {
         c.style.background = color;
         const pct = maxP > 0 ? Math.round((v / maxP) * 100) : 0;
-        tip = `${days[dow]} ${h}h — ${label} joueur(s) en moyenne (${pct}% de la limite ${maxP})`;
+        const hi2 = HEAT_HOURS.indexOf(h);
+        const hnext2 = HEAT_HOURS[hi2 + 1] || 24;
+        tip = `${days[dow]} ${h}h–${hnext2}h — ${label} joueur(s) en moyenne (${pct}% de la limite ${maxP})`;
       } else {
         c.style.background = 'var(--panel-2)';
-        tip = `${days[dow]} ${h}h — ${cell ? label + ' joueur(s)' : 'pas de données'} (aucun joueur sur cette case)`;
+        const hi3 = HEAT_HOURS.indexOf(h);
+        const hnext3 = HEAT_HOURS[hi3 + 1] || 24;
+        tip = `${days[dow]} ${h}h–${hnext3}h — ${cell ? label + ' joueur(s)' : 'pas de données'} (aucun joueur sur cette case)`;
       }
       c.addEventListener('mouseenter', (e) => showHmTip(tip, e));
       c.addEventListener('mouseleave', hideHmTip);
