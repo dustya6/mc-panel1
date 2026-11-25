@@ -568,6 +568,7 @@ function drawHeatmap(history) {
   }
   const allPts = (history || []).filter((p) => p.players != null);
   const avg = allPts.length ? allPts.reduce((a, p) => a + Number(p.players), 0) / allPts.length : null;
+  const denom = Math.max(avg || 0, 1); // minimum 1 joueur pour eviter les ratios explosifs
   const cells = {};
   for (const p of pts) {
     const d = new Date(p.ts);
@@ -587,14 +588,14 @@ function drawHeatmap(history) {
       const cell = cells[dow + '-' + h];
       let tip;
       const v = cell ? cell.sum / cell.n : 0;
-      if (cell && v > 0) {
-        const r = avg ? v / avg : 0;
+      const label = v >= 1 ? String(Math.round(v)) : v.toFixed(1);
+      if (cell && v >= 0.05) {
+        const r = v / denom;
         c.style.background = heatColor(r);
-        const label = v >= 1 ? String(Math.round(v)) : v.toFixed(1);
         tip = `${days[dow]} ${h}h — ${label} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
       } else {
         c.style.background = 'var(--panel-2)';
-        tip = `${days[dow]} ${h}h — ${cell ? '0' : 'pas de données'} (aucun joueur sur cette case)`;
+        tip = `${days[dow]} ${h}h — ${cell ? label + ' joueur(s)' : 'pas de données'} (aucun joueur sur cette case)`;
       }
       c.addEventListener('mouseenter', (e) => showHmTip(tip, e));
       c.addEventListener('mouseleave', hideHmTip);
