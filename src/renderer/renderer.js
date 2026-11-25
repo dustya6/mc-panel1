@@ -532,6 +532,12 @@ function setRes(fill, txt, pct, label) {
   txt.textContent = label;
 }
 
+function fmtSize(used, total) {
+  if (isNaN(used) || isNaN(total) || total <= 0) return '?';
+  if (total >= 1024) return `${(used / 1024).toFixed(1)} / ${(total / 1024).toFixed(1)} Go`;
+  return `${Math.round(used)} / ${Math.round(total)} Mo`;
+}
+
 async function loadResources() {
   if (!currentServer) return;
   if (!currentServer.sshUser) {
@@ -539,9 +545,13 @@ async function loadResources() {
     return;
   }
   const cmd = [
-    "vmstat 1 2 | tail -1 | awk '{print 100-$15}'",
-    "free -m | awk '/^Mem:/ {printf \"%.0f %.0f\", $3, $2}'",
-    "df -h / | tail -1 | awk '{gsub(/%/, \"\", $5); print $5, $3, $2}'",
+    "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_a",
+    "sleep 2",
+    "awk '/^cpu / {t=$2+$3+$4+$5+$6+$7+$8+$9; i=$5+$6; print t, i}' /proc/stat > /tmp/.mcp_b",
+    "awk 'NR==FNR{a=$1;b=$2;next}{d=$1-a; if(d>0) printf \"%.1f\", 100*((d-($2-b))/d); else print \"0\"}' /tmp/.mcp_a /tmp/.mcp_b",
+    "rm -f /tmp/.mcp_a /tmp/.mcp_b",
+    "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\", $3, $2, $3*100/$2}'",
+    "df -h / | tail -1 | awk '{gsub(/%/,\"\",$5); print $5, $3, $2}'",
   ].join('; ');
   let res;
   try {
@@ -554,6 +564,7 @@ async function loadResources() {
     resStatusEl.textContent = `Erreur SSH : ${res.error}`;
     return;
   }
+  if (window.api.logDebug) window.api.logDebug(`res raw: ${JSON.stringify(res.out)}`);
   resStatusEl.textContent = '';
   const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
   const cpu = Number(lines[0]);
@@ -561,8 +572,9 @@ async function loadResources() {
   const ram = (lines[1] || '').split(/\s+/);
   const ramUsed = Number(ram[0]);
   const ramTotal = Number(ram[1]);
-  const ramPct = ramTotal ? (ramUsed / ramTotal) * 100 : NaN;
-  setRes(resRamFill, resRamTxt, ramPct, `${isNaN(ramPct) ? '?' : Math.round(ramPct) + '%'} (${ramUsed || '?'} / ${ramTotal || '?'} Mo)`);
+  let ramPct = Number(ram[2]);
+  if (isNaN(ramPct) && ramTotal > 0) ramPct = (ramUsed / ramTotal) * 100;
+  setRes(resRamFill, resRamTxt, ramPct, `${isNaN(ramPct) ? '?' : Math.round(ramPct) + '%'} (${fmtSize(ramUsed, ramTotal)})`);
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
