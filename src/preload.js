@@ -26,4 +26,11 @@ contextBridge.exposeInMainWorld('api', {
   pluginsDownload: (args) => ipcRenderer.invoke('plugins:download', args),
   pluginsInstalled: (id) => ipcRenderer.invoke('plugins:installed', id),
   openUrl: (url) => ipcRenderer.invoke('app:open-url', url),
+  autoList: (id) => ipcRenderer.invoke('auto:list', id),
+  autoSave: (args) => ipcRenderer.invoke('auto:save', args),
+  autoDeploy: (args) => ipcRenderer.invoke('auto:deploy', args),
+  autoTest: (args) => ipcRenderer.invoke('auto:test', args),
+  autoStatus: (id) => ipcRenderer.invoke('auto:status', id),
+  autoLog: (args) => ipcRenderer.invoke('auto:log', args),
+  autoClean: (args) => ipcRenderer.invoke('auto:clean', args),
 });

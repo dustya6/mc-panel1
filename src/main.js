@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'plugins-install-fix';
+const BUILD = 'automations-v1';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -415,6 +415,269 @@ async function searchPlugins(query, platform, version) {
   return results;
 }
 
+// ---------- Automatisations : editeur de blocs -> script bash + cron/watcher sur le VPS ----------
+function autoDir() { return path.join(app.getPath('userData'), 'automations'); }
+function autoFile(id) { return path.join(autoDir(), `${id}.json`); }
+function loadAutos(serverId) {
+  try { return JSON.parse(fs.readFileSync(autoFile(serverId), 'utf8')); } catch { return []; }
+}
+function saveAutos(serverId, list) {
+  fs.mkdirSync(autoDir(), { recursive: true });
+  fs.writeFileSync(autoFile(serverId), JSON.stringify(list, null, 2));
+}
+
+function shQuote(s) {
+  return `'${String(s == null ? '' : s).replace(/'/g, `'\\''`)}'`;
+}
+
+const RCON_PY = `#!/usr/bin/env python3
+import socket, struct, sys
+def pkt(sock, rid, ptype, payload):
+    body = struct.pack('>ii', rid, ptype) + payload.encode('utf-8') + b'\\x00\\x00'
+    sock.sendall(struct.pack('>i', len(body)) + body)
+def read_pkt(sock):
+    raw = b''
+    while len(raw) < 4:
+        c = sock.recv(4 - len(raw))
+        if not c: raise SystemExit('closed')
+        raw += c
+    (ln,) = struct.unpack('>i', raw)
+    data = b''
+    while len(data) < ln:
+        c = sock.recv(ln - len(data))
+        if not c: break
+        data += c
+    rid, ptype = struct.unpack('>ii', data[:8])
+    return rid, ptype, data[8:-2].decode('utf-8', 'replace')
+def main():
+    if len(sys.argv) < 5:
+        sys.stderr.write('usage: rcon.py host port password command\\n'); sys.exit(2)
+    host, port, password, cmd = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
+    s = socket.create_connection((host, port), timeout=8)
+    pkt(s, 1, 3, password)
+    rid, ptype, _ = read_pkt(s)
+    if rid == -1:
+        sys.stderr.write('RCON auth failed\\n'); sys.exit(3)
+    pkt(s, 2, 2, cmd)
+    rid, ptype, body = read_pkt(s)
+    print(body)
+    s.close()
+if __name__ == '__main__':
+    main()
+`;
+
+function configSh(server) {
+  const raw = cleanDir(server.serverDir);
+  const dirVal = raw.startsWith('~') ? `$HOME${raw.slice(1)}` : raw;
+  return [
+    `RCON_PORT=${Number(server.rconPort) || 25575}`,
+    `RCON_PASSWORD=${shQuote(decrypt(server.encryptedPassword) || '')}`,
+    `SERVER_DIR="${dirVal}"`,
+    `START_CMD=${shQuote(server.startCmd || '')}`,
+    '',
+  ].join('\n');
+}
+
+function cronForTrigger(tr, id) {
+  const script = `$HOME/.mc-panel/auto-${id}.sh`;
+  const p = tr.params || {};
+  const [h, m] = String(p.time || '03:00').split(':').map((x) => Math.max(0, Math.min(59, parseInt(x, 10) || 0)));
+  const mm = String(p.time || '03:00').split(':')[1] || '00';
+  const hh = String(p.time || '03:00').split(':')[0] || '03';
+  switch (tr.kind) {
+    case 'tr_daily': return [`${mm} ${hh} * * * ${script} --run`];
+    case 'tr_every_min': return [`*/${Math.max(1, Number(p.n) || 5)} * * * * ${script} --run`];
+    case 'tr_every_hour': return [`0 */${Math.max(1, Number(p.n) || 1)} * * * ${script} --run`];
+    case 'tr_weekday': {
+      const days = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 };
+      return [`${mm} ${hh} * * ${days[p.day] != null ? days[p.day] : 1} ${script} --run`];
+    }
+    default: return null; // watcher
+  }
+}
+
+function condExpr(b) {
+  const p = (b && b.params) || {};
+  switch (b && b.kind) {
+    case 'c_online': case 'online': return 'online';
+    case 'c_offline': case 'offline': return '! online';
+    case 'c_ram': case 'ram90': return `ram_pct_gt ${Number(p.n) || 90}`;
+    case 'c_tps': case 'tps15': return `tps_lt ${Number(p.n) || 15}`;
+    case 'c_cpu': case 'cpu90': return `cpu_pct_gt ${Number(p.n) || 90}`;
+    case 'c_disk': case 'disk10': return `disk_free_lt ${Number(p.n) || 10}`;
+    case 'c_backup_ok': return '[ "$LAST_BACKUP_RC" -eq 0 ]';
+    case 'c_backup_fail': return '[ "$LAST_BACKUP_RC" -ne 0 ]';
+    case 'c_time': return `[ "$(date +%H:%M)" = ${shQuote(p.time || '00:00')} ]`;
+    case 'c_last': case 'last': return '[ "$LAST_COND" -eq 0 ]';
+  }
+  return 'true';
+}
+
+function actionSnippet(b) {
+  const p = b.params || {};
+  switch (b.kind) {
+    case 'a_start': return `if online; then log 'start: déjà en ligne'; else cd "$SERVER_DIR" && nohup setsid bash -c "$START_CMD" >/dev/null 2>&1 & sleep 2; log 'start: lancé'; fi`;
+    case 'a_stop': return `rcon 'stop'; log 'stop: arrêt demandé'`;
+    case 'a_restart': return `rcon 'stop'; sleep 5; cd "$SERVER_DIR" && nohup setsid bash -c "$START_CMD" >/dev/null 2>&1 & sleep 2; log 'restart: relancé'`;
+    case 'a_save': return `rcon 'save-all'; log 'save-all envoyé'`;
+    case 'a_backup': return `rcon 'save-all'; sleep 3; mkdir -p "$SERVER_DIR/backups"; tar -czf "$SERVER_DIR/backups/world-$(date +%F-%H%M).tgz" -C "$SERVER_DIR" world 2>>"$LOG"; LAST_BACKUP_RC=$?; log "backup rc=$LAST_BACKUP_RC"`;
+    case 'a_prune': return `find "$SERVER_DIR/backups" -name '*.tgz' -mtime +${Math.max(1, Number(p.days) || 7)} -delete 2>>"$LOG"; log 'prune: anciennes sauvegardes supprimées'`;
+    case 'a_state': return `if online; then log "state: EN LIGNE $(rcon 'list')"; else log 'state: HORS LIGNE'; fi`;
+    case 'a_perf': return `log "perf: tps=$(tpsval) ram=$(free -m 2>/dev/null | awk '/^Mem:/{print int($3*100/$2)}')% cpu=$(top -bn1 2>/dev/null | awk '/%Cpu/{print int(100-$8)}')% disque_libre=$(df -BG "$SERVER_DIR" 2>/dev/null | tail -1 | awk '{print $4}')"`;
+    case 'a_cmd': return `rcon ${shQuote(p.cmd || '')}`;
+    case 'a_mnt_on': return `rcon 'whitelist on'; log 'maintenance ON (whitelist activée)'`;
+    case 'a_mnt_off': return `rcon 'whitelist off'; log 'maintenance OFF (whitelist désactivée)'`;
+    case 'a_report': return `R="$DIR/report-$AUTO_ID-$(date +%F-%H%M).txt"; { echo "Rapport $(date)"; rcon 'list'; echo "TPS: $(tpsval)"; free -m; df -h "$SERVER_DIR"; } > "$R" 2>&1; log "rapport: $R"`;
+    case 'a_event': return `event ${shQuote(p.msg || 'événement')}`;
+  }
+  return `log ${shQuote('action inconnue ' + b.kind)}`;
+}
+
+function emitBlocks(blocks, ind) {
+  let out = '';
+  let prevSnippet = null;
+  const pad = '  '.repeat(ind);
+  for (const b of blocks || []) {
+    const label = b.label || b.kind;
+    if (b.cat === 'cond' && b.kind !== 'c_if') {
+      out += `${pad}if ${condExpr(b)}; then LAST_COND=0; else LAST_COND=1; fi; log "cond ${label}: $LAST_COND"\n`;
+    } else if (b.kind === 'c_if') {
+      out += `${pad}if ${condExpr({ kind: b.params.cond })}; then LAST_COND=0\n${emitBlocks(b.children.then, ind + 1)}${pad}else LAST_COND=1\n${emitBlocks(b.children.else, ind + 1)}${pad}fi\n`;
+    } else if (b.kind === 't_repeat') {
+      const n = Math.max(1, Number(b.params.n) || 3);
+      out += `${pad}for i in $(seq 1 ${n}); do log "répétition $i/${n}"\n${emitBlocks(b.children.body, ind + 1)}${pad}done\n`;
+    } else if (b.kind === 't_repeat_until') {
+      out += `${pad}i=0; while ! ${condExpr({ kind: b.params.cond })}; do\n${emitBlocks(b.children.body, ind + 1)}${pad}  i=$((i+1)); [ $i -ge 1000 ] && { log 'repeat_until: limite atteinte'; break; }; sleep ${Math.max(1, Number(b.params.pause) || 15)}; done\n`;
+    } else if (b.kind === 'e_on_fail' || b.kind === 'e_noresp' || b.kind === 'e_backup_fail') {
+      const test = b.kind === 'e_noresp' ? '! online' : b.kind === 'e_backup_fail' ? '[ "${LAST_BACKUP_RC:-1}" -ne 0 ]' : '[ "$LAST_RC" -ne 0 ]';
+      out += `${pad}if ${test}; then log "branche erreur: ${label}"\n${emitBlocks(b.children.body, ind + 1)}${pad}fi\n`;
+    } else if (b.kind === 'e_retry') {
+      const n = Math.max(1, Number(b.params.n) || 3);
+      if (prevSnippet) out += `${pad}i=0; LAST_RC=1; while [ "$LAST_RC" -ne 0 ] && [ $i -lt ${n} ]; do i=$((i+1)); log "nouvel essai $i/${n}"; ${prevSnippet}; LAST_RC=$?; done; [ "$LAST_RC" -ne 0 ] && log "ERR: ${label} a échoué après ${n} essais"\n`;
+    } else if (b.kind === 't_redo') {
+      if (prevSnippet) out += `${pad}${prevSnippet}; LAST_RC=$?\n`;
+    } else if (b.kind === 't_stop') {
+      out += `${pad}log "arrêt de l'automatisation demandé"; exit 0\n`;
+    } else if (b.kind === 't_skip') {
+      out += `${pad}: # étape ignorée\n`;
+    } else if (b.kind === 'e_stop_err') {
+      out += `${pad}ERRMODE=stop; log "mode erreur: arrêt du scénario en cas d'erreur"\n`;
+    } else if (b.kind === 'e_cont_err') {
+      out += `${pad}ERRMODE=continue; log "mode erreur: continuer malgré les erreurs"\n`;
+    } else if (b.kind === 'e_log_err') {
+      out += `${pad}if [ "$LAST_RC" -ne 0 ]; then log "ERR: l'étape précédente a échoué"; fi\n`;
+    } else if (b.cat === 'action') {
+      const snip = actionSnippet(b);
+      out += `${pad}${snip}; LAST_RC=$?\n${pad}if [ "$LAST_RC" -ne 0 ]; then log "ERR ${label}"; [ "$ERRMODE" = "stop" ] && exit 1; fi\n`;
+      prevSnippet = snip;
+    }
+  }
+  return out;
+}
+
+const WATCHER_KINDS = ['tr_at', 'tr_start', 'tr_stop', 'tr_crash', 'tr_offline', 'tr_online'];
+
+function compileAutomation(auto, server) {
+  const id = auto.id;
+  const tr = auto.trigger || { kind: 'tr_daily', params: { time: '03:00' } };
+  const isWatcher = WATCHER_KINDS.includes(tr.kind);
+  const head = `#!/usr/bin/env bash
+set -u
+DIR="$HOME/.mc-panel"
+AUTO_ID=${shQuote(id)}
+source "$DIR/config.sh"
+LOG="$DIR/auto-$AUTO_ID.log"
+STATE="$DIR/auto-$AUTO_ID.state"
+exec 9>"$DIR/auto-$AUTO_ID.lock"
+flock -n 9 || exit 0
+LAST_RC=0; LAST_COND=0; LAST_BACKUP_RC=0; ERRMODE=continue
+log(){ echo "$(date '+%F %T') [$AUTO_ID] $*" >> "$LOG"; }
+event(){ echo "$(date '+%F %T') EVENT: $*" >> "$LOG"; }
+rcon(){ python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
+online(){ rcon "list" >/dev/null 2>&1; }
+tpsval(){ rcon "tps" 2>/dev/null | grep -oE '[0-9]+([.][0-9]+)?' | head -1; }
+ram_pct_gt(){ read -r u t <<< "$(free -m 2>/dev/null | awk '/^Mem:/{print $3, $2}')"; [ -n "$t" ] && [ "$t" -gt 0 ] && [ $((u*100/t)) -gt "$1" ]; }
+cpu_pct_gt(){ local c; c=$(top -bn1 2>/dev/null | awk '/%Cpu/{print int(100-$8); exit}'); [ -n "$c" ] && [ "$c" -gt "$1" ]; }
+tps_lt(){ local t; t=$(tpsval); [ -n "$t" ] && awk -v t="$t" -v x="$1" 'BEGIN{exit !(t<x)}'; }
+disk_free_lt(){ local g; g=$(df -BG "$SERVER_DIR" 2>/dev/null | tail -1 | awk '{gsub(/G/,"",$4); print $4}'); [ -n "$g" ] && [ "$g" -lt "$1" ]; }
+run_body(){
+  log "=== déclenchement ==="
+${emitBlocks(auto.blocks, 1)}  log "=== fin ==="
+}
+MODE="\${1:---run}"
+`;
+  let tail;
+  if (isWatcher) {
+    tail = `
+if [ "$MODE" = "--watch" ]; then
+  log "watcher démarré"
+  while true; do
+    case "${tr.kind}" in
+      tr_at)
+        now=$(date +%H:%M)
+        if [ "$now" = ${shQuote(tr.params.time || '03:00')} ] && ! grep -qx "$now" "$STATE" 2>/dev/null; then echo "$now" >> "$STATE"; run_body; fi ;;
+      tr_start|tr_online)
+        if online; then cur=1; else cur=0; fi; prev=$(cat "$STATE.online" 2>/dev/null || echo 0)
+        if [ "$cur" = 1 ] && [ "$prev" = 0 ]; then echo 1 > "$STATE.online"; run_body; fi
+        [ "$cur" = 0 ] && echo 0 > "$STATE.online" ;;
+      tr_stop|tr_offline)
+        if online; then cur=1; else cur=0; fi; prev=$(cat "$STATE.online" 2>/dev/null || echo 1)
+        if [ "$cur" = 0 ] && [ "$prev" = 1 ]; then echo 0 > "$STATE.online"; run_body; fi
+        [ "$cur" = 1 ] && echo 1 > "$STATE.online" ;;
+      tr_crash)
+        n=$(tail -30 "$SERVER_DIR/logs/latest.log" 2>/dev/null | grep -cE 'SEVERE|Exception')
+        fired=$(cat "$STATE.crash" 2>/dev/null || echo 0)
+        if [ "$n" -ge 3 ] && [ "$fired" = 0 ]; then echo 1 > "$STATE.crash"; run_body; fi
+        [ "$n" -lt 3 ] && echo 0 > "$STATE.crash" ;;
+    esac
+    sleep 15
+  done
+fi
+if [ "$MODE" = "--run" ]; then
+  run_body
+fi
+`;
+  } else {
+    tail = `
+if [ "$MODE" = "--run" ]; then
+  run_body
+fi
+`;
+  }
+  let cron = cronForTrigger(tr, id) || [];
+  if (isWatcher) cron.push(`@reboot $HOME/.mc-panel/auto-${id}.sh --watch`);
+  return { script: head + tail, cron, watcher: isWatcher };
+}
+
+async function deployAutomation(server, auto) {
+  const { script, cron, watcher } = compileAutomation(auto, auto.id ? auto : { ...auto, id: auto.id });
+  const id = auto.id;
+  const mk = await sshExec(server, `mkdir -p "$HOME/.mc-panel" && chmod 700 "$HOME/.mc-panel"`, 20000);
+  if (mk.error) return { ok: false, error: mk.error };
+  const r1 = await sshExec(server, `cat > "$HOME/.mc-panel/rcon.py" <<'RCONPY_EOF'
+${RCON_PY}RCONPY_EOF
+chmod 700 "$HOME/.mc-panel/rcon.py"`, 30000);
+  if (r1.error) return { ok: false, error: r1.error };
+  const r2 = await sshExec(server, `cat > "$HOME/.mc-panel/config.sh" <<'CFG_EOF'
+${configSh(server)}CFG_EOF
+chmod 600 "$HOME/.mc-panel/config.sh"`, 30000);
+  if (r2.error) return { ok: false, error: r2.error };
+  const r3 = await sshExec(server, `cat > "$HOME/.mc-panel/auto-${id}.sh" <<'AUTO_EOF'
+${script}AUTO_EOF
+chmod 700 "$HOME/.mc-panel/auto-${id}.sh"`, 30000);
+  if (r3.error) return { ok: false, error: r3.error };
+  const tag = `mc-panel:${id}`;
+  const enabled = auto.enabled !== false;
+  const echoLines = cron.map((l) => `echo ${shQuote((enabled ? '' : '# ') + l + ' # ' + tag)}`).join('; ');
+  const r4 = await sshExec(server, `(crontab -l 2>/dev/null | grep -v '${tag}'; ${echoLines}) | crontab -`, 30000);
+  if (r4.error) return { ok: false, error: r4.error };
+  if (watcher) {
+    if (enabled) await sshExec(server, `pgrep -f "auto-${id}.sh --watch" >/dev/null || (nohup "$HOME/.mc-panel/auto-${id}.sh" --watch >/dev/null 2>&1 &); true`, 20000);
+    else await sshExec(server, `pkill -f "auto-${id}.sh --watch" 2>/dev/null; true`, 20000);
+  }
+  return { ok: true, cron, watcher };
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -667,6 +930,42 @@ app.whenReady().then(() => {
     if (out.includes('CDERR')) return { ok: false, error: `Dossier introuvable sur le serveur : ${cleanDir(server.serverDir)} — vérifie « Dossier du serveur » dans Mes serveurs.` };
     const files = out.split('\n').map((s) => s.trim()).filter((s) => s.endsWith('.jar'));
     return { ok: true, files };
+  });
+
+  ipcMain.handle('auto:list', (event, id) => loadAutos(id));
+  ipcMain.handle('auto:save', (event, { id, list }) => { saveAutos(id, Array.isArray(list) ? list : []); return true; });
+  ipcMain.handle('auto:deploy', async (event, { id, auto }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server) return { ok: false, error: 'Serveur introuvable' };
+    if (!server.sshUser) return { ok: false, error: 'SSH requis (onglet Automatisations = VPS avec SSH)' };
+    try { return await deployAutomation(server, auto); } catch (err) { debugLog(`auto:deploy error: ${err.message}`); return { ok: false, error: String((err && err.message) || err) }; }
+  });
+  ipcMain.handle('auto:test', async (event, { id, autoId }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server || !server.sshUser) return { ok: false, error: 'SSH requis' };
+    const r = await sshExec(server, `"$HOME/.mc-panel/auto-${autoId}.sh" --run; echo "RC=$?"; echo '--- log ---'; tail -20 "$HOME/.mc-panel/auto-${autoId}.log" 2>/dev/null`, 90000);
+    if (r.error) return { ok: false, error: r.error };
+    return { ok: true, out: r.out || '' };
+  });
+  ipcMain.handle('auto:status', async (event, id) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server || !server.sshUser) return { ok: false, noSsh: true };
+    const r = await sshExec(server, `echo '--- cron ---'; crontab -l 2>/dev/null | grep 'mc-panel:' || echo '(aucune ligne)'; echo '--- watchers ---'; pgrep -af 'mc-panel/auto-.*sh --watch' || echo '(aucun)'; echo '--- scripts ---'; ls -1 "$HOME/.mc-panel"/auto-*.sh 2>/dev/null || echo '(aucun)'`, 20000);
+    if (r.error) return { ok: false, error: r.error };
+    return { ok: true, out: r.out || '' };
+  });
+  ipcMain.handle('auto:log', async (event, { id, autoId, n }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server || !server.sshUser) return { ok: false, noSsh: true };
+    const r = await sshExec(server, `tail -n ${Math.max(10, Number(n) || 60)} "$HOME/.mc-panel/auto-${autoId}.log" 2>/dev/null || echo '(pas encore de log)'`, 20000);
+    if (r.error) return { ok: false, error: r.error };
+    return { ok: true, out: r.out || '' };
+  });
+  ipcMain.handle('auto:clean', async (event, { id, autoId }) => {
+    const server = loadServers().find((s) => s.id === id);
+    if (!server || !server.sshUser) return { ok: false, noSsh: true };
+    await sshExec(server, `pkill -f "auto-${autoId}.sh --watch" 2>/dev/null; rm -f "$HOME/.mc-panel/auto-${autoId}.sh" "$HOME/.mc-panel/auto-${autoId}.log" "$HOME/.mc-panel/auto-${autoId}.state" "$HOME/.mc-panel/auto-${autoId}.lock"; (crontab -l 2>/dev/null | grep -v 'mc-panel:${autoId}') | crontab -; true`, 30000);
+    return { ok: true };
   });
 
   createWindow();

@@ -15,6 +15,7 @@
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="news" id="nav-news">Actualités<span id="news-dot" class="news-dot" hidden></span></button>
         <button type="button" class="nav-btn" data-page="plugins">Plugins</button>
+        <button type="button" class="nav-btn" data-page="automations" id="nav-auto">Automatisations</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
         <span id="build-tag" class="muted"></span>
@@ -180,6 +181,40 @@
           <div class="card-title">Sur mon serveur (dossier <code>plugins/</code>) <button type="button" id="btn-plug-installed" class="ghost">Rafraîchir</button></div>
           <p id="plug-installed-hint" class="hint"></p>
           <ul id="plug-installed"></ul>
+        </div>
+      </section>
+      <section id="page-automations" hidden>
+        <div class="card">
+          <div class="card-title">Mes automatisations
+            <button type="button" id="btn-auto-new" class="primary">＋ Nouvelle</button>
+            <button type="button" id="btn-auto-presets" class="ghost">Presets 1 clic</button>
+            <button type="button" id="btn-auto-status" class="ghost">État sur le VPS</button>
+          </div>
+          <ul id="auto-list" class="auto-list"></ul>
+          <p class="hint">Les automatisations tournent sur le VPS (script + cron), même quand cette appli est fermée. Elles sont stockées par serveur et cet onglet n'apparaît que pour les serveurs VPS avec SSH.</p>
+          <pre id="auto-status-out" class="auto-log" hidden></pre>
+        </div>
+        <div class="card" id="auto-editor-card" hidden>
+          <div class="card-title">Éditeur</div>
+          <div class="row auto-name-row">
+            <input id="auto-edit-name" type="text" placeholder="Nom de l'automatisation" />
+            <label class="auto-en-label"><input type="checkbox" id="auto-edit-enabled" /> Activée</label>
+          </div>
+          <div class="auto-layout">
+            <div class="auto-palette" id="auto-palette"></div>
+            <div class="auto-canvas" id="auto-canvas"></div>
+            <div class="auto-params" id="auto-params"><p class="muted">Clique sur un bloc pour régler ses paramètres.</p></div>
+          </div>
+          <div id="auto-validation" class="auto-validation"></div>
+          <div class="row auto-actions">
+            <button type="button" id="btn-auto-save" class="primary">Enregistrer</button>
+            <button type="button" id="btn-auto-deploy">Enregistrer et déployer sur le VPS</button>
+            <button type="button" id="btn-auto-test" class="ghost">Tester maintenant</button>
+            <span id="auto-save-status" class="hint"></span>
+          </div>
+          <pre id="auto-test-out" class="auto-log" hidden></pre>
+          <div class="card-title auto-log-title">Historique (log sur le VPS) <button type="button" id="btn-auto-log" class="ghost">Voir le log</button></div>
+          <pre id="auto-log-out" class="auto-log" hidden></pre>
         </div>
       </section>
       <section id="page-servers" hidden>
@@ -369,5 +404,6 @@
     </div>
     <div id="hm-tip" class="hm-tip" hidden></div>
     <script src="renderer.js"></script>
+    <script src="automations.js"></script>
   </body>
 </html>

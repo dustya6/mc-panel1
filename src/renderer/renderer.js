@@ -37,6 +37,7 @@ const cardPlugInstalled = document.getElementById('card-plug-installed');
 const plugInstalledEl = document.getElementById('plug-installed');
 const plugInstalledHint = document.getElementById('plug-installed-hint');
 const btnPlugInstalled = document.getElementById('btn-plug-installed');
+const pageAutomations = document.getElementById('page-automations');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -188,6 +189,7 @@ function showPage(page) {
   pageSettings.hidden = page !== 'settings';
   pageNews.hidden = page !== 'news';
   pagePlugins.hidden = page !== 'plugins';
+  pageAutomations.hidden = page !== 'automations';
   if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
@@ -197,6 +199,7 @@ function showPage(page) {
     window.api.setSetting('newsLastSeen', Date.now()).then(() => updateNewsDot());
   }
   if (page === 'plugins') initPluginsPage();
+  if (page === 'automations' && window.AutoPage) window.AutoPage.init();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -936,6 +939,11 @@ async function selectServer(s) {
     navServer.hidden = !hasSsh;
     if (navServer.hidden && currentPage === 'server') showPage('overview');
   }
+  const navAuto = document.getElementById('nav-auto');
+  if (navAuto) {
+    navAuto.hidden = !hasSsh;
+    if (navAuto.hidden && currentPage === 'automations') showPage('overview');
+  }
   srvRunning = false;
   updateSrvButtons();
   if (currentPage === 'server') loadServerCtl();
@@ -947,6 +955,7 @@ async function selectServer(s) {
   await loadStatus();
   if (currentPage === 'players') refreshPlayers();
   if (currentPage === 'plugins') loadInstalledPlugins();
+  if (currentPage === 'automations' && window.AutoPage) window.AutoPage.reload();
   clearInterval(statusTimer);
   statusTimer = setInterval(loadStatus, refreshSec * 1000);
   if (window.api.logDebug) window.api.logDebug(`selectServer id=${s.id} sshUser=${s.sshUser || '(vide)'}`);
