@@ -586,15 +586,15 @@ function drawHeatmap(history) {
       c.className = 'hm-cell';
       const cell = cells[dow + '-' + h];
       let tip;
-      if (cell) {
-        const v = cell.sum / cell.n;
+      const v = cell ? cell.sum / cell.n : 0;
+      if (cell && v > 0) {
         const r = avg ? v / avg : 0;
         c.style.background = heatColor(r);
         const label = v >= 1 ? String(Math.round(v)) : v.toFixed(1);
         tip = `${days[dow]} ${h}h — ${label} joueur(s) en moyenne (moyenne serveur : ${avg == null ? '?' : avg.toFixed(1)})`;
       } else {
         c.style.background = 'var(--panel-2)';
-        tip = `${days[dow]} ${h}h : pas de données`;
+        tip = `${days[dow]} ${h}h — ${cell ? '0' : 'pas de données'} (aucun joueur sur cette case)`;
       }
       c.addEventListener('mouseenter', (e) => showHmTip(tip, e));
       c.addEventListener('mouseleave', hideHmTip);
