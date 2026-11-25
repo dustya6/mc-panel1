@@ -356,6 +356,9 @@ const METRICS = {
   players: { color: '#3b82f6', unit: '', digits: 0, label: 'Joueurs en ligne' },
   latency: { color: '#d29922', unit: ' ms', digits: 1, label: 'Latence' },
   tps: { color: '#3fb950', unit: '', digits: 1, label: 'TPS' },
+  cpu: { color: '#f0883e', unit: '%', digits: 0, label: 'CPU du VPS' },
+  ram: { color: '#56b6c2', unit: '%', digits: 0, label: 'RAM du VPS' },
+  disk: { color: '#98c379', unit: '%', digits: 0, label: 'Disque' },
 };
 
 function metricPoints(history, key, since) {
@@ -495,7 +498,63 @@ function drawDashboard(history, result) {
   const tps = r.tps != null ? r.tps : last ? last.tps : null;
   kpiTpsEl.textContent = tps != null ? `${Number(tps).toFixed(1)}` : '\u2014';
   drawMain(lastHistory);
+  drawHourly(lastHistory);
   drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
+}
+
+function drawHourly(history) {
+  const svg = document.getElementById('chart-hours');
+  if (!svg) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
+  const pts = (history || []).filter((p) => p.ts >= since && p.players != null);
+  const w = 600;
+  const h = 200;
+  const padL = 30;
+  const padR = 8;
+  const padT = 10;
+  const padB = 20;
+  if (!pts.length) {
+    svgText(svg, ns, w / 2, h / 2, 'Pas de données sur cette période.', 'middle', '#8b96a8', 13);
+    return;
+  }
+  const hours = new Array(24).fill(null);
+  for (const p of pts) {
+    const hh = new Date(p.ts).getHours();
+    if (!hours[hh]) hours[hh] = { sum: 0, n: 0 };
+    hours[hh].sum += Number(p.players);
+    hours[hh].n++;
+  }
+  const vals = hours.map((x) => (x ? x.sum / x.n : 0));
+  const max = Math.max(...vals, 1);
+  const pw = w - padL - padR;
+  const ph = h - padT - padB;
+  const bw = pw / 24;
+  svgLine(svg, ns, padL, padT, padL, padT + ph, '#2a3342');
+  svgLine(svg, ns, padL, padT + ph, padL + pw, padT + ph, '#2a3342');
+  for (const f of [0, 0.5, 1]) {
+    const v = max * f;
+    const yy = padT + ph - (v / max) * ph;
+    svgLine(svg, ns, padL, yy, padL + pw, yy, '#1c2330');
+    svgText(svg, ns, padL - 4, yy + 3, v.toFixed(0), 'end');
+  }
+  for (let hh = 0; hh < 24; hh++) {
+    const v = vals[hh];
+    const bh = (v / max) * ph;
+    const r = document.createElementNS(ns, 'rect');
+    r.setAttribute('x', String(padL + hh * bw + 1));
+    r.setAttribute('y', String(padT + ph - bh));
+    r.setAttribute('width', String(Math.max(1, bw - 2)));
+    r.setAttribute('height', String(bh));
+    r.setAttribute('fill', '#3b82f6');
+    r.setAttribute('fill-opacity', '0.75');
+    const t = document.createElementNS(ns, 'title');
+    t.textContent = `${hh}h : ${v.toFixed(1)} joueur(s) en moyenne`;
+    r.appendChild(t);
+    svg.appendChild(r);
+    if (hh % 3 === 0) svgText(svg, ns, padL + hh * bw + bw / 2, h - 6, `${hh}h`, 'middle');
+  }
 }
 
 document.querySelectorAll('.range-btn').forEach((b) => {
@@ -607,10 +666,12 @@ let resLoading = false;
 async function loadResources() {
   if (!currentServer || resLoading) return;
   if (!currentServer.sshUser) {
-    resStatusEl.textContent = 'SSH non configur\u00e9 (voir Mes serveurs)';
+    resStatusEl.textContent = 'SSH non configuré (voir Mes serveurs)';
     return;
   }
   resLoading = true;
+  const dir = currentServer.serverDir || '~/minecraft';
+  const eventsCmd = `D=${dir}; cd "$D" 2>/dev/null; { for f in logs/*.log.gz logs/*.log; do [ -e "$f" ] || continue; b=$(basename "$f"); [ "$b" = "latest.log" ] && continue; d=$(echo "$b" | cut -d- -f1-3); if [[ "$f" == *.gz ]]; then zcat "$f"; else cat "$f"; fi | grep -hE 'joined the game|left the game' | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$d \\1 \\2 \\3/"; done; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$(date +%F) \\1 \\2 \\3/"; } | tail -20000`;
   const cmd = [
     "a=$(awk '/^cpu / {print $2+$3+$4+$5+$6+$7+$8+$9, $5+$6}' /proc/stat)",
     "sleep 2",
@@ -619,6 +680,7 @@ async function loadResources() {
     "free -m | awk '/^Mem:/ {printf \"%.0f %.0f %.1f\\n\", $3, $2, $3*100/$2}'",
     "df -h / | tail -1 | awk '{gsub(/%/,\"\",$5); print $5, $3, $2}'",
     "echo \"raw:$a|$b\"",
+    eventsCmd,
   ].join('; ');
   let res;
   try {
@@ -633,7 +695,7 @@ async function loadResources() {
     resStatusEl.textContent = `Erreur SSH : ${res.error}`;
     return;
   }
-  if (window.api.logDebug) window.api.logDebug(`res raw: ${JSON.stringify(res.out)}`);
+  if (window.api.logDebug) window.api.logDebug(`res raw: ${JSON.stringify((res.out || '').slice(0, 200))}`);
   resStatusEl.textContent = '';
   const lines = (res.out || '').split('\n').map((l) => l.trim()).filter(Boolean);
   const cpu = Number(lines[0]);
@@ -647,8 +709,46 @@ async function loadResources() {
   const disk = (lines[2] || '').split(/\s+/);
   const diskPct = Number(disk[0]);
   setRes(resDiskFill, resDiskTxt, diskPct, `${isNaN(diskPct) ? '?' : Math.round(diskPct) + '%'} (${disk[1] || '?'} / ${disk[2] || '?'})`);
+  if (!isNaN(cpu) || !isNaN(ramPct) || !isNaN(diskPct)) {
+    window.api.addHistoryPoint(currentServer.id, {
+      ts: Date.now(),
+      cpu: isNaN(cpu) ? null : cpu,
+      ram: isNaN(ramPct) ? null : ramPct,
+      disk: isNaN(diskPct) ? null : diskPct,
+    }).catch(() => {});
+  }
   if (isNaN(cpu) && isNaN(ramPct) && isNaN(diskPct)) {
-    resStatusEl.textContent = `Re\u00e7u du serveur : ${JSON.stringify(res.out || '').slice(0, 120)}`;
+    resStatusEl.textContent = `Reçu du serveur : ${JSON.stringify(res.out || '').slice(0, 120)}`;
+  }
+  const resAvgEl = document.getElementById('res-avg');
+  if (resAvgEl) {
+    const perPlayer = new Map();
+    const openMap = new Map();
+    for (const l of lines.slice(4)) {
+      const m = l.match(/^(\d{4}-\d{2}-\d{2}) ([0-9:]{8}) (\S+) (joined|left)$/);
+      if (!m) continue;
+      const ts = new Date(`${m[1]}T${m[2]}`).getTime();
+      if (m[4] === 'joined') {
+        if (!perPlayer.has(m[3])) perPlayer.set(m[3], 0);
+        if (!openMap.has(m[3])) openMap.set(m[3], ts);
+      } else {
+        const o = openMap.get(m[3]);
+        if (o != null) {
+          perPlayer.set(m[3], perPlayer.get(m[3]) + (ts - o) / 1000);
+          openMap.delete(m[3]);
+        }
+      }
+    }
+    for (const [name, openTs] of openMap) {
+      perPlayer.set(name, (perPlayer.get(name) || 0) + Math.max(0, (Date.now() - openTs) / 1000));
+    }
+    let totalSec = 0;
+    for (const v of perPlayer.values()) totalSec += v;
+    if (perPlayer.size > 0) {
+      resAvgEl.textContent = `Temps de jeu moyen par joueur : ${fmtDur(totalSec / perPlayer.size)} (${perPlayer.size} joueur(s) dans les logs)`;
+    } else {
+      resAvgEl.textContent = '';
+    }
   }
 }
 
@@ -659,6 +759,8 @@ async function selectServer(s) {
   await window.api.setSetting('lastServerId', s.id);
   const chartSrv = document.getElementById('chart-srv');
   if (chartSrv) chartSrv.textContent = s.name;
+  const chartSrv2 = document.getElementById('chart-srv2');
+  if (chartSrv2) chartSrv2.textContent = s.name;
   drawDashboard([], null);
   document.getElementById('f-name').value = s.name;
   document.getElementById('f-host').value = (s.type === 'aternos') ? `${s.host}:${s.queryPort}` : s.host;
@@ -691,6 +793,9 @@ async function selectServer(s) {
   if (plLimited) plLimited.hidden = hasRcon;
   const resCard = document.getElementById('res-card');
   if (resCard) resCard.hidden = !hasSsh;
+  document.querySelectorAll('.metric-btn').forEach((b) => {
+    if (['cpu', 'ram', 'disk'].includes(b.dataset.metric)) b.hidden = !hasSsh;
+  });
   const navServer = document.getElementById('nav-server');
   if (navServer) {
     navServer.hidden = !hasSsh;

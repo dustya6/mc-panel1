@@ -354,3 +354,5 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 .quick-btn { padding: 8px 14px; font-size: 13px; border-radius: 0; }
 .quick-del { padding: 8px 10px; border-left: none; color: var(--danger); }
 #page-console .card[hidden] { display: none; }
+
+.metric-btn[hidden] { display: none; }

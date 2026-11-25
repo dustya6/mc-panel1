@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'quick-cmds';
+const BUILD = 'charts-v2';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -387,6 +387,16 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('server:history', (event, id) => loadHistory(id));
+
+  ipcMain.handle('server:hist-add', (event, { id, point }) => {
+    const history = loadHistory(id);
+    const last = history[history.length - 1];
+    if (last && Date.now() - last.ts < 90000) Object.assign(last, point);
+    else history.push(point);
+    fs.mkdirSync(historyDir(), { recursive: true });
+    fs.writeFileSync(path.join(historyDir(), `${id}.json`), JSON.stringify(history.slice(-30000)));
+    return true;
+  });
 
   ipcMain.handle('server:logs:start', (event, id) => {
     const server = loadServers().find((s) => s.id === id);

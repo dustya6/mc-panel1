@@ -58,6 +58,7 @@
           <div class="res-row"><span class="res-label">CPU</span><div class="res-bar"><div id="res-cpu-fill" class="res-fill"></div></div><span id="res-cpu-txt" class="res-txt">&mdash;</span></div>
           <div class="res-row"><span class="res-label">RAM</span><div class="res-bar"><div id="res-ram-fill" class="res-fill"></div></div><span id="res-ram-txt" class="res-txt">&mdash;</span></div>
           <div class="res-row"><span class="res-label">Disque</span><div class="res-bar"><div id="res-disk-fill" class="res-fill"></div></div><span id="res-disk-txt" class="res-txt">&mdash;</span></div>
+          <p id="res-avg" class="hint" style="margin:10px 0 0"></p>
         </div>
         <div class="card">
           <div class="card-title"><span>Historique &mdash; <span id="chart-srv"></span></span>
@@ -75,10 +76,17 @@
               <span class="metric-bar" id="metric-bar">
                 <button type="button" class="metric-btn active" data-metric="players">Joueurs</button>
                 <button type="button" class="metric-btn" data-metric="latency">Latence</button>
+                <button type="button" class="metric-btn" data-metric="cpu">CPU</button>
+                <button type="button" class="metric-btn" data-metric="ram">RAM</button>
+                <button type="button" class="metric-btn" data-metric="disk">Disque</button>
               </span>
             </span>
           </div>
           <svg id="chart-main" class="chart chart-main" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Heures de pointe — <span id="chart-srv2"></span></span> <span class="hint">joueurs moyens par heure (même période que l'historique)</span></div>
+          <svg id="chart-hours" class="chart chart-main" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
         </div>
       </section>
       <section id="page-console" hidden>
