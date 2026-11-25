@@ -566,8 +566,8 @@ function drawHeatmap(history) {
     grid.appendChild(empty);
     return;
   }
-  const sum = pts.reduce((a, p) => a + Number(p.players), 0);
-  const avg = sum / pts.length;
+  const allPts = (history || []).filter((p) => p.players != null);
+  const avg = allPts.length ? allPts.reduce((a, p) => a + Number(p.players), 0) / allPts.length : null;
   const cells = {};
   for (const p of pts) {
     const d = new Date(p.ts);
@@ -587,9 +587,9 @@ function drawHeatmap(history) {
       const cell = cells[dow + '-' + h];
       if (cell) {
         const v = cell.sum / cell.n;
-        const r = avg > 0 ? v / avg : 0;
+        const r = avg ? v / avg : 0;
         c.style.background = heatColor(r);
-        c.title = `${days[dow]} ${h}h : ${v.toFixed(1)} joueurs en moyenne (moyenne globale ${avg.toFixed(1)})`;
+        c.title = `${days[dow]} ${h}h : ${v.toFixed(1)} joueurs en moyenne (moyenne globale du serveur ${avg == null ? '?' : avg.toFixed(1)})`;
       } else {
         c.style.background = 'var(--panel-2)';
         c.title = `${days[dow]} ${h}h : pas de données`;
