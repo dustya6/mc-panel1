@@ -1072,9 +1072,6 @@ function updateSrvButtons() {
   btnSrvStart.disabled = srvRunning || !hasStartCmd;
   btnSrvStop.disabled = !srvRunning;
   btnSrvRestart.disabled = !srvRunning;
-  if (btnSrvStart) btnSrvStart.title = srvRunning ? 'Le serveur est déjà démarré' : (hasStartCmd ? 'Lancer le serveur' : 'Renseigne la commande de démarrage dans Mes serveurs');
-  if (btnSrvStop) btnSrvStop.title = srvRunning ? 'Arrêter le serveur (stop)' : 'Le serveur est déjà arrêté';
-  if (btnSrvRestart) btnSrvRestart.title = srvRunning ? 'Arrêter puis relancer le serveur' : 'Le serveur est déjà arrêté';
 }
 
 async function loadServerCtl() {
