@@ -396,5 +396,5 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
 .hm-cell { aspect-ratio: 1; min-height: 7px; }
 .heatmap { max-width: 520px; }
 .hm-empty { grid-column: 1 / -1; color: var(--muted); font-size: 12px; padding: 10px 0; }
-.heatmap-legend { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--muted); }
+.heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 11px; color: var(--muted); }
 .hm-swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--border); }

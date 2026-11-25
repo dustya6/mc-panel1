@@ -524,13 +524,16 @@ function drawDashboard(history, result) {
 }
 
 function heatColor(r) {
-  // r = valeur / moyenne ; 0 -> vert clair, 1 -> jaune, >=2 -> rouge fonce
+  // 6 niveaux, relatif a la moyenne : vert clair -> vert fonce -> jaune -> orange -> rouge clair -> rouge fonce
   const stops = [
-    [0, [126, 231, 135]],
+    [0, [168, 230, 161]],
+    [0.5, [46, 125, 50]],
     [1, [227, 179, 65]],
-    [2, [164, 14, 38]],
+    [1.5, [239, 125, 26]],
+    [2, [239, 83, 80]],
+    [2.5, [164, 14, 38]],
   ];
-  const rr = Math.max(0, Math.min(2, r));
+  const rr = Math.max(0, Math.min(2.5, r));
   let a = stops[0];
   let b = stops[stops.length - 1];
   for (let i = 0; i < stops.length - 1; i++) {
@@ -545,6 +548,8 @@ function heatColor(r) {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
+const HEAT_HOURS = [9, 11, 16, 18, 20, 22];
+
 function drawHeatmap(history) {
   const el = document.getElementById('heatmap');
   if (!el) return;
@@ -554,15 +559,6 @@ function drawHeatmap(history) {
   const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const grid = el;
   grid.style.gridTemplateColumns = `36px repeat(7, 1fr)`;
-  const corner = document.createElement('div');
-  corner.className = 'hm-corner';
-  grid.appendChild(corner);
-  for (const d of days) {
-    const c = document.createElement('div');
-    c.className = 'hm-day';
-    c.textContent = d;
-    grid.appendChild(c);
-  }
   if (!pts.length) {
     const empty = document.createElement('div');
     empty.className = 'hm-empty';
@@ -580,10 +576,10 @@ function drawHeatmap(history) {
     cells[key].sum += Number(p.players);
     cells[key].n++;
   }
-  for (let h = 0; h < 24; h++) {
+  for (const h of HEAT_HOURS) {
     const lab = document.createElement('div');
     lab.className = 'hm-hour';
-    lab.textContent = [9, 11, 16, 18, 20, 22].includes(h) ? `${h}h` : '';
+    lab.textContent = `${h}h`;
     grid.appendChild(lab);
     for (let dow = 0; dow < 7; dow++) {
       const c = document.createElement('div');
@@ -600,6 +596,16 @@ function drawHeatmap(history) {
       }
       grid.appendChild(c);
     }
+  }
+  // jours en bas
+  const corner = document.createElement('div');
+  corner.className = 'hm-corner';
+  grid.appendChild(corner);
+  for (const d of days) {
+    const c = document.createElement('div');
+    c.className = 'hm-day';
+    c.textContent = d;
+    grid.appendChild(c);
   }
 }
 
