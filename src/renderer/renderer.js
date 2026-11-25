@@ -519,7 +519,88 @@ function drawDashboard(history, result) {
   kpiTpsEl.textContent = tps != null ? `${Number(tps).toFixed(1)}` : '\u2014';
   drawMain(lastHistory);
   updatePeakAvg(lastHistory);
+  drawHeatmap(lastHistory);
   drawSpark(sparkLatencyEl, lastHistory, 'latency', latColor || METRICS.latency.color);
+}
+
+function heatColor(r) {
+  // r = valeur / moyenne ; 0 -> vert clair, 1 -> jaune, >=2 -> rouge fonce
+  const stops = [
+    [0, [126, 231, 135]],
+    [1, [227, 179, 65]],
+    [2, [164, 14, 38]],
+  ];
+  const rr = Math.max(0, Math.min(2, r));
+  let a = stops[0];
+  let b = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (rr >= stops[i][0] && rr <= stops[i + 1][0]) {
+      a = stops[i];
+      b = stops[i + 1];
+      break;
+    }
+  }
+  const t = b[0] === a[0] ? 0 : (rr - a[0]) / (b[0] - a[0]);
+  const c = a[1].map((v, i) => Math.round(v + (b[1][i] - v) * t));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function drawHeatmap(history) {
+  const el = document.getElementById('heatmap');
+  if (!el) return;
+  el.innerHTML = '';
+  const since = currentRange === 'all' ? 0 : Date.now() - currentRange;
+  const pts = (history || []).filter((p) => p.ts >= since && p.players != null);
+  const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const grid = el;
+  grid.style.gridTemplateColumns = `36px repeat(7, 1fr)`;
+  const corner = document.createElement('div');
+  corner.className = 'hm-corner';
+  grid.appendChild(corner);
+  for (const d of days) {
+    const c = document.createElement('div');
+    c.className = 'hm-day';
+    c.textContent = d;
+    grid.appendChild(c);
+  }
+  if (!pts.length) {
+    const empty = document.createElement('div');
+    empty.className = 'hm-empty';
+    empty.textContent = 'Pas de données sur cette période.';
+    grid.appendChild(empty);
+    return;
+  }
+  const sum = pts.reduce((a, p) => a + Number(p.players), 0);
+  const avg = sum / pts.length;
+  const cells = {};
+  for (const p of pts) {
+    const d = new Date(p.ts);
+    const key = ((d.getDay() + 6) % 7) + '-' + d.getHours();
+    if (!cells[key]) cells[key] = { sum: 0, n: 0 };
+    cells[key].sum += Number(p.players);
+    cells[key].n++;
+  }
+  for (let h = 0; h < 24; h++) {
+    const lab = document.createElement('div');
+    lab.className = 'hm-hour';
+    lab.textContent = (h % 2 === 0) ? `${h}h` : '';
+    grid.appendChild(lab);
+    for (let dow = 0; dow < 7; dow++) {
+      const c = document.createElement('div');
+      c.className = 'hm-cell';
+      const cell = cells[dow + '-' + h];
+      if (cell) {
+        const v = cell.sum / cell.n;
+        const r = avg > 0 ? v / avg : 0;
+        c.style.background = heatColor(r);
+        c.title = `${days[dow]} ${h}h : ${v.toFixed(1)} joueurs en moyenne (moyenne globale ${avg.toFixed(1)})`;
+      } else {
+        c.style.background = 'var(--panel-2)';
+        c.title = `${days[dow]} ${h}h : pas de données`;
+      }
+      grid.appendChild(c);
+    }
+  }
 }
 
 function updatePeakAvg(history) {
@@ -771,6 +852,8 @@ async function selectServer(s) {
   if (chartSrv) chartSrv.textContent = s.name;
   const chartSrv2 = document.getElementById('chart-srv2');
   if (chartSrv2) chartSrv2.textContent = s.name;
+  const chartSrv3 = document.getElementById('chart-srv3');
+  if (chartSrv3) chartSrv3.textContent = s.name;
   drawDashboard([], null);
   document.getElementById('f-name').value = s.name;
   document.getElementById('f-host').value = (s.type === 'aternos') ? `${s.host}:${s.queryPort}` : s.host;
