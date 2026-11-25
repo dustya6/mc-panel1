@@ -14,6 +14,7 @@
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
         <button type="button" class="nav-btn" data-page="news" id="nav-news">Actualités<span id="news-dot" class="news-dot" hidden></span></button>
+        <button type="button" class="nav-btn" data-page="plugins">Plugins</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
         <span id="build-tag" class="muted"></span>
@@ -142,6 +143,38 @@
         <div class="card">
           <div class="card-title">Actualités <span class="hint">alertes (disque / RAM / CPU / TPS), serveur en ligne / hors ligne, joueurs (ban / kick)</span> <button type="button" id="btn-news-clear" class="ghost" style="float:right">Tout effacer</button></div>
           <ul id="news-list" class="news-list"></ul>
+        </div>
+      </section>
+      <section id="page-plugins" hidden>
+        <div class="card">
+          <div class="card-title">Ma plateforme</div>
+          <div class="row plug-bar">
+            <select id="plug-platform">
+              <option value="paper">Paper / Purpur</option>
+              <option value="spigot">Spigot</option>
+              <option value="fabric">Fabric</option>
+              <option value="quilt">Quilt</option>
+              <option value="neoforge">NeoForge</option>
+              <option value="forge">Forge</option>
+              <option value="velocity">Velocity</option>
+              <option value="bungeecord">BungeeCord</option>
+              <option value="waterfall">Waterfall</option>
+              <option value="folia">Folia</option>
+              <option value="sponge">Sponge</option>
+            </select>
+            <input id="plug-version" type="text" placeholder="Ta version Minecraft, ex : 26.2" />
+            <span id="plug-saved" class="plug-saved" hidden>Enregistré ✓</span>
+          </div>
+          <p class="hint">Détecté automatiquement depuis ton serveur quand c'est possible — tu peux changer (ex : NeoForge + 21.11). Chaque plugin est ensuite marqué compatible ou non avec TA plateforme et TA version.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Rechercher un plugin (Hangar)</div>
+          <form id="plug-form" class="row">
+            <input id="plug-q" type="text" placeholder="Nom du plugin, ex : LuckPerms, WorldEdit, EssentialsX..." />
+            <button type="submit" class="primary">Rechercher</button>
+          </form>
+          <p class="hint">Laisse vide pour voir les plugins les plus téléchargés. Clique sur un plugin pour ouvrir sa page Hangar dans ton navigateur.</p>
+          <div id="plug-results"></div>
         </div>
       </section>
       <section id="page-servers" hidden>

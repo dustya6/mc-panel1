@@ -431,3 +431,34 @@ body.light .modal { background: rgba(30, 38, 50, .45); }
   box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
 }
 .chart-btn:active { transform: translateY(0); box-shadow: none; }
+
+/* ---------- Page Plugins ---------- */
+#page-plugins .card { max-width: 780px; }
+.plug-bar { align-items: center; flex-wrap: wrap; }
+select {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+select:focus { outline: none; border-color: var(--primary); }
+.plug-bar input { flex: 1; min-width: 200px; margin-top: 0; }
+.plug-saved { color: var(--ok); font-size: 12px; white-space: nowrap; }
+.plug-row {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  padding: 10px 12px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.plug-row:hover { border-color: var(--primary); }
+.plug-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.plug-name { font-weight: 700; }
+.plug-badge { font-size: 11px; padding: 2px 8px; border: 1px solid var(--border); white-space: nowrap; }
+.plug-badge.ok { color: var(--ok); border-color: var(--ok); background: rgba(63, 185, 80, .12); }
+.plug-badge.bad { color: var(--danger); border-color: var(--danger); background: rgba(229, 83, 75, .12); }
+.plug-badge.unk { color: var(--muted); }
+.plug-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.plug-desc { font-size: 13px; margin-top: 4px; }
+.plug-vers { font-size: 11px; color: var(--muted); margin-top: 4px; }

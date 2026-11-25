@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'no-ai';
+const BUILD = 'page-plugins';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -269,6 +269,119 @@ function startLogStream(server) {
   client.connect(sshConfig);
 }
 
+// ---------- Hangar (recherche de plugins + compatibilite version) ----------
+const HANGAR_API = 'https://hangar.papermc.io/api/v1';
+const HANGAR_PLATFORMS = {
+  paper: 'PAPER', purpur: 'PAPER', spigot: 'SPIGOT', fabric: 'FABRIC', quilt: 'QUILT',
+  forge: 'FORGE', neoforge: 'NEOFORGE', velocity: 'VELOCITY', bungeecord: 'BUNGEECORD',
+  waterfall: 'WATERFALL', folia: 'FOLIA', sponge: 'SPONGE',
+};
+
+async function hangarGet(pathName, params) {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const r = await fetch(HANGAR_API + pathName + qs, {
+      signal: ctrl.signal,
+      headers: { 'Accept': 'application/json', 'User-Agent': 'mc-panel/1.0' },
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function verParts(v) {
+  return String(v || '').split('.').map((x) => parseInt(x, 10)).filter((n) => !Number.isNaN(n));
+}
+// true si la version saisie (a) couvre une version supportee (b) : ex "26" couvre "26.2", "26.2" couvre "26.2"
+function verCovers(a, b) {
+  const A = verParts(a);
+  const B = verParts(b);
+  if (!A.length || !B.length || A.length > B.length) return false;
+  for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) return false;
+  return true;
+}
+
+async function hangarVersions(owner, slug) {
+  const all = [];
+  let offset = 0;
+  for (let page = 0; page < 3; page++) {
+    const d = await hangarGet(`/projects/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/versions`, { limit: 100, offset });
+    const list = Array.isArray(d) ? d : (d.result || []);
+    all.push(...list);
+    offset += list.length;
+    const count = d && d.pagination ? Number(d.pagination.count) : list.length;
+    if (!list.length || offset >= count) break;
+  }
+  return all;
+}
+
+async function hangarProjectList(query) {
+  const q = String(query || '').trim();
+  if (q) {
+    try { return await hangarGet('/projects', { limit: 20, sort: '-relevance', q }); }
+    catch { try { return await hangarGet('/projects', { limit: 20, q }); } catch { return await hangarGet('/projects', { limit: 100 }); } }
+  }
+  try { return await hangarGet('/projects', { limit: 12, sort: '-downloads' }); }
+  catch { return await hangarGet('/projects', { limit: 12 }); }
+}
+
+function normProjects(data) {
+  const list = Array.isArray(data) ? data : ((data && data.result) || []);
+  return list.filter((p) => !p.visibility || p.visibility === 'public');
+}
+
+async function searchPlugins(query, platform, version) {
+  const platCode = HANGAR_PLATFORMS[String(platform || 'paper').toLowerCase()] || 'PAPER';
+  let list = normProjects(await hangarProjectList(query));
+  const q = String(query || '').trim().toLowerCase();
+  if (q) {
+    const matches = (p) =>
+      String(p.name || '').toLowerCase().includes(q) ||
+      String(p.description || '').toLowerCase().includes(q) ||
+      String((p.namespace && p.namespace.owner) || '').toLowerCase().includes(q);
+    let filtered = list.filter(matches);
+    if (!filtered.length) {
+      try {
+        filtered = normProjects(await hangarGet('/projects', { limit: 100 })).filter(matches);
+      } catch { }
+    }
+    list = filtered.slice(0, 10);
+  } else {
+    list = list.slice(0, 12);
+  }
+  const results = await Promise.all(list.map(async (p) => {
+    const owner = (p.namespace && p.namespace.owner) || '';
+    const slug = (p.namespace && p.namespace.slug) || p.name;
+    const out = {
+      name: p.name || slug,
+      slug: `${owner}/${slug}`,
+      description: p.description || '',
+      author: owner,
+      downloads: (p.stats && p.stats.downloads) || 0,
+      stars: (p.stats && p.stats.stars) || 0,
+      url: `https://hangar.papermc.io/${owner}/${slug}`,
+      compatible: null,
+      versions: [],
+    };
+    try {
+      const vs = await hangarVersions(owner, slug);
+      const mine = vs.filter((v) => Array.isArray(v.platforms) && v.platforms.some((x) => String(x).toUpperCase() === platCode));
+      if (mine.length) {
+        out.compatible = mine.some((v) => (v.gameVersions || []).some((g) => verCovers(version, g)));
+        const set = [];
+        for (const v of mine.slice(0, 8)) for (const g of (v.gameVersions || [])) if (!set.includes(g)) set.push(g);
+        out.versions = set.slice(0, 12);
+      }
+    } catch { /* compatibilite inconnue */ }
+    return out;
+  }));
+  return results;
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -446,6 +559,24 @@ app.whenReady().then(() => {
       [command]
     );
     return out[command];
+  });
+
+  ipcMain.handle('plugins:search', async (event, args) => {
+    try {
+      const results = await searchPlugins((args && args.query) || '', (args && args.platform) || 'paper', (args && args.version) || '');
+      return { ok: true, results };
+    } catch (err) {
+      debugLog(`plugins:search error: ${(err && err.message) || err}`);
+      return { ok: false, error: String((err && err.message) || err) };
+    }
+  });
+
+  ipcMain.handle('app:open-url', async (event, url) => {
+    if (typeof url === 'string' && /^https:\/\/hangar\.papermc\.io\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/.test(url)) {
+      await shell.openExternal(url);
+      return true;
+    }
+    return false;
   });
 
   createWindow();

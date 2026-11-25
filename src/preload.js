@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('api', {
   sshExec: (id, command) => ipcRenderer.invoke('server:ssh-exec', { id, command }),
   stopLogs: (id) => ipcRenderer.invoke('server:logs:stop', id),
   onLogs: (cb) => ipcRenderer.on('server:logs', (event, data) => cb(data)),
+  pluginsSearch: (args) => ipcRenderer.invoke('plugins:search', args),
+  openUrl: (url) => ipcRenderer.invoke('app:open-url', url),
 });

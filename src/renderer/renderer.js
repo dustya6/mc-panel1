@@ -26,6 +26,13 @@ const pagePlayers = document.getElementById('page-players');
 const pageServer = document.getElementById('page-server');
 const pageSettings = document.getElementById('page-settings');
 const pageNews = document.getElementById('page-news');
+const pagePlugins = document.getElementById('page-plugins');
+const plugPlatformEl = document.getElementById('plug-platform');
+const plugVersionEl = document.getElementById('plug-version');
+const plugSavedEl = document.getElementById('plug-saved');
+const plugForm = document.getElementById('plug-form');
+const plugQEl = document.getElementById('plug-q');
+const plugResultsEl = document.getElementById('plug-results');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -176,6 +183,7 @@ function showPage(page) {
   pageServer.hidden = page !== 'server';
   pageSettings.hidden = page !== 'settings';
   pageNews.hidden = page !== 'news';
+  pagePlugins.hidden = page !== 'plugins';
   if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
@@ -184,6 +192,7 @@ function showPage(page) {
     renderNews();
     window.api.setSetting('newsLastSeen', Date.now()).then(() => updateNewsDot());
   }
+  if (page === 'plugins') initPluginsPage();
 }
 
 document.querySelectorAll('.nav-btn').forEach((b) => {
@@ -730,6 +739,7 @@ async function loadStatus() {
   const result = await window.api.getStatus(currentServer.id);
   renderStatus(result);
   lastStatus = result;
+  if (result.ping && result.ping.version) autoFillPlatform(result.ping.version).catch(() => {});
   if (prevPing !== undefined) {
     if (prevPing && !result.ping) addNews('serveur', 'Le serveur est passé hors ligne.');
     else if (!prevPing && result.ping) addNews('serveur', 'Le serveur est de retour en ligne.');
@@ -1675,6 +1685,167 @@ document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
     renderSettings();
   });
 });
+
+// ---------- Page Plugins (recherche Hangar + compatibilite avec MA version) ----------
+const PLAT_KEYWORDS = [
+  ['neoforge', 'neoforge'], ['forge', 'forge'], ['fabric', 'fabric'], ['quilt', 'quilt'],
+  ['purpur', 'purpur'], ['paper', 'paper'], ['folia', 'folia'], ['spigot', 'spigot'],
+  ['velocity', 'velocity'], ['bungeecord', 'bungeecord'], ['waterfall', 'waterfall'], ['sponge', 'sponge'],
+];
+let plugSavedTimer = null;
+let pluginsInitDone = false;
+
+function detectPlatform(versionStr) {
+  const s = String(versionStr || '').toLowerCase();
+  for (const [key, word] of PLAT_KEYWORDS) if (s.includes(word)) return key;
+  return null;
+}
+
+function detectVersion(versionStr) {
+  const m = String(versionStr || '').match(/(\d+\.\d+(?:\.\d+)?)/);
+  return m ? m[1] : null;
+}
+
+async function autoFillPlatform(versionStr) {
+  const plat = detectPlatform(versionStr);
+  const ver = detectVersion(versionStr);
+  let changed = false;
+  if (plat && !(await window.api.getSetting('plugPlatform'))) {
+    await window.api.setSetting('plugPlatform', plat);
+    changed = true;
+  }
+  if (ver && !(await window.api.getSetting('plugVersion'))) {
+    await window.api.setSetting('plugVersion', ver);
+    changed = true;
+  }
+  if (changed) await fillPluginFields();
+}
+
+async function fillPluginFields() {
+  if (!plugPlatformEl || !plugVersionEl) return;
+  const p = (await window.api.getSetting('plugPlatform')) || 'paper';
+  const v = (await window.api.getSetting('plugVersion')) || '';
+  const hasOpt = Array.from(plugPlatformEl.options || []).some((o) => o.value === p);
+  plugPlatformEl.value = hasOpt ? p : 'paper';
+  plugVersionEl.value = v;
+}
+
+function showPlugSaved() {
+  if (!plugSavedEl) return;
+  plugSavedEl.hidden = false;
+  if (plugSavedTimer) clearTimeout(plugSavedTimer);
+  plugSavedTimer = setTimeout(() => { plugSavedEl.hidden = true; plugSavedTimer = null; }, 2000);
+}
+
+async function initPluginsPage() {
+  await fillPluginFields();
+  if (!pluginsInitDone) {
+    pluginsInitDone = true;
+    if (plugPlatformEl) plugPlatformEl.addEventListener('change', async () => {
+      await window.api.setSetting('plugPlatform', plugPlatformEl.value);
+      showPlugSaved();
+      doPluginSearch(plugQEl ? plugQEl.value.trim() : '');
+    });
+    if (plugVersionEl) plugVersionEl.addEventListener('change', async () => {
+      await window.api.setSetting('plugVersion', plugVersionEl.value.trim());
+      showPlugSaved();
+      doPluginSearch(plugQEl ? plugQEl.value.trim() : '');
+    });
+    if (plugForm) plugForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      doPluginSearch(plugQEl ? plugQEl.value.trim() : '');
+    });
+  }
+  if (plugResultsEl && !plugResultsEl.children.length) doPluginSearch('');
+}
+
+function fmtCount(n) {
+  n = Number(n) || 0;
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace('.', ',') + ' M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace('.', ',') + ' k';
+  return String(n);
+}
+
+async function doPluginSearch(query) {
+  if (!plugResultsEl) return;
+  const platform = plugPlatformEl ? plugPlatformEl.value : 'paper';
+  const version = plugVersionEl ? plugVersionEl.value.trim() : '';
+  plugResultsEl.innerHTML = '';
+  const loading = document.createElement('p');
+  loading.className = 'muted';
+  loading.textContent = query ? `Recherche de « ${query} » sur Hangar...` : 'Chargement des plugins les plus téléchargés...';
+  plugResultsEl.appendChild(loading);
+  let res;
+  try {
+    res = await window.api.pluginsSearch({ query, platform, version });
+  } catch (err) {
+    plugResultsEl.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'error';
+    p.textContent = `Erreur : ${err.message}`;
+    plugResultsEl.appendChild(p);
+    return;
+  }
+  plugResultsEl.innerHTML = '';
+  if (!res.ok) {
+    const p = document.createElement('p');
+    p.className = 'error';
+    p.textContent = `Hangar injoignable : ${res.error || 'erreur inconnue'} — vérifie ta connexion internet.`;
+    plugResultsEl.appendChild(p);
+    return;
+  }
+  if (!res.results || !res.results.length) {
+    const p = document.createElement('p');
+    p.className = 'muted';
+    p.textContent = query ? `Aucun plugin trouvé pour « ${query} » — essaie un autre nom.` : 'Aucun plugin trouvé.';
+    plugResultsEl.appendChild(p);
+    return;
+  }
+  for (const pl of res.results) plugResultsEl.appendChild(renderPluginRow(pl, version));
+}
+
+function renderPluginRow(pl, version) {
+  const row = document.createElement('div');
+  row.className = 'plug-row';
+  row.title = 'Ouvrir la page Hangar de ce plugin';
+  const head = document.createElement('div');
+  head.className = 'plug-head';
+  const name = document.createElement('span');
+  name.className = 'plug-name';
+  name.textContent = pl.name;
+  head.appendChild(name);
+  const badge = document.createElement('span');
+  if (pl.compatible === true) {
+    badge.className = 'plug-badge ok';
+    badge.textContent = version ? `Compatible ${version}` : 'Compatible';
+  } else if (pl.compatible === false) {
+    badge.className = 'plug-badge bad';
+    badge.textContent = version ? `Pas compatible ${version}` : 'Pas compatible';
+  } else {
+    badge.className = 'plug-badge unk';
+    badge.textContent = 'Compatibilité inconnue';
+  }
+  head.appendChild(badge);
+  row.appendChild(head);
+  const meta = document.createElement('div');
+  meta.className = 'plug-meta';
+  meta.textContent = `${pl.author || '?'} · ${fmtCount(pl.downloads)} téléchargements · ★ ${fmtCount(pl.stars)}`;
+  row.appendChild(meta);
+  if (pl.description) {
+    const desc = document.createElement('div');
+    desc.className = 'plug-desc';
+    desc.textContent = pl.description;
+    row.appendChild(desc);
+  }
+  if (pl.versions && pl.versions.length) {
+    const vers = document.createElement('div');
+    vers.className = 'plug-vers';
+    vers.textContent = 'Versions : ' + pl.versions.join(', ');
+    row.appendChild(vers);
+  }
+  row.addEventListener('click', () => { if (pl.url && window.api.openUrl) window.api.openUrl(pl.url); });
+  return row;
+}
 
 const aboutModal = document.getElementById('about-modal');
 const btnAbout = document.getElementById('btn-about');
