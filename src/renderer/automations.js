@@ -270,19 +270,14 @@
     const a = auto();
     cv.innerHTML = '';
     if (!a) return;
-    // zone déclencheur
-    const tz = el('div', 'auto-trigger-zone');
-    const th = el('div', 'ab-zone-label', 'DÉCLENCHEUR');
-    tz.appendChild(th);
-    if (a.trigger) tz.appendChild(blockEl(a.trigger, true));
-    else tz.appendChild(el('div', 'auto-trigger-empty'));
-    cv.appendChild(tz);
+    // le déclencheur est simplement le premier bloc de la pile (style Scratch)
+    if (a.trigger) cv.appendChild(blockEl(a.trigger, true));
     cv.appendChild(zoneEl(a.blocks, 'racine', a.blocks));
   }
 
   function zoneEl(list, label, listRef) {
     const active = listRef === S.insertList;
-    const z = el('div', 'auto-zone' + (active ? ' insert-here' : ''));
+    const z = el('div', 'auto-zone' + (active ? ' insert-here' : '') + (label === 'racine' ? ' root-zone' : ''));
     if (label !== 'racine') z.appendChild(el('div', 'ab-zone-label', label.toUpperCase()));
     if (!list.length) z.classList.add('empty');
     for (let i = 0; i < list.length; i++) z.appendChild(blockEl(list[i], false, i + 1));
@@ -471,7 +466,7 @@
   // ---------- validation ----------
   function validate(a) {
     const errs = [];
-    if (!a.trigger) errs.push({ level: 'error', msg: 'Il manque un déclencheur (bloc jaune) en haut de la pile.', uid: null });
+    if (!a.trigger) errs.push({ level: 'error', msg: 'Premier bloc : un déclencheur (jaune).', uid: null });
     if (!a.name || !a.name.trim()) errs.push({ level: 'error', msg: "Donne un nom à l'automatisation.", uid: null });
     else if (S.autos.some((x) => x.id !== a.id && (x.name || '').trim().toLowerCase() === a.name.trim().toLowerCase())) errs.push({ level: 'error', msg: 'Ce nom est déjà utilisé par une autre automatisation de ce serveur.', uid: null });
     const hasBackup = JSON.stringify(a.blocks).includes('"a_backup"');

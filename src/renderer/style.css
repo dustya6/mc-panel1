@@ -588,3 +588,10 @@ select:focus { outline: none; border-color: var(--primary); }
 .auto-zone > .auto-block { margin-top: 0; }
 .auto-zone > .auto-block + .auto-block { margin-top: -1px; }
 .auto-trigger-zone > .auto-block { margin-top: 6px; }
+
+/* ---------- Automatisations V5 : juste palette + grand ecran noir ---------- */
+.auto-canvas { min-height: 58vh; background: var(--bg); border: 1px solid var(--border); padding: 10px; }
+.auto-canvas > .auto-block { margin-bottom: -1px; }
+.auto-zone.root-zone { min-height: 40px; }
+.auto-actions { margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.auto-actions input { width: 170px; margin-top: 0; }
