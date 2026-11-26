@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'srv-pgrep-fix';
+const BUILD = 'rcon-bytes2';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -433,7 +433,7 @@ function shQuote(s) {
 const RCON_PY = `#!/usr/bin/env python3
 import socket, struct, sys
 def pkt(sock, rid, ptype, payload):
-    body = struct.pack('>ii', rid, ptype) + payload.encode('utf-8') + b'\\x00\\x00'
+    body = struct.pack('>ii', rid, ptype) + payload.encode('utf-8') + bytes(2)
     sock.sendall(struct.pack('>i', len(body)) + body)
 def read_pkt(sock):
     raw = b''
