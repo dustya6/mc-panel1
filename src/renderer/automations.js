@@ -143,7 +143,7 @@
     return b;
   };
   const deep = (o) => JSON.parse(JSON.stringify(o));
-  const withUids = (list) => list.map((b) => { const c = deep(b); c.uid = uid(); if (c.children) for (const z of Object.keys(c.children)) c.children[z] = withUids(c.children[z]); return c; });
+  const withUids = (list) => list.map((b) => { const c = deep(b); c.uid = uid(); c.cat = (META[c.kind] && META[c.kind].cat) || c.cat; if (c.children) for (const z of Object.keys(c.children)) c.children[z] = withUids(c.children[z]); return c; });
 
   const S = {
     serverId: null, server: null, autos: [], selId: null,
@@ -469,7 +469,13 @@
     if (!a.trigger) errs.push({ level: 'error', msg: 'Premier bloc : un déclencheur (jaune).', uid: null });
     if (!a.name || !a.name.trim()) errs.push({ level: 'error', msg: "Donne un nom à l'automatisation.", uid: null });
     else if (S.autos.some((x) => x.id !== a.id && (x.name || '').trim().toLowerCase() === a.name.trim().toLowerCase())) errs.push({ level: 'error', msg: 'Ce nom est déjà utilisé par une autre automatisation de ce serveur.', uid: null });
-    const hasBackup = JSON.stringify(a.blocks).includes('"a_backup"');
+    // au moins UNE action (bleu) dans toute l'automatisation — le reste est optionnel
+    const all = [];
+    const collect = (list) => { for (const b of list || []) { all.push(b); if (b.children) for (const z of Object.keys(b.children)) collect(b.children[z]); } };
+    collect(a.blocks);
+    if (!all.some((b) => b.cat === 'action')) errs.push({ level: 'error', msg: 'Ajoute au moins une action (bloc bleu).', uid: null });
+    const hasBackup = all.some((b) => b.kind === 'a_backup');
+    const ORDER_KINDS = ['e_on_fail', 'e_noresp', 'e_backup_fail', 'e_log_err', 'e_retry', 't_redo'];
     const walk = (list, prevAction) => {
       let prev = prevAction;
       for (const b of list) {
@@ -481,10 +487,12 @@
         if (b.kind === 'c_if' && !b.params.cond) errs.push({ level: 'error', msg: '« SI / SINON » : choisis une condition.', uid: b.uid });
         if (RCON_ACTIONS.includes(b.kind) && S.server && !S.server.hasPassword) errs.push({ level: 'error', msg: `« ${m.label} » a besoin du mot de passe RCON — renseigne-le dans Mes serveurs.`, uid: b.uid });
         if ((b.kind === 'a_start' || b.kind === 'a_restart') && S.server && !S.server.startCmd) errs.push({ level: 'error', msg: `« ${m.label} » a besoin de la « commande de démarrage » — renseigne-la dans Mes serveurs (section SSH).`, uid: b.uid });
-        if ((b.kind === 'e_retry' || b.kind === 't_redo') && !prev) errs.push({ level: 'warn', msg: `« ${m.label} » : aucune action avant ce bloc dans cette zone.`, uid: b.uid });
-        if ((b.kind === 'c_backup_ok' || b.kind === 'c_backup_fail' || b.kind === 'e_backup_fail') && !hasBackup) errs.push({ level: 'warn', msg: `« ${m.label} » : il n’y a aucune sauvegarde (tar) dans cette automatisation.`, uid: b.uid });
+        // mauvais ordre -> erreur : ces blocs doivent suivre un autre bloc dans la meme zone
+        if (ORDER_KINDS.includes(b.kind) && !prev) errs.push({ level: 'error', msg: `« ${m.label} » : place ce bloc APRÈS un autre bloc.`, uid: b.uid });
+        // conditions de sauvegarde avant toute sauvegarde -> erreur d'ordre
+        if ((b.kind === 'c_backup_ok' || b.kind === 'c_backup_fail' || b.kind === 'e_backup_fail') && !hasBackup) errs.push({ level: 'error', msg: `« ${m.label} » : mets d'abord une « Sauvegarde complète » (bleu) avant.`, uid: b.uid });
         if (b.children) for (const z of Object.keys(b.children)) prev = walk(b.children[z], prev);
-        if (b.cat === 'action') prev = b;
+        if (!CONTAINER_ZONES[b.kind]) prev = b;
       }
       return prev;
     };
