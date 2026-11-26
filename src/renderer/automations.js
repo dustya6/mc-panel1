@@ -554,7 +554,7 @@
       await persist(); renderList(); renderValidation();
       flashStatus('Déploiement sur le VPS…');
       const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
-      if (r.ok) flashStatus(`Déployé ✓ (${r.cron.length} ligne(s) cron${r.watcher ? ' + watcher' : ''})`);
+      if (r.ok) flashStatus(`Déployé ✓ — ${a.enabled !== false ? 'activée' : 'DÉSACTIVÉE : coche « Activée » !'} (${r.cron.length} ligne(s) cron${r.watcher ? ' + watcher' : ''})`);
       else flashStatus(`Erreur : ${r.error || (r.problems || []).join(' | ') || 'échec du déploiement'}`);
     });
     $('btn-auto-test').addEventListener('click', async () => {
