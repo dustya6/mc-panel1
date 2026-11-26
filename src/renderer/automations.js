@@ -211,9 +211,7 @@
     $('auto-edit-enabled').checked = a.enabled !== false;
     S.insertList = a.blocks; S.insertLabel = 'racine';
     S.selBlock = null; S.selIsTrigger = false;
-    const fresh = !a.trigger && !a.blocks.length;
-    const pbox = $('auto-presets');
-    if (fresh) { renderPresetsPanel(); pbox.hidden = false; } else pbox.hidden = true;
+    $('auto-presets').hidden = true;
     renderPalette();
     renderCanvas();
     renderParams();
