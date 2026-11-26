@@ -275,15 +275,7 @@
     const th = el('div', 'ab-zone-label', 'DÉCLENCHEUR');
     tz.appendChild(th);
     if (a.trigger) tz.appendChild(blockEl(a.trigger, true));
-    else {
-      const b = el('button', 'auto-trigger-empty', '＋ Déclencheur');
-      b.addEventListener('click', () => {
-        const pal = $('auto-palette');
-        const heads = pal.querySelectorAll('.pal-cat');
-        if (heads && heads[0]) { heads[0].classList.add('pal-cat-hot'); heads[0].scrollIntoView({ block: 'center' }); }
-      });
-      tz.appendChild(b);
-    }
+    else tz.appendChild(el('div', 'auto-trigger-empty'));
     cv.appendChild(tz);
     cv.appendChild(zoneEl(a.blocks, 'racine', a.blocks));
   }
@@ -291,8 +283,8 @@
   function zoneEl(list, label, listRef) {
     const active = listRef === S.insertList;
     const z = el('div', 'auto-zone' + (active ? ' insert-here' : ''));
-    const head = el('div', 'ab-zone-label', label === 'racine' ? 'BLOCS' : label.toUpperCase());
-    z.appendChild(head);
+    if (label !== 'racine') z.appendChild(el('div', 'ab-zone-label', label.toUpperCase()));
+    if (!list.length) z.classList.add('empty');
     for (let i = 0; i < list.length; i++) z.appendChild(blockEl(list[i], false, i + 1));
     z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('drag-over'); });
     z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
@@ -311,9 +303,11 @@
       S.selBlock = b; S.selIsTrigger = false;
       renderPalette(); renderCanvas(); renderValidation();
     });
-    const add = el('button', 'ab-add', active ? '✓ ici' : '＋ ici');
-    add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); renderCanvas(); });
-    z.appendChild(add);
+    if (label !== 'racine' || list.length) {
+      const add = el('button', 'ab-add', active ? '✓ ici' : '＋ ici');
+      add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); renderCanvas(); });
+      z.appendChild(add);
+    }
     return z;
   }
 

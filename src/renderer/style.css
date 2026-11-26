@@ -580,3 +580,11 @@ select:focus { outline: none; border-color: var(--primary); }
 .ab-params { border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 6px; }
 .auto-zone.drag-over { outline: 2px dashed var(--primary); outline-offset: 3px; }
 .auto-block.sel { box-shadow: 0 0 0 2px var(--primary); }
+
+/* ---------- Automatisations V4 : look Scratch (zones noires vides, blocs attaches) ---------- */
+.auto-trigger-empty { display: block; width: 100%; min-height: 46px; padding: 0; background: var(--bg); border: 1px solid var(--border); cursor: default; }
+.auto-trigger-zone { margin-bottom: 0; }
+.auto-zone.empty { min-height: 46px; }
+.auto-zone > .auto-block { margin-top: 0; }
+.auto-zone > .auto-block + .auto-block { margin-top: -1px; }
+.auto-trigger-zone > .auto-block { margin-top: 6px; }
