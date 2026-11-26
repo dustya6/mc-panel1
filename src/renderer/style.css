@@ -572,3 +572,9 @@ body.light #blk-tip { background: #ffffff; box-shadow: 0 6px 18px rgba(29,37,20,
 .bt-row { margin-top: 7px; font-size: 12px; line-height: 1.45; }
 .bt-k { display: block; font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 1px; }
 .bt-warn .bt-k { color: var(--amber); }
+
+/* ---------- Page Statistiques ---------- */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.stats-card .pv-big { font-size: 24px; }
+.stats-card .hint { display: block; margin-top: 5px; }
+#stats-search-input { font-family: var(--mono); }

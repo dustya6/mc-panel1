@@ -17,6 +17,7 @@
         <button type="button" class="nav-btn" data-page="console" id="nav-console">Console</button>
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
         <button type="button" class="nav-btn" data-page="players">Joueurs</button>
+        <button type="button" class="nav-btn" data-page="stats">Statistiques</button>
         <button type="button" class="nav-btn" data-page="news" id="nav-news">Actualités<span id="news-dot" class="news-dot" hidden></span></button>
         <button type="button" class="nav-btn" data-page="plugins">Plugins</button>
         <button type="button" class="nav-btn" data-page="automations" id="nav-auto">Automatisations</button>
@@ -149,6 +150,19 @@
         </div>
         <p id="settings-status" class="hint"></p>
         <button type="button" id="btn-about" class="ghost">À propos</button>
+      </section>
+      <section id="page-stats" hidden>
+        <div class="card">
+          <div class="card-title">Rechercher</div>
+          <form id="stats-search-form" class="row">
+            <input id="stats-search-input" type="text" placeholder="Un joueur (ex : Steve) ou un mot-clé de stat (ex : tps, record, disque)…" autocomplete="off" />
+            <button type="submit" class="primary">Rechercher</button>
+          </form>
+          <p id="stats-search-status" class="hint"></p>
+          <ul id="stats-search-results" class="players"></ul>
+        </div>
+        <div id="stats-grid" class="stats-grid"></div>
+        <p id="stats-empty" class="hint" hidden>Aucune donnée pour l’instant — l’appli enregistre un échantillon toutes les 15 s ; reviens dans quelques minutes.</p>
       </section>
       <section id="page-news" hidden>
         <div class="card">

@@ -38,6 +38,13 @@ const plugInstalledEl = document.getElementById('plug-installed');
 const plugInstalledHint = document.getElementById('plug-installed-hint');
 const btnPlugInstalled = document.getElementById('btn-plug-installed');
 const pageAutomations = document.getElementById('page-automations');
+const pageStats = document.getElementById('page-stats');
+const statsGrid = document.getElementById('stats-grid');
+const statsEmpty = document.getElementById('stats-empty');
+const statsSearchForm = document.getElementById('stats-search-form');
+const statsSearchInput = document.getElementById('stats-search-input');
+const statsSearchStatus = document.getElementById('stats-search-status');
+const statsSearchResults = document.getElementById('stats-search-results');
 const newsDot = document.getElementById('news-dot');
 const settingsStatusEl = document.getElementById('settings-status');
 const srvCtlStatus = document.getElementById('srv-ctl-status');
@@ -190,7 +197,9 @@ function showPage(page) {
   pageNews.hidden = page !== 'news';
   pagePlugins.hidden = page !== 'plugins';
   pageAutomations.hidden = page !== 'automations';
+  pageStats.hidden = page !== 'stats';
   if (page === 'players') { refreshPlayers(); drawHeatmap(lastHistory); }
+  if (page === 'stats') loadStats();
   if (page === 'server') loadServerCtl();
   if (page === 'console') renderQuickCmds();
   if (page === 'settings') renderSettings();
@@ -791,8 +800,183 @@ async function loadStatus() {
     if (window.api.logDebug) window.api.logDebug(`draw error: ${err.message}`);
   }
   loadResources();
+  if (currentPage === 'stats') loadStatsLight();
   pollAutoEvents(); // événements des autos -> Actualités
 }
+
+// ---------- Page Statistiques ----------
+let statsLogsCache = 0;
+let statsLogsData = null;
+let lastHistLen = -1;
+
+function fmtDur(ms) {
+  if (!ms || ms <= 0) return '0 min';
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + ' h ' + (m % 60) + ' min';
+  return Math.floor(h / 24) + ' j ' + (h % 24) + ' h';
+}
+function fmtDate(ts) {
+  const d = new Date(ts); const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}h${p(d.getMinutes())}`;
+}
+
+function statCard(id, title, kw, value, sub) {
+  const d = document.createElement('div');
+  d.className = 'stat-big stats-card';
+  d.id = id;
+  d.dataset.kw = (title + ' ' + kw).toLowerCase();
+  d.innerHTML = `<span class="pl">${escapeHtml(title)}</span><span class="pv-big">${escapeHtml(String(value))}</span>` + (sub ? `<span class="hint">${escapeHtml(String(sub))}</span>` : '');
+  return d;
+}
+
+async function loadStats() {
+  if (!currentServer) return;
+  const hist = await window.api.getHistory(currentServer.id).catch(() => []);
+  renderStats(hist || [], lastStatus);
+  applyStatsFilter();
+  if (currentServer.sshUser) loadStatsLogs();
+}
+function loadStatsLight() {
+  if (!currentServer) return;
+  window.api.getHistory(currentServer.id).then((h) => { renderStats(h || [], lastStatus); applyStatsFilter(); }).catch(() => {});
+}
+
+function renderStats(hist, status) {
+  if (!statsGrid) return;
+  lastHistLen = hist.length;
+  statsGrid.innerHTML = '';
+  const now = Date.now();
+  const h24 = hist.filter((p) => now - p.ts < 24 * 3600e3);
+  const h7 = hist.filter((p) => now - p.ts < 7 * 86400e3);
+  const withP = (a) => a.filter((p) => p.players != null);
+  const avg = (a, f) => { const b = a.filter((p) => f(p) != null); return b.length ? b.reduce((s, p) => s + f(p), 0) / b.length : null; };
+  let rec = null;
+  for (const p of withP(hist)) if (!rec || p.players > rec.players) rec = p;
+  const latAvg = avg(h24, (p) => p.latency);
+  const latMax = h24.reduce((m, p) => Math.max(m, p.latency || 0), 0);
+  const tpsA = h24.filter((p) => p.tps != null);
+  const tpsAvg = tpsA.length ? tpsA.reduce((s, p) => s + p.tps, 0) / tpsA.length : null;
+  const tpsMin = tpsA.length ? Math.min(...tpsA.map((p) => p.tps)) : null;
+  const up = h7.length ? (withP(h7).length / h7.length) * 100 : null;
+  const buckets = Array.from({ length: 24 }, () => ({ sum: 0, n: 0 }));
+  for (const p of withP(hist)) { const b = buckets[new Date(p.ts).getHours()]; b.sum += p.players; b.n++; }
+  let peakH = -1, peakV = -1;
+  buckets.forEach((b, i) => { if (b.n && b.sum / b.n > peakV) { peakV = b.sum / b.n; peakH = i; } });
+  const days = Array.from({ length: 7 }, () => ({ sum: 0, n: 0 }));
+  for (const p of withP(hist)) { const b = days[new Date(p.ts).getDay()]; b.sum += p.players; b.n++; }
+  const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  let dayI = -1, dayV = -1;
+  days.forEach((b, i) => { if (b.n && b.sum / b.n > dayV) { dayV = b.sum / b.n; dayI = i; } });
+  const online = status && status.ping ? status.ping.playersOnline : null;
+  const pmax = status && status.ping ? status.ping.playersMax : null;
+  const sd = statsLogsData;
+  const cards = [];
+  cards.push(statCard('st-online', 'Joueurs en ligne maintenant', 'en ligne maintenant online joueurs actuels connectés', online == null ? '—' : online + (pmax ? ' / ' + pmax : ''), status && status.ping ? 'MOTD : ' + String(status.ping.motd || '').replace(/§./g, '') : ''));
+  if (rec) cards.push(statCard('st-record', 'Record de joueurs', 'record max pic joueurs jamais maximum', rec.players, 'le ' + fmtDate(rec.ts)));
+  const a24 = avg(h24, (p) => p.players), a30 = avg(hist, (p) => p.players);
+  cards.push(statCard('st-avg24', 'Moyenne de joueurs (24 h)', 'moyenne moyenne joueurs 24h 24 heures journée', a24 == null ? '—' : a24.toFixed(1), h24.length + ' échantillons'));
+  cards.push(statCard('st-avg30', 'Moyenne de joueurs (tout)', 'moyenne 30j mois tout joueurs', a30 == null ? '—' : a30.toFixed(1), ''));
+  cards.push(statCard('st-lat', 'Latence (ping)', 'latence ping ms délai réponse', latAvg == null ? '—' : Math.round(latAvg) + ' ms', 'max vu : ' + (latMax || '—') + ' ms'));
+  cards.push(statCard('st-tps', 'Vitesse du serveur (TPS)', 'tps vitesse lag fps serveur', tpsAvg == null ? '—' : tpsAvg.toFixed(1), 'pire vu : ' + (tpsMin == null ? '—' : tpsMin)));
+  cards.push(statCard('st-uptime', 'Disponibilité estimée (7 j)', 'uptime dispo en ligne disponible pourcentage 7j semaine', up == null ? '—' : up.toFixed(1) + ' %', 'd’après les échantillons enregistrés'));
+  if (peakH >= 0) cards.push(statCard('st-peak', 'Heure de pic moyenne', 'pic heure pointe quand plus de monde heure', peakH + 'h', peakV.toFixed(1) + ' joueurs en moyenne à cette heure'));
+  if (dayI >= 0) cards.push(statCard('st-day', 'Jour le plus chargé', 'jour semaine lundi mardi mercredi jeudi vendredi samedi dimanche chargé', dayNames[dayI], dayV.toFixed(1) + ' joueurs en moyenne ce jour-là'));
+  cards.push(statCard('st-uniques', 'Joueurs uniques (logs)', 'joueurs uniques total jamais venus connectés historique joueurs', sd ? sd.uniques : '…', currentServer.sshUser ? (sd ? 'vus dans les logs du serveur' : 'chargement…') : 'nécessite SSH (VPS)'));
+  cards.push(statCard('st-bans', 'Bans et expulsions (logs)', 'bans kicks bannis expulsés modération', sd ? sd.bans + ' bans · ' + sd.kicks + ' kicks' : '…', 'depuis le début des logs'));
+  cards.push(statCard('st-first', 'Première ligne des logs', 'début historique premier démarrage âge ancien', sd ? (sd.first || '—') : '…', 'début du plus vieux fichier de logs'));
+  cards.push(statCard('st-top', 'Joueur le plus actif', 'top joueur actif temps de jeu le plus heures', sd && sd.top ? sd.top.name + ' — ' + fmtDur(sd.top.ms) : '…', sd ? 'temps de jeu total cumulé : ' + fmtDur(sd.total) : ''));
+  cards.push(statCard('st-session', 'Session moyenne par joueur', 'session moyenne durée connexion jeu temps', sd && sd.avgSession ? fmtDur(sd.avgSession) : '…', sd ? sd.joins + ' connexions au total' : ''));
+  cards.push(statCard('st-span', 'Données collectées', 'historique depuis collecte échantillons 15s données', hist.length ? 'depuis le ' + fmtDate(hist[0].ts) : '—', hist.length + ' échantillons (un toutes les 15 s)'));
+  if (status && status.ping) cards.push(statCard('st-version', 'Version du serveur', 'version paper spigot motd', String(status.ping.version || '—'), ''));
+  if (pmax) cards.push(statCard('st-max', 'Capacité max du serveur', 'max slots capacité limite joueurs total', pmax + ' joueurs', ''));
+  for (const c of cards) statsGrid.appendChild(c);
+}
+
+function applyStatsFilter() {
+  if (!statsGrid) return;
+  const q = (statsSearchInput.value || '').trim().toLowerCase();
+  let visible = 0;
+  for (const c of statsGrid.children) {
+    const show = !q || (c.dataset.kw || '').includes(q);
+    c.style.display = show ? '' : 'none';
+    if (show) visible++;
+  }
+  if (q && visible === 0) {
+    statsEmpty.hidden = false;
+    statsEmpty.textContent = `Aucune statistique pour « ${q} » — essaie : tps, record, disque, joueurs, latence…`;
+  } else if (lastHistLen === 0) {
+    statsEmpty.hidden = false;
+    statsEmpty.textContent = 'Aucune donnée pour l’instant — l’appli enregistre un échantillon toutes les 15 s ; reviens dans quelques minutes.';
+  } else {
+    statsEmpty.hidden = true;
+  }
+}
+
+async function loadStatsLogs() {
+  if (!currentServer || !currentServer.sshUser) return;
+  if (statsLogsData && Date.now() - statsLogsCache < 60000) return;
+  statsLogsCache = Date.now();
+  const dir = currentServer.serverDir || '~/minecraft';
+  const D = `D=${dir}; cd "$D" 2>/dev/null || exit 0`;
+  const r1 = await window.api.sshExec(currentServer.id, `${D}; { grep -h "joined the game" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "joined the game"; } | sed -E 's/.*\\]: *([^ ]+) joined the game.*/\\1/' | sort -u | wc -l; { grep -h "was banned" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "was banned"; } | wc -l; { grep -h "was kicked" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "was kicked"; } | wc -l`).catch(() => null);
+  const r2 = await window.api.sshExec(currentServer.id, `${D}; f=$(ls logs/ 2>/dev/null | sort | head -1); if [ -n "$f" ]; then case "$f" in *.gz) zcat "logs/$f";; *) cat "logs/$f";; esac | head -1; fi`).catch(() => null);
+  const r3 = await window.api.sshExec(currentServer.id, `${D}; { for f in logs/*.log.gz logs/*.log; do [ -e "$f" ] || continue; b=$(basename "$f"); [ "$b" = "latest.log" ] && continue; d=$(echo "$b" | cut -d- -f1-3); if [[ "$f" == *.gz ]]; then zcat "$f"; else cat "$f"; fi | grep -hE 'joined the game|left the game' | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$d \\1 \\2 \\3/"; done; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$(date +%F) \\1 \\2 \\3/"; } | tail -20000`).catch(() => null);
+  if (!r1 || r1.error || !r3 || r3.error) return;
+  const nums = (r1.out || '').split('\n').map((x) => parseInt(x, 10) || 0);
+  const first = (r2 && r2.out ? r2.out.split('\n')[0] : '').trim();
+  const evs = (r3.out || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const m = l.match(/^(\d{4}-\d{2}-\d{2}) ([0-9:]{8}) (\S+) (joined|left)$/);
+    return m ? { ts: Date.parse(m[1] + 'T' + m[2]), name: m[3], ev: m[4] } : null;
+  }).filter(Boolean).sort((a, b) => a.ts - b.ts);
+  const play = {}; const open = {}; let joins = 0;
+  for (const e of evs) {
+    if (e.ev === 'joined') { joins++; open[e.name] = e.ts; }
+    else if (open[e.name] != null) { play[e.name] = (play[e.name] || 0) + (e.ts - open[e.name]); delete open[e.name]; }
+  }
+  const names = Object.keys(play);
+  const total = names.reduce((s, n) => s + play[n], 0);
+  let top = null;
+  for (const n of names) if (!top || play[n] > play[top.name]) top = { name: n, ms: play[n] };
+  statsLogsData = { uniques: nums[0] || 0, bans: nums[1] || 0, kicks: nums[2] || 0, first, top, total, avgSession: joins ? total / joins : 0, joins };
+  if (currentPage === 'stats') loadStatsLight();
+}
+
+let statsSearchTimer = null;
+function onStatsSearchInput() {
+  applyStatsFilter();
+  clearTimeout(statsSearchTimer);
+  const q = statsSearchInput.value.trim();
+  if (q.length < 2 || !currentServer || !currentServer.sshUser) {
+    statsSearchResults.innerHTML = '';
+    statsSearchStatus.textContent = q.length >= 2 && currentServer && !currentServer.sshUser ? 'Recherche joueur : nécessite SSH (VPS, pas Aternos gratuit). Le mot-clé filtre quand même les stats ci-dessous.' : '';
+    return;
+  }
+  statsSearchStatus.textContent = 'Recherche du joueur dans les logs…';
+  statsSearchTimer = setTimeout(async () => {
+    const dir = currentServer.serverDir || '~/minecraft';
+    const cmd = `D=${dir}; cd "$D" 2>/dev/null; { grep -h "joined the game" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "joined the game"; } | sed -E 's/.*\\]: *([^ ]+) joined the game.*/\\1/' | sort -u`;
+    const res = await window.api.sshExec(currentServer.id, cmd).catch(() => null);
+    if (!res || res.error) { statsSearchStatus.textContent = 'Recherche joueur indisponible (SSH).'; return; }
+    const all = (res.out || '').split('\n').map((x) => x.trim()).filter(Boolean);
+    const found = all.filter((n) => n.toLowerCase().includes(q.toLowerCase())).slice(0, 30);
+    statsSearchStatus.textContent = found.length
+      ? `${found.length} joueur(s) trouvé(s) — clique pour les actions (ban, op…) :`
+      : 'Aucun joueur trouvé. (Le mot-clé filtre aussi les statistiques ci-dessous.)';
+    statsSearchResults.innerHTML = '';
+    for (const n of found) {
+      const li = document.createElement('li');
+      li.className = 'player-action';
+      li.textContent = n;
+      li.addEventListener('click', () => openModal(n));
+      statsSearchResults.appendChild(li);
+    }
+  }, 450);
+}
+if (statsSearchInput) statsSearchInput.addEventListener('input', onStatsSearchInput);
+if (statsSearchForm) statsSearchForm.addEventListener('submit', (e) => { e.preventDefault(); onStatsSearchInput(); });
+
 
 function resColor(pct) {
   if (pct == null || isNaN(pct)) return '';
@@ -980,6 +1164,7 @@ async function selectServer(s) {
   await refreshList();
   await loadStatus();
   if (currentPage === 'players') refreshPlayers();
+  if (currentPage === 'stats') loadStats();
   if (currentPage === 'plugins') loadInstalledPlugins();
   if (currentPage === 'automations' && window.AutoPage) window.AutoPage.reload();
   clearInterval(statusTimer);
