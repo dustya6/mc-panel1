@@ -372,6 +372,12 @@
     btns.appendChild(up); btns.appendChild(dn); btns.appendChild(del);
     head.appendChild(btns);
     d.appendChild(head);
+    const desc = DESC[b.kind] || '';
+    if (desc) {
+      const info = el('span', 'info ab-info', 'i');
+      info.dataset.tip = desc; // infobulle au survol : à quoi sert ce bloc
+      d.appendChild(info);
+    }
     if (selected) {
       const pb = el('div', 'ab-params');
       fillParamFields(b, pb);

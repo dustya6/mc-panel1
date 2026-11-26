@@ -549,3 +549,12 @@ body.light .ab-num { background: #ffffff; }
 .auto-actions { margin-top: 12px; }
 #btn-auto-deploy { min-width: 190px; }
 .auto-palette { position: sticky; top: 0; }
+
+/* ---------- Automatisations : retour à gauche + icône "i" sur chaque bloc ---------- */
+.auto-ed-head { flex-direction: row; }
+.auto-ed-head .ghost { flex: none; }
+.auto-ed-head input { flex: 1; min-width: 0; }
+.auto-block { position: relative; }
+.ab-info { top: 6px; right: 6px; }
+.ab-info::after { width: 280px; }
+.ab-btns { margin-right: 24px; }
