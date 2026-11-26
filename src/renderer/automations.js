@@ -65,27 +65,58 @@
   const META = {};
   for (const b of BLOCKS) META[b.kind] = b;
   const DESC = {
-    tr_daily: 'Tous les jours à HH:MM (cron)', tr_at: 'Une seule fois à HH:MM', tr_every_min: 'Toutes les X minutes (cron)',
-    tr_every_hour: 'Toutes les X heures (cron)', tr_weekday: 'Un jour précis de la semaine (cron)',
-    tr_start: 'Quand le serveur démarre (watcher)', tr_stop: 'Quand le serveur s’arrête (watcher)',
-    tr_crash: 'Quand un crash est détecté dans les logs (watcher)', tr_offline: 'Quand le serveur passe hors ligne (watcher)',
-    tr_online: 'Quand le serveur revient en ligne (watcher)',
-    c_online: 'Vrai si le serveur répond (RCON)', c_offline: 'Vrai si le serveur ne répond plus',
-    c_ram: 'RAM utilisée > X %', c_tps: 'TPS < X', c_cpu: 'CPU > X %', c_disk: 'Moins de X Go libres sur le disque',
-    c_backup_ok: 'La dernière sauvegarde a réussi', c_backup_fail: 'La dernière sauvegarde a échoué',
-    c_time: 'Heure actuelle = HH:MM', c_last: 'Résultat de la condition précédente', c_if: 'Branche ALORS / SINON selon une condition',
-    a_start: 'Lance le serveur (commande de démarrage)', a_stop: 'Arrêt propre via RCON (stop)', a_restart: 'stop puis relance',
-    a_save: 'save-all (sauvegarde rapide)', a_backup: 'save-all + archive tar datée du monde',
-    a_prune: 'Supprime les backups de plus de X jours', a_state: 'Écrit l’état (en ligne + joueurs) dans le log',
-    a_perf: 'Écrit TPS / RAM / CPU / disque dans le log', a_cmd: 'Envoie une commande au serveur (ex : say Bonjour)',
-    a_mnt_on: 'whitelist on (bloque les non-whitelistés)', a_mnt_off: 'whitelist off',
-    a_report: 'Génère un fichier rapport de perfs sur le VPS', a_event: 'Ligne EVENT dans le log (vue aussi dans Actualités)',
-    t_wait: 'Pause de X secondes / minutes / heures', t_repeat: 'Répète les blocs imbriqués X fois',
-    t_repeat_until: 'Répète les blocs imbriqués jusqu’à ce que la condition soit vraie', t_stop: 'Arrête l’automatisation tout de suite',
-    t_skip: 'Ne fait rien (étape ignorée)', t_redo: 'Relance l’action précédente une fois',
-    e_on_fail: 'Si l’action précédente a échoué → exécute les blocs imbriqués', e_retry: 'Relance l’action précédente jusqu’à X fois',
-    e_noresp: 'Si le serveur ne répond pas → blocs imbriqués', e_backup_fail: 'Si la sauvegarde a échoué → blocs imbriqués',
-    e_stop_err: 'En cas d’erreur : tout s’arrête', e_cont_err: 'En cas d’erreur : on continue', e_log_err: 'Écrit l’erreur dans le log',
+    // déclencheurs (jaune) — quand ça se lance
+    tr_daily: 'Se lance TOUS LES JOURS à l’heure choisie (ex : 03:00). Le script tourne sur le VPS via cron.',
+    tr_at: 'Se lance UNE FOIS PAR JOUR à l’heure choisie (ex : 20:00). Mémorisé : ne se répète pas dans la même journée.',
+    tr_every_min: 'Se lance toutes les X minutes (ex : toutes les 5 min, max 59).',
+    tr_every_hour: 'Se lance toutes les X heures (ex : toutes les 2 h, max 23).',
+    tr_weekday: 'Se lance un JOUR PRÉCIS de la semaine à une heure (ex : vendredi à 20:00).',
+    tr_start: 'Se lance quand le serveur DÉMARRE (vérifié toutes les 15 s sur le VPS).',
+    tr_stop: 'Se lance quand le serveur S’ARRÊTE.',
+    tr_crash: 'Se lance quand un crash est détecté : nouvelles erreurs SEVERE dans les logs OU nouveau fichier dans crash-reports/.',
+    tr_offline: 'Se lance quand le serveur ne répond PLUS (passe hors ligne).',
+    tr_online: 'Se lance quand le serveur REVIENT en ligne.',
+    // conditions (orange) — bloquent la suite si fausses
+    c_online: 'Vrai si le serveur répond. Si FAUX → bloque tous les blocs suivants.',
+    c_offline: 'Vrai si le serveur ne répond plus. Si FAUX → bloque la suite.',
+    c_ram: 'Vrai si la RAM utilisée dépasse X %. Si faux → bloque la suite.',
+    c_tps: 'Vrai si le TPS descend sous X (le serveur lag). Si faux → bloque la suite.',
+    c_cpu: 'Vrai si le CPU dépasse X %. Si faux → bloque la suite.',
+    c_disk: 'Vrai s’il reste moins de X Go libres sur le disque. Si faux → bloque la suite.',
+    c_backup_ok: 'Vrai si la dernière sauvegarde (bloc « Sauvegarde complète ») a réussi.',
+    c_backup_fail: 'Vrai si la dernière sauvegarde a ÉCHOUÉ.',
+    c_time: 'Vrai si l’heure actuelle du VPS est exactement HH:MM.',
+    c_last: 'Vrai si la condition juste avant était vraie.',
+    c_if: 'Branche ALORS / SINON : selon la condition, exécute les blocs du HAUT (alors) ou du BAS (sinon).',
+    // actions (vert)
+    a_start: 'Lance le serveur avec la « commande de démarrage » (renseignée dans Mes serveurs). Ne fait rien s’il est déjà en ligne.',
+    a_stop: 'Arrêt PROPRE : envoie « stop » au serveur (il sauvegarde avant de s’arrêter).',
+    a_restart: 'Arrêt propre (« stop ») puis relance du serveur.',
+    a_save: 'Envoie « save-all » : sauvegarde rapide du monde directement sur le VPS.',
+    a_backup: 'save-all + archive .tgz datée (avec la date et l’heure) de world, world_nether et world_the_end dans le dossier backups/.',
+    a_prune: 'Supprime les archives de backups/ vieilles de plus de X jours.',
+    a_state: 'Écrit dans le log de l’auto si le serveur est en ligne + la liste des joueurs (commande « list »).',
+    a_perf: 'Écrit dans le log le TPS, la RAM %, le CPU % et l’espace disque libre.',
+    a_cmd: 'Envoie TA commande au serveur (ex : say Bonjour, give @p diamond 64, time set day, whitelist add Steve).',
+    a_mnt_on: 'Active la whitelist (« whitelist on ») : seuls les pseudos whitelistés peuvent entrer → mode maintenance.',
+    a_mnt_off: 'Désactive la whitelist (« whitelist off ») : tout le monde peut entrer.',
+    a_report: 'Génère un fichier rapport (joueurs, TPS, RAM, disque) dans ~/.mc-panel/ sur le VPS.',
+    a_event: 'Ajoute une ligne EVENT dans le log de l’auto (et dans la page Actualités).',
+    // temps (violet)
+    t_wait: 'Pause de X secondes / minutes / heures, puis continue.',
+    t_repeat: 'Répète les blocs imbriqués X fois (ex : 3 fois de suite).',
+    t_repeat_until: 'Répète les blocs imbriqués jusqu’à ce que la condition soit vraie (pause entre chaque essai, max 1000 essais).',
+    t_stop: 'Arrête l’automatisation immédiatement.',
+    t_skip: 'Ne fait rien (étape ignorée, juste là pour la clarté).',
+    t_redo: 'Relance UNE FOIS l’action précédente.',
+    // erreurs (rouge)
+    e_on_fail: 'Si l’action précédente a ÉCHOUÉ → exécute les blocs imbriqués (ex : prévenir, réessayer…).',
+    e_retry: 'Si l’action précédente échoue, la réessaie automatiquement jusqu’à X fois.',
+    e_noresp: 'Si le serveur ne répond plus → exécute les blocs imbriqués.',
+    e_backup_fail: 'Si la dernière sauvegarde a échoué → exécute les blocs imbriqués.',
+    e_stop_err: 'Mode erreur « ARRÊTER » : la moindre erreur arrête tout le scénario.',
+    e_cont_err: 'Mode erreur « CONTINUER » : une erreur ne bloque pas la suite (c’est le mode par défaut).',
+    e_log_err: 'Si l’étape précédente a échoué, écrit une ligne « ERR » dans le log.',
   };
   const RCON_ACTIONS = ['a_stop', 'a_restart', 'a_save', 'a_backup', 'a_cmd', 'a_mnt_on', 'a_mnt_off', 'a_state', 'a_perf'];
   const CONTAINER_ZONES = { c_if: ['then', 'else'], t_repeat: ['body'], t_repeat_until: ['body'], e_on_fail: ['body'], e_noresp: ['body'], e_backup_fail: ['body'] };
@@ -221,6 +252,12 @@
       for (const m of BLOCKS.filter((b) => b.cat === cat)) {
         const b = el('button', 'pal-block cat-' + cat);
         b.appendChild(el('span', 'pal-label', m.label));
+        if (DESC[m.kind]) {
+          const info = el('span', 'info pal-info', 'i');
+          info.dataset.tip = DESC[m.kind];
+          info.addEventListener('click', (e) => { if (e) { e.stopPropagation(); e.preventDefault(); } }); // le "i" n'ajoute pas le bloc
+          b.appendChild(info);
+        }
         b.addEventListener('click', () => {
           const a = auto();
           if (!a) return;

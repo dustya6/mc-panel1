@@ -558,3 +558,8 @@ body.light .ab-num { background: #ffffff; }
 .ab-info { top: 6px; right: 6px; }
 .ab-info::after { width: 280px; }
 .ab-btns { margin-right: 24px; }
+
+/* ---------- icône "i" aussi dans la palette ---------- */
+.pal-block { position: relative; padding-right: 26px; }
+.pal-info { top: 4px; right: 4px; }
+.pal-info::after { width: 220px; }
