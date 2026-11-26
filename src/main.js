@@ -603,9 +603,10 @@ flock -n 9 || exit 0
 LAST_RC=0; LAST_COND=0; LAST_BACKUP_RC=0; ERRMODE=continue
 log(){ echo "$(date '+%F %T') [$AUTO_ID] $*" >> "$LOG"; }
 event(){ echo "$(date '+%F %T') EVENT: $*" >> "$LOG"; }
-rcon(){ python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG" && return 0; python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
-online(){ rcon "list" >/dev/null 2>&1; }
-tpsval(){ rcon "tps" 2>/dev/null | grep -oE '[0-9]+([.][0-9]+)?' | head -1; }
+has_screen(){ screen -ls 2>/dev/null | grep -q minecraft; }
+rcon(){ if has_screen; then screen -S minecraft -X stuff "$1"$'\\n' && return 0; fi; python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG" && return 0; python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
+online(){ pgrep -f 'java.*[.]jar' >/dev/null 2>&1; }
+tpsval(){ local t; t=$(python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" tps 2>/dev/null | grep -oE '[0-9]+([.][0-9]+)?' | head -1); if [ -z "$t" ] && has_screen; then screen -S minecraft -X hardcopy /tmp/mcpanel-cap 2>/dev/null; t=$(tail -100 /tmp/mcpanel-cap 2>/dev/null | grep -oiE 'tps[^0-9]{0,20}[0-9]+([.][0-9]+)?' | tail -1 | grep -oE '[0-9]+([.][0-9]+)?$'); fi; echo "$t"; }
 ram_pct_gt(){ read -r u t <<< "$(free -m 2>/dev/null | awk '/^Mem:/{print $3, $2}')"; [ -n "$t" ] && [ "$t" -gt 0 ] && [ $((u*100/t)) -gt "$1" ]; }
 cpu_pct_gt(){ local c; c=$(top -bn1 2>/dev/null | awk '/%Cpu/{print int(100-$8); exit}'); [ -n "$c" ] && [ "$c" -gt "$1" ]; }
 tps_lt(){ local t; t=$(tpsval); [ -n "$t" ] && awk -v t="$t" -v x="$1" 'BEGIN{exit !(t<x)}'; }
