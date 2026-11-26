@@ -540,7 +540,7 @@
       a.enabled = $('auto-edit-enabled').checked;
       await persist(); renderList();
       const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
-      flashStatus(r.ok ? (a.enabled ? 'Activée et déployée ✓' : 'Désactivée sur le VPS ✓') : `Erreur : ${r.error}`);
+      flashStatus(r.ok ? (a.enabled ? 'Activée et déployée ✓' : 'Désactivée sur le VPS ✓') : `Erreur : ${r.error || (r.problems || []).join(' | ')}`);
     });
     $('btn-auto-save').addEventListener('click', async () => {
       const a = auto(); if (!a) return;
@@ -555,7 +555,7 @@
       flashStatus('Déploiement sur le VPS…');
       const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
       if (r.ok) flashStatus(`Déployé ✓ (${r.cron.length} ligne(s) cron${r.watcher ? ' + watcher' : ''})`);
-      else flashStatus(`Erreur : ${r.error}`);
+      else flashStatus(`Erreur : ${r.error || (r.problems || []).join(' | ') || 'échec du déploiement'}`);
     });
     $('btn-auto-test').addEventListener('click', async () => {
       const a = auto(); if (!a) return;

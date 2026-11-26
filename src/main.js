@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'auto-ui-v9';
+const BUILD = 'auto-deploy-checks';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -455,7 +455,10 @@ def main():
     host, port, password, cmd = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
     s = socket.create_connection((host, port), timeout=8)
     pkt(s, 1, 3, password)
-    rid, ptype, _ = read_pkt(s)
+    while True:
+        rid, ptype, _ = read_pkt(s)
+        if ptype == 2 or rid == -1:
+            break
     if rid == -1:
         sys.stderr.write('RCON auth failed\\n'); sys.exit(3)
     pkt(s, 2, 2, cmd)
@@ -650,32 +653,43 @@ fi
 }
 
 async function deployAutomation(server, auto) {
-  const { script, cron, watcher } = compileAutomation(auto, auto.id ? auto : { ...auto, id: auto.id });
+  const { script, cron, watcher } = compileAutomation(auto, auto.id);
   const id = auto.id;
-  const mk = await sshExec(server, `mkdir -p "$HOME/.mc-panel" && chmod 700 "$HOME/.mc-panel"`, 20000);
+  const problems = [];
+  const mk = await sshExec(server, `mkdir -p "$HOME/.mc-panel" && chmod 700 "$HOME/.mc-panel" && echo MKOK`, 20000);
   if (mk.error) return { ok: false, error: mk.error };
+  const py = await sshExec(server, `command -v python3 >/dev/null 2>&1 && echo PYOK || echo NOPYTHON3`, 20000);
+  if (!String(py.out || '').includes('PYOK')) problems.push('python3 est introuvable sur le VPS → installe-le : sudo apt install python3');
   const r1 = await sshExec(server, `cat > "$HOME/.mc-panel/rcon.py" <<'RCONPY_EOF'
 ${RCON_PY}RCONPY_EOF
-chmod 700 "$HOME/.mc-panel/rcon.py"`, 30000);
+chmod 700 "$HOME/.mc-panel/rcon.py" && test -f "$HOME/.mc-panel/rcon.py" && echo HELPOK || echo HELPERR`, 30000);
   if (r1.error) return { ok: false, error: r1.error };
+  if (!String(r1.out || '').includes('HELPOK')) problems.push('rcon.py n’a pas pu être écrit sur le VPS');
   const r2 = await sshExec(server, `cat > "$HOME/.mc-panel/config.sh" <<'CFG_EOF'
 ${configSh(server)}CFG_EOF
-chmod 600 "$HOME/.mc-panel/config.sh"`, 30000);
+chmod 600 "$HOME/.mc-panel/config.sh" && test -f "$HOME/.mc-panel/config.sh" && echo CFGOK || echo CFGEERR`, 30000);
   if (r2.error) return { ok: false, error: r2.error };
+  if (!String(r2.out || '').includes('CFGOK')) problems.push('config.sh n’a pas pu être écrit sur le VPS');
   const r3 = await sshExec(server, `cat > "$HOME/.mc-panel/auto-${id}.sh" <<'AUTO_EOF'
 ${script}AUTO_EOF
-chmod 700 "$HOME/.mc-panel/auto-${id}.sh"`, 30000);
+chmod 700 "$HOME/.mc-panel/auto-${id}.sh" && test -x "$HOME/.mc-panel/auto-${id}.sh" && echo SCRIPTOK || echo SCRIPTKO`, 30000);
   if (r3.error) return { ok: false, error: r3.error };
+  if (!String(r3.out || '').includes('SCRIPTOK')) problems.push('le script auto n’a pas pu être écrit sur le VPS');
   const tag = `mc-panel:${id}`;
   const enabled = auto.enabled !== false;
   const echoLines = cron.map((l) => `echo ${shQuote((enabled ? '' : '# ') + l + ' # ' + tag)}`).join('; ');
-  const r4 = await sshExec(server, `(crontab -l 2>/dev/null | grep -v '${tag}'; ${echoLines}) | crontab -`, 30000);
+  const r4 = await sshExec(server, `command -v crontab >/dev/null 2>&1 || echo NOCRON; (crontab -l 2>/dev/null | grep -v '${tag}'; ${echoLines}) 2>/dev/null | crontab - 2>/dev/null && echo CRONOK || echo CRONERR`, 30000);
   if (r4.error) return { ok: false, error: r4.error };
+  const out4 = String(r4.out || '');
+  if (out4.includes('NOCRON')) problems.push('la commande crontab manque sur le VPS → sudo apt install cron');
+  if (!out4.includes('CRONOK')) problems.push('l’écriture du crontab a échoué → installe cron : sudo apt install cron && sudo systemctl enable --now cron');
+  const crond = await sshExec(server, `if pgrep -x cron >/dev/null 2>&1 || pgrep -x crond >/dev/null 2>&1 || pgrep -f 'cron -f' >/dev/null 2>&1; then echo CRONDOK; else echo NOCROND; fi`, 20000);
+  if (!String(crond.out || '').includes('CRONDOK')) problems.push('le démon cron ne tourne pas sur le VPS → sudo systemctl enable --now cron');
   if (watcher) {
     if (enabled) await sshExec(server, `pgrep -f "auto-${id}.sh --watch" >/dev/null || (nohup "$HOME/.mc-panel/auto-${id}.sh" --watch >/dev/null 2>&1 &); true`, 20000);
     else await sshExec(server, `pkill -f "auto-${id}.sh --watch" 2>/dev/null; true`, 20000);
   }
-  return { ok: true, cron, watcher };
+  return { ok: problems.length === 0, problems, cron, watcher };
 }
 
 function createWindow() {
