@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'auto-screen-cmd';
+const BUILD = 'auto-test-fix';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -604,7 +604,7 @@ LAST_RC=0; LAST_COND=0; LAST_BACKUP_RC=0; ERRMODE=continue
 log(){ echo "$(date '+%F %T') [$AUTO_ID] $*" >> "$LOG"; }
 event(){ echo "$(date '+%F %T') EVENT: $*" >> "$LOG"; }
 has_screen(){ screen -ls 2>/dev/null | grep -q minecraft; }
-rcon(){ if has_screen; then screen -S minecraft -X stuff "$1"$'\\n' && return 0; fi; python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG" && return 0; python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
+rcon(){ if has_screen; then if screen -S minecraft -X stuff "$1"$'\\n'; then log "via screen: $1"; return 0; fi; fi; python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG" && return 0; python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
 online(){ pgrep -f 'java.*[.]jar' >/dev/null 2>&1; }
 tpsval(){ local t; t=$(python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" tps 2>/dev/null | grep -oE '[0-9]+([.][0-9]+)?' | head -1); if [ -z "$t" ] && has_screen; then screen -S minecraft -X hardcopy /tmp/mcpanel-cap 2>/dev/null; t=$(tail -100 /tmp/mcpanel-cap 2>/dev/null | grep -oiE 'tps[^0-9]{0,20}[0-9]+([.][0-9]+)?' | tail -1 | grep -oE '[0-9]+([.][0-9]+)?$'); fi; echo "$t"; }
 ram_pct_gt(){ read -r u t <<< "$(free -m 2>/dev/null | awk '/^Mem:/{print $3, $2}')"; [ -n "$t" ] && [ "$t" -gt 0 ] && [ $((u*100/t)) -gt "$1" ]; }
@@ -965,7 +965,7 @@ app.whenReady().then(() => {
   ipcMain.handle('auto:test', async (event, { id, autoId }) => {
     const server = loadServers().find((s) => s.id === id);
     if (!server || !server.sshUser) return { ok: false, error: 'SSH requis' };
-    const r = await sshExec(server, `"$HOME/.mc-panel/auto-${autoId}.sh" --run; echo "RC=$?"; echo '--- log ---'; tail -20 "$HOME/.mc-panel/auto-${autoId}.log" 2>/dev/null`, 90000);
+    const r = await sshExec(server, `L="$HOME/.mc-panel/auto-${autoId}.log"; B=$(wc -l < "$L" 2>/dev/null || echo 0); "$HOME/.mc-panel/auto-${autoId}.sh" --run; echo "RC=$?"; echo '--- log (nouvelles lignes de ce test) ---'; tail -n +$((B+1)) "$L" 2>/dev/null`, 90000);
     if (r.error) return { ok: false, error: r.error };
     return { ok: true, out: r.out || '' };
   });
