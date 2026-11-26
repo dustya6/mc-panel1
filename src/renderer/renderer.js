@@ -1495,7 +1495,7 @@ function updateSrvButtons() {
 async function loadServerCtl() {
   if (!currentServer || !currentServer.sshUser) return;
   if (srvDirEl) srvDirEl.textContent = `Dossier : ${currentServer.serverDir || '—'}`;
-  const cmd = "p=$(pgrep -f 'server\.jar' | head -1); if [ -n \"$p\" ]; then echo \"PID=$p\"; ps -o etimes= -p \"$p\" | tr -d ' '; else echo STOPPED; fi";
+  const cmd = "p=$(pgrep -f 'java.*\\.jar' | head -1); if [ -z \"$p\" ]; then p=$(pgrep -f 'server\\.jar' | head -1); fi; if [ -n \"$p\" ]; then echo \"PID=$p\"; ps -o etimes= -p \"$p\" | tr -d ' '; else echo STOPPED; fi";
   let res;
   try {
     res = await window.api.sshExec(currentServer.id, cmd);
