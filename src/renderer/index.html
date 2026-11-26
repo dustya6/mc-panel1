@@ -7,8 +7,12 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main>
-      <nav id="nav" hidden>
+    <nav id="nav" hidden>
+      <div class="brand">
+        <div class="brand-logo">MC</div>
+        <div class="brand-txt"><h1>MC PANEL</h1><p class="brand-sub">panneau de contrôle</p></div>
+      </div>
+      <div class="nav-btns">
         <button type="button" class="nav-btn active" data-page="overview">Tableau de bord</button>
         <button type="button" class="nav-btn" data-page="console" id="nav-console">Console</button>
         <button type="button" class="nav-btn" data-page="server" id="nav-server">Serveur</button>
@@ -18,12 +22,18 @@
         <button type="button" class="nav-btn" data-page="automations" id="nav-auto">Automatisations</button>
         <button type="button" class="nav-btn" data-page="servers">Mes serveurs</button>
         <button type="button" class="nav-btn" data-page="settings" id="nav-settings">Réglages</button>
+      </div>
+      <div class="nav-foot">
         <span id="build-tag" class="muted"></span>
         <button type="button" id="btn-refresh" class="ghost">Rafraîchir</button>
-      </nav>
+      </div>
+    </nav>
+    <main>
       <section id="welcome" hidden>
+        <div class="welcome-logo">MC</div>
+        <h1 class="welcome-title">MC PANEL</h1>
+        <p class="muted welcome-sub">Connecte ton serveur Minecraft et vois tout en direct :<br />joueurs, statistiques, console...</p>
         <button type="button" id="btn-welcome-add" class="primary big">＋ Ajouter un serveur</button>
-        <p class="muted">Connecte ton serveur Minecraft et vois tout en direct :<br />joueurs, statistiques, console...</p>
       </section>
       <section id="setup" hidden>
         <div class="setup-grid">

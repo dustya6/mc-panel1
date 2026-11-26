@@ -2,11 +2,11 @@
 // Le compilateur cote main (main.js) transforme ca en script bash + cron/watcher sur le VPS.
 (function () {
   const CATS = {
-    trigger: { label: 'Déclencheurs', color: '#d29922' },
-    cond: { label: 'Conditions (bloquent la suite si fausses)', color: '#f0883e' },
-    action: { label: 'Actions', color: '#3b82f6' },
-    time: { label: 'Gestion du temps', color: '#8957e5' },
-    error: { label: 'Gestion des erreurs', color: '#e5534b' },
+    trigger: { label: 'Déclencheurs', color: '#e0a83c' },
+    cond: { label: 'Conditions (bloquent la suite si fausses)', color: '#f08a3c' },
+    action: { label: 'Actions', color: '#7cb342' },
+    time: { label: 'Gestion du temps', color: '#9b7ede' },
+    error: { label: 'Gestion des erreurs', color: '#e5484d' },
   };
   const COND_OPTS = [
     ['online', 'serveur en ligne'], ['offline', 'serveur hors ligne'], ['tps15', 'TPS < 15'],
