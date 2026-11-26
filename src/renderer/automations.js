@@ -175,7 +175,7 @@
     const ul = $('auto-list');
     ul.innerHTML = '';
     if (!S.autos.length) {
-      const li = el('li', 'muted', 'Aucune automatisation pour ce serveur — clique « ＋ Nouvelle » ou « Presets 1 clic ».');
+      const li = el('li', 'muted', 'Aucune automatisation.');
       ul.appendChild(li);
       return;
     }
@@ -183,7 +183,7 @@
       const li = el('li', 'auto-item' + (a.id === S.selId ? ' sel' : ''));
       const trLabel = a.trigger ? (META[a.trigger.kind] ? META[a.trigger.kind].label : a.trigger.kind) : 'sans déclencheur';
       const name = el('span', 'auto-item-name', a.name || '(sans nom)');
-      const sub = el('span', 'auto-item-sub', ` ${trLabel} · ${a.blocks.length} bloc(s)`);
+      const sub = el('span', 'auto-item-sub', trLabel);
       const badge = el('span', 'badge ' + (a.enabled !== false ? 'online' : 'offline'), a.enabled !== false ? 'activée' : 'désactivée');
       const open = el('button', 'ghost ab-btn', 'Ouvrir');
       open.addEventListener('click', () => { S.selId = a.id; S.selBlock = null; renderList(); renderEditor(); });
@@ -232,7 +232,6 @@
       for (const m of BLOCKS.filter((b) => b.cat === cat)) {
         const b = el('button', 'pal-block cat-' + cat);
         b.appendChild(el('span', 'pal-label', m.label));
-        if (DESC[m.kind]) b.appendChild(el('span', 'pal-desc', DESC[m.kind]));
         b.addEventListener('click', () => {
           const a = auto();
           if (!a) return;
@@ -271,11 +270,11 @@
     if (!a) return;
     // zone déclencheur
     const tz = el('div', 'auto-trigger-zone');
-    const th = el('div', 'ab-zone-label', '1 · DÉCLENCHEUR (un seul, en haut)');
+    const th = el('div', 'ab-zone-label', 'DÉCLENCHEUR');
     tz.appendChild(th);
     if (a.trigger) tz.appendChild(blockEl(a.trigger, true));
     else {
-      const b = el('button', 'auto-trigger-empty', '＋ Choisir un déclencheur (blocs jaunes, palette à gauche)');
+      const b = el('button', 'auto-trigger-empty', '＋ Déclencheur');
       b.addEventListener('click', () => {
         const pal = $('auto-palette');
         const heads = pal.querySelectorAll('.pal-cat');
@@ -290,10 +289,10 @@
   function zoneEl(list, label, listRef) {
     const active = listRef === S.insertList;
     const z = el('div', 'auto-zone' + (active ? ' insert-here' : ''));
-    const head = el('div', 'ab-zone-label', label === 'racine' ? '2 · BLOCS (exécutés de haut en bas)' : label.toUpperCase());
+    const head = el('div', 'ab-zone-label', label === 'racine' ? 'BLOCS' : label.toUpperCase());
     z.appendChild(head);
     for (let i = 0; i < list.length; i++) z.appendChild(blockEl(list[i], false, i + 1));
-    const add = el('button', 'ab-add', active ? '✓ zone d’ajout active — choisis un bloc à gauche' : '＋ ajouter dans cette zone');
+    const add = el('button', 'ab-add', active ? '✓ ici' : '＋ ici');
     add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); renderCanvas(); });
     z.appendChild(add);
     return z;
@@ -372,7 +371,7 @@
     const a = auto();
     if (!a) return;
     const b = S.selIsTrigger ? a.trigger : S.selBlock;
-    if (!b) { box.appendChild(el('p', 'muted', 'Clique sur un bloc pour régler ses paramètres.')); return; }
+    if (!b) return;
     const m = META[b.kind] || {};
     const titleRow = el('div', 'pal-cat');
     const chip = el('span', 'pal-chip');
@@ -380,7 +379,7 @@
     titleRow.appendChild(chip);
     titleRow.appendChild(el('span', null, (S.selIsTrigger ? 'Déclencheur : ' : 'Bloc : ') + (m.label || b.kind)));
     box.appendChild(titleRow);
-    if (DESC[b.kind]) box.appendChild(el('p', 'ap-desc', DESC[b.kind]));
+
     for (const p of (m.params || [])) {
       const lab = el('label', 'ap-label', p.label);
       let input;
@@ -408,7 +407,7 @@
       lab.appendChild(input);
       box.appendChild(lab);
     }
-    if (!m.params || !m.params.length) box.appendChild(el('p', 'muted', 'Ce bloc n’a pas de réglage.'));
+    if (!m.params || !m.params.length) return;
   }
 
   // ---------- validation ----------
@@ -447,7 +446,7 @@
     if (!a) return;
     const errs = validate(a);
     if (!errs.length) {
-      box.appendChild(el('div', 'av-ok', '✓ Automatisation valide — tu peux l’enregistrer et la déployer.'));
+      box.appendChild(el('div', 'av-ok', '✓ Valide'));
       return;
     }
     for (const e of errs) {
@@ -552,8 +551,7 @@
     box.innerHTML = '';
     for (const p of PRESETS) {
       const card = el('button', 'preset-card');
-      card.appendChild(el('span', 'preset-name', 'Preset · ' + p.name));
-      card.appendChild(el('span', 'preset-desc', PRESET_DESC[p.name] || ''));
+      card.appendChild(el('span', 'preset-name', p.name));
       card.addEventListener('click', async () => {
         const a = { id: 'auto' + Date.now(), name: p.name, enabled: false, trigger: mkBlock(p.trigger.kind), blocks: withUids(p.blocks) };
         a.trigger.params = { ...p.trigger.params };
@@ -562,7 +560,7 @@
         await persist();
         box.hidden = true;
         renderList(); renderEditor();
-        flashStatus(`Preset « ${p.name} » créé ✓ — vérifie les blocs puis « Enregistrer et déployer sur le VPS ».`);
+        flashStatus('Preset créé ✓');
       });
       box.appendChild(card);
     }

@@ -192,7 +192,6 @@
           </div>
           <ul id="auto-list" class="auto-list"></ul>
           <div id="auto-presets" class="preset-row" hidden></div>
-          <p class="hint">Les automatisations tournent sur le VPS (script + cron), même quand cette appli est fermée. Elles sont stockées par serveur et cet onglet n'apparaît que pour les serveurs VPS avec SSH.</p>
           <pre id="auto-status-out" class="auto-log" hidden></pre>
         </div>
         <div class="card" id="auto-editor-card" hidden>
@@ -201,7 +200,6 @@
             <input id="auto-edit-name" type="text" placeholder="Nom de l'automatisation" />
             <label class="auto-en-label"><input type="checkbox" id="auto-edit-enabled" /> Activée</label>
           </div>
-          <p class="hint auto-ed-hint"><b>1)</b> choisis <b>un déclencheur</b> (jaune) en haut → <b>2)</b> ajoute des blocs avec la palette à gauche → <b>3)</b> clique sur un bloc pour le régler à droite → <b>4)</b> déploie sur le VPS.</p>
           <div class="auto-layout">
             <div class="auto-palette" id="auto-palette"></div>
             <div class="auto-main">
@@ -215,7 +213,7 @@
               </div>
               <pre id="auto-test-out" class="auto-log" hidden></pre>
             </div>
-            <div class="auto-params" id="auto-params"><p class="muted">Sélectionne un bloc dans la pile pour modifier ses réglages.</p></div>
+            <div class="auto-params" id="auto-params"></div>
           </div>
           <div class="card-title auto-log-title">Historique (log sur le VPS) <button type="button" id="btn-auto-log" class="ghost">Voir le log</button></div>
           <pre id="auto-log-out" class="auto-log" hidden></pre>
