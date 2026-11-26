@@ -149,7 +149,7 @@
     serverId: null, server: null, autos: [], selId: null,
     insertList: null, insertLabel: 'racine',
     selBlock: null, selIsTrigger: false,
-    saveTimer: null,
+    saveTimer: null, dragUid: null,
   };
   const auto = () => S.autos.find((a) => a.id === S.selId) || null;
 
@@ -214,7 +214,6 @@
     $('auto-presets').hidden = true;
     renderPalette();
     renderCanvas();
-    renderParams();
     renderValidation();
   }
 
@@ -240,7 +239,9 @@
             a.trigger = mkBlock(m.kind);
             S.selBlock = a.trigger; S.selIsTrigger = true;
           } else {
-            (S.insertList || a.blocks).push(mkBlock(m.kind));
+            const nb = mkBlock(m.kind);
+            (S.insertList || a.blocks).push(nb);
+            S.selBlock = nb; S.selIsTrigger = false;
           }
           renderCanvas(); renderValidation();
         });
@@ -293,22 +294,93 @@
     const head = el('div', 'ab-zone-label', label === 'racine' ? 'BLOCS' : label.toUpperCase());
     z.appendChild(head);
     for (let i = 0; i < list.length; i++) z.appendChild(blockEl(list[i], false, i + 1));
+    z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('drag-over'); });
+    z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
+    z.addEventListener('drop', (e) => {
+      e.preventDefault();
+      z.classList.remove('drag-over');
+      const uid = S.dragUid || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+      if (!uid) { renderCanvas(); return; }
+      const a = auto();
+      if (!a) return;
+      const b = (a.trigger && a.trigger.uid === uid) ? null : findBlockByUid(uid);
+      if (!b) { renderCanvas(); return; }
+      removeFromParent(b);
+      listRef.push(b);
+      S.insertList = listRef; S.insertLabel = label;
+      S.selBlock = b; S.selIsTrigger = false;
+      renderPalette(); renderCanvas(); renderValidation();
+    });
     const add = el('button', 'ab-add', active ? '✓ ici' : '＋ ici');
     add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); renderCanvas(); });
     z.appendChild(add);
     return z;
   }
 
+  function findBlockByUid(uid) {
+    const a = auto();
+    let found = null;
+    const walk = (list) => {
+      for (const x of list) {
+        if (x.uid === uid) { found = x; return true; }
+        if (x.children) for (const z of Object.keys(x.children)) if (walk(x.children[z])) return true;
+      }
+      return false;
+    };
+    if (a) walk(a.blocks);
+    return found;
+  }
+
+  function removeFromParent(b) {
+    const a = auto();
+    const walk = (list) => {
+      const i = list.indexOf(b);
+      if (i >= 0) { list.splice(i, 1); return true; }
+      for (const x of list) if (x.children) for (const z of Object.keys(x.children)) if (walk(x.children[z])) return true;
+      return false;
+    };
+    return a && walk(a.blocks);
+  }
+
+  function moveBlockToUid(uid, beforeBlock, after) {
+    const a = auto();
+    if (!a) return;
+    if (a.trigger && a.trigger.uid === uid) { renderCanvas(); return; }
+    const b = findBlockByUid(uid);
+    if (!b || b === beforeBlock) { renderCanvas(); return; }
+    removeFromParent(b);
+    const list = findListOf(beforeBlock);
+    if (list) list.splice(after ? list.indexOf(beforeBlock) + 1 : list.indexOf(beforeBlock), 0, b);
+    S.selBlock = b; S.selIsTrigger = false;
+    renderCanvas(); renderValidation();
+  }
+
   function blockEl(b, isTrigger, num) {
     const m = META[b.kind] || { cat: b.cat, label: b.kind };
-    const d = el('div', 'auto-block cat-' + m.cat + (S.selBlock === b && S.selIsTrigger === isTrigger ? ' sel' : ''));
+    const selected = S.selBlock === b && S.selIsTrigger === isTrigger;
+    const d = el('div', 'auto-block cat-' + m.cat + (selected ? ' sel' : ''));
     d.dataset.uid = b.uid;
     const head = el('div', 'ab-head');
+    head.draggable = true;
+    head.addEventListener('dragstart', (e) => {
+      S.dragUid = b.uid;
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', b.uid); } catch { } }
+    });
     head.appendChild(el('span', 'ab-num' + (isTrigger ? ' ab-num-trig' : ''), isTrigger ? '►' : String(num)));
     head.appendChild(el('span', 'ab-label', m.label));
     const sum = paramSummary(b);
     if (sum) head.appendChild(el('span', 'ab-sum', sum));
-    head.addEventListener('click', () => { S.selBlock = b; S.selIsTrigger = isTrigger; renderCanvas(); renderParams(); });
+    head.addEventListener('click', () => {
+      if (selected) { S.selBlock = null; S.selIsTrigger = false; }
+      else { S.selBlock = b; S.selIsTrigger = isTrigger; }
+      renderCanvas(); renderValidation();
+    });
+    head.addEventListener('dragover', (e) => { e.preventDefault(); });
+    head.addEventListener('drop', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const uid = S.dragUid || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+      if (uid) moveBlockToUid(uid, b, false);
+    });
     const btns = el('span', 'ab-btns');
     const up = el('button', 'ghost ab-btn', '↑');
     up.title = 'Monter';
@@ -322,6 +394,11 @@
     btns.appendChild(up); btns.appendChild(dn); btns.appendChild(del);
     head.appendChild(btns);
     d.appendChild(head);
+    if (selected) {
+      const pb = el('div', 'ab-params');
+      fillParamFields(b, pb);
+      d.appendChild(pb);
+    }
     if (CONTAINER_ZONES[b.kind]) {
       const zones = CONTAINER_ZONES[b.kind];
       for (const zname of zones) {
@@ -362,25 +439,12 @@
       const list = findListOf(b);
       if (list) list.splice(list.indexOf(b), 1);
     }
-    if (S.selBlock === b) { S.selBlock = null; renderParams(); }
+    if (S.selBlock === b) S.selBlock = null;
     renderCanvas(); renderValidation();
   }
 
-  function renderParams() {
-    const box = $('auto-params');
-    box.innerHTML = '';
-    const a = auto();
-    if (!a) return;
-    const b = S.selIsTrigger ? a.trigger : S.selBlock;
-    if (!b) return;
+  function fillParamFields(b, box) {
     const m = META[b.kind] || {};
-    const titleRow = el('div', 'pal-cat');
-    const chip = el('span', 'pal-chip');
-    chip.style.background = (CATS[m.cat] && CATS[m.cat].color) || '#888';
-    titleRow.appendChild(chip);
-    titleRow.appendChild(el('span', null, (S.selIsTrigger ? 'Déclencheur : ' : 'Bloc : ') + (m.label || b.kind)));
-    box.appendChild(titleRow);
-
     for (const p of (m.params || [])) {
       const lab = el('label', 'ap-label', p.label);
       let input;
@@ -408,7 +472,6 @@
       lab.appendChild(input);
       box.appendChild(lab);
     }
-    if (!m.params || !m.params.length) return;
   }
 
   // ---------- validation ----------

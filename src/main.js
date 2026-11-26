@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'auto-ui-v5';
+const BUILD = 'auto-ui-v6';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
