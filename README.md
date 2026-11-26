@@ -1,5 +1,8 @@
 # MC Panel
 
+> Site de vente (page d'achat + paiement Worldline + téléchargement) : voir [`site/README.md`](site/README.md).
+
+
 Application de bureau (Windows, macOS, Linux) pour surveiller et gérer un serveur Minecraft à distance : joueurs en ligne, informations du serveur et console RCON.
 
 ## Prérequis

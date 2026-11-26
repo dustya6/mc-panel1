@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self'; script-src 'self'">
+<title>MC Panel — appli de bureau pour serveur Minecraft</title>
+<!-- REMPLACE le prix ci-dessous (ligne avec id="prix") par ton prix, ex: 19.90 CHF TTC -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-head">
+  <a class="brand" href="index.html">
+    <span class="logo">MC</span>
+    <span class="wordmark">Panel</span>
+  </a>
+  <nav class="site-nav">
+    <a href="#produit">Produit</a>
+    <a href="#prix">Prix</a>
+    <a href="#cgv">CGV</a>
+    <a href="#remboursement">Remboursement</a>
+    <a href="#apropos">À propos</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero" id="top">
+    <p class="kicker">Application Windows — téléchargement immédiat</p>
+    <h1>Gérez votre serveur Minecraft<br><span class="accent">depuis une appli de bureau.</span></h1>
+    <p class="lead">
+      MC Panel se connecte à <b>votre</b> serveur (VPS ou Aternos) et affiche en direct :
+      joueurs en ligne, console, statistiques, automatisations par blocs, plugins.
+      Tout reste sur votre ordinateur — aucun compte, aucune donnée envoyée.
+    </p>
+    <div class="price-line">
+      <span class="price" id="prix">XX.XX CHF TTC</span>
+      <a class="btn primary big" id="btn-payer" href="#" aria-disabled="true">Payer et télécharger</a>
+    </div>
+    <p class="hint" id="pay-hint" hidden>Paiement pas encore configuré — voir <code>site/README.md</code> dans le dépôt.</p>
+    <p class="hint">Paiement sécurisé par Worldline (carte bancaire, Twint, PostFinance selon votre configuration marchand). Après le paiement, une page vous donne le lien de téléchargement.</p>
+  </section>
+
+  <!-- ================= PRODUIT ================= -->
+  <section id="produit">
+    <p class="kicker">Ce que fait l'appli</p>
+    <h2>Tout le contrôle de votre serveur, sans ligne de commande</h2>
+    <div class="grid">
+      <div class="card"><div class="card-label">Tableau de bord</div><h3>En direct</h3><p>Joueurs en ligne, latence, TPS, CPU, RAM, disque — avec graphiques sur 1 h à 30 jours.</p></div>
+      <div class="card"><div class="card-label">Console</div><h3>Terminal intégré</h3><p>Envoyez des commandes au serveur, historique avec les flèches haut/bas, erreurs en rouge.</p></div>
+      <div class="card"><div class="card-label">Joueurs</div><h3>Actions en un clic</h3><p>Kick, ban, op, deop, gamemode, whitelist — et recherche de tous les joueurs déjà venus.</p></div>
+      <div class="card"><div class="card-label">Automatisations</div><h3>Blocs visuels</h3><p>Sauvegardes automatiques, redémarrages programmés, commandes à heure fixe — assemblés comme des blocs, sans coder.</p></div>
+      <div class="card"><div class="card-label">Statistiques</div><h3>8 cartes</h3><p>Temps de fonctionnement, record de joueurs, taille du monde, temps de jeu total, morts, retours des joueurs, commandes console.</p></div>
+      <div class="card"><div class="card-label">Plugins</div><h3>Depuis Hangar</h3><p>Recherchez des plugins compatibles avec votre version et installez-les directement dans le dossier <code>plugins/</code> de votre serveur.</p></div>
+      <div class="card"><div class="card-label">Serveurs</div><h3>VPS ou Aternos</h3><p>Connectez plusieurs serveurs. Sur Aternos gratuit, les fonctions qui ont besoin de SSH sont simplement masquées.</p></div>
+      <div class="card"><div class="card-label">Confidentialité</div><h3>100 % local</h3><p>Vos mots de passe sont chiffrés par Windows sur votre PC. Rien n'est envoyé à un serveur.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= COMMENT ÇA MARCHE ================= -->
+  <section id="comment">
+    <p class="kicker">3 étapes</p>
+    <h2>Acheter et installer</h2>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><p><b>Payez</b> avec le bouton « Payer et télécharger » (Worldline, en CHF).</p></div>
+      <div class="step"><span class="num">2</span><p><b>Téléchargez</b> le fichier d'installation <code>.exe</code> sur la page de confirmation du paiement.</p></div>
+      <div class="step"><span class="num">3</span><p><b>Installez</b> puis cliquez sur « + Ajouter un serveur » : entrez l'adresse de votre serveur et son mot de passe RCON, l'appli teste la connexion toute seule.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= PRIX ================= -->
+  <section id="prix">
+    <p class="kicker">Prix</p>
+    <h2>Une licence, un utilisateur</h2>
+    <div class="legal">
+      <p><b id="prix-2">XX.XX CHF TTC</b> — paiement unique, pas d'abonnement.</p>
+      <ul>
+        <li>Licence personnelle pour <b>un utilisateur</b>, utilisable sur <b>vos propres serveurs</b> Minecraft (autant que vous voulez).</li>
+        <li>Livrée sous forme de fichier d'installation Windows (<code>.exe</code>).</li>
+        <li>Mises à jour incluses tant que le produit est vendu.</li>
+        <li>Support par e-mail : <b>leon.capt@eduvd.ch</b></li>
+      </ul>
+      <a class="btn primary" id="btn-payer-2" href="#" aria-disabled="true">Payer avec Worldline</a>
+    </div>
+  </section>
+
+  <!-- ================= CGV ================= -->
+  <section id="cgv">
+    <p class="kicker">Légal</p>
+    <h2>Conditions générales de vente</h2>
+    <div class="legal">
+      <p><b>Éditeur :</b> Capt, 1350 rue de la gare — e-mail : leon.capt@eduvd.ch</p>
+      <ul>
+        <li><b>Objet :</b> vente d'une licence d'utilisation du logiciel « MC Panel » (application de bureau Windows).</li>
+        <li><b>Prix :</b> prix affiché sur cette page, en francs suisses, toutes taxes comprises (TTC).</li>
+        <li><b>Paiement :</b> via la plateforme Worldline. La licence est activée dès réception du paiement.</li>
+        <li><b>Livraison :</b> le logiciel est livré par téléchargement immédiat après le paiement, sous forme de fichier <code>.exe</code>.</li>
+        <li><b>Licence :</b> personnelle, non transférable, pour un utilisateur. Vous pouvez l'utiliser sur vos propres serveurs Minecraft. Toute revente ou distribution du fichier est interdite.</li>
+        <li><b>Droit applicable :</b> droit suisse. Tribunal compétent : domicile du vendeur.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= REMBOURSEMENT ================= -->
+  <section id="remboursement">
+    <p class="kicker">Droit de rétractation</p>
+    <h2>Remboursement 14 jours</h2>
+    <div class="legal">
+      <p>Pour les ventes conclues en ligne, vous disposez d'un <b>délai de 14 jours</b> à compter de l'achat pour demander le <b>remboursement intégral</b>, sans avoir à donner de raison.</p>
+      <p>Envoyez simplement votre demande à <b>leon.capt@eduvd.ch</b> en indiquant l'adresse e-mail utilisée pour le paiement. Le remboursement est effectué par le même moyen de paiement, en général sous quelques jours ouvrables.</p>
+    </div>
+  </section>
+
+  <!-- ================= À PROPOS ================= -->
+  <section id="apropos">
+    <p class="kicker">Éditeur</p>
+    <h2>À propos</h2>
+    <div class="legal">
+      <p><b>MC Panel</b> est édité par :</p>
+      <p><b>Capt</b><br>1350 rue de la gare<br>E-mail : <b>leon.capt@eduvd.ch</b></p>
+      <p><b>Données personnelles :</b> MC Panel fonctionne entièrement en local sur votre ordinateur. Aucun compte n'est nécessaire et aucune donnée personnelle n'est envoyée à l'éditeur. Les mots de passe de vos serveurs sont chiffrés par le système de votre ordinateur (Windows) et ne quittent jamais votre machine. Seules la recherche de plugins (Hangar) et l'affichage des avatars de joueurs (mc-heads.net) contactent des sites externes, avec uniquement le texte de recherche ou le pseudo du joueur.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <span>MC PANEL — © Capt</span>
+  <span>contact : leon.capt@eduvd.ch</span>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self'; script-src 'self'">
+<title>MC Panel — paiement réussi</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-head">
+  <a class="brand" href="index.html">
+    <span class="logo">MC</span>
+    <span class="wordmark">Panel</span>
+  </a>
+</header>
+
+<main class="wrap">
+  <section class="hero success-box">
+    <span class="ok-badge">Paiement confirmé</span>
+    <h1>Merci pour votre achat.</h1>
+    <p class="lead">Votre paiement a bien été reçu. Vous pouvez maintenant télécharger MC Panel.</p>
+
+    <div id="dl-zone">
+      <div class="price-line">
+        <a class="btn primary big" id="btn-dl" href="download/MC-Panel-Setup.exe" download>Télécharger MC Panel (.exe)</a>
+      </div>
+      <p class="hint">Conservez le fichier téléchargé : il contient le programme d'installation. Double-cliquez dessus pour installer MC Panel sur votre PC Windows, puis lancez l'appli et cliquez sur « + Ajouter un serveur ».</p>
+      <p class="hint">Un problème ? Écrivez à <b>leon.capt@eduvd.ch</b> (pensez à indiquer l'e-mail utilisé pour le paiement). Remboursement possible dans les 14 jours, sans raison — voir la page d'achat.</p>
+    </div>
+
+    <div id="dl-nonconfirme" hidden>
+      <p class="hint warn">Cette page ne peut être affichée que depuis la confirmation de paiement. Retournez à la <a href="index.html">page d'achat</a> et payez pour recevoir le lien de téléchargement.</p>
+    </div>
+
+    <p><a href="index.html">← Retour à la page d'achat</a></p>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <span>MC PANEL — © Capt</span>
+  <span>contact : leon.capt@eduvd.ch</span>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
