@@ -3,7 +3,7 @@
 (function () {
   const CATS = {
     trigger: { label: 'Déclencheurs', color: '#d29922' },
-    cond: { label: 'Conditions', color: '#f0883e' },
+    cond: { label: 'Conditions (bloquent la suite si fausses)', color: '#f0883e' },
     action: { label: 'Actions', color: '#3b82f6' },
     time: { label: 'Gestion du temps', color: '#8957e5' },
     error: { label: 'Gestion des erreurs', color: '#e5534b' },
@@ -571,7 +571,7 @@
       if (hasErrors(a)) { renderValidation(); flashStatus('Corrige les erreurs (✕) avant de tester.'); return; }
       const out = $('auto-test-out');
       out.hidden = false;
-      out.textContent = 'Test en cours sur le VPS…';
+      out.textContent = 'Test dry-run sur le VPS (aucune action réelle)…';
       const r = await window.api.autoTest({ id: S.serverId, autoId: a.id });
       out.textContent = r.ok ? r.out : `Erreur : ${r.error}`;
     });
