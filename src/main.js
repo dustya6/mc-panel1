@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'auto-deploy-msg';
+const BUILD = 'auto-rcon-host';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -439,7 +439,7 @@ def read_pkt(sock):
     raw = b''
     while len(raw) < 4:
         c = sock.recv(4 - len(raw))
-        if not c: raise SystemExit('closed')
+        if not c: raise SystemExit('connexion fermee par le serveur (mauvaise IP/port ou auth RCON ?)')
         raw += c
     (ln,) = struct.unpack('>i', raw)
     data = b''
@@ -466,7 +466,13 @@ def main():
     print(body)
     s.close()
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print('rcon error: ' + str(e), file=sys.stderr)
+        sys.exit(1)
 `;
 
 function configSh(server) {
@@ -474,6 +480,7 @@ function configSh(server) {
   const dirVal = raw.startsWith('~') ? `$HOME${raw.slice(1)}` : raw;
   return [
     `RCON_PORT=${Number(server.rconPort) || 25575}`,
+    `RCON_HOST=${shQuote(server.host || '127.0.0.1')}`,
     `RCON_PASSWORD=${shQuote(decrypt(server.encryptedPassword) || '')}`,
     `SERVER_DIR="${dirVal}"`,
     `START_CMD=${shQuote(server.startCmd || '')}`,
@@ -596,7 +603,7 @@ flock -n 9 || exit 0
 LAST_RC=0; LAST_COND=0; LAST_BACKUP_RC=0; ERRMODE=continue
 log(){ echo "$(date '+%F %T') [$AUTO_ID] $*" >> "$LOG"; }
 event(){ echo "$(date '+%F %T') EVENT: $*" >> "$LOG"; }
-rcon(){ python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
+rcon(){ python3 "$DIR/rcon.py" "\${RCON_HOST:-127.0.0.1}" "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG" && return 0; python3 "$DIR/rcon.py" 127.0.0.1 "\${RCON_PORT:-25575}" "$RCON_PASSWORD" "$1" 2>>"$LOG"; }
 online(){ rcon "list" >/dev/null 2>&1; }
 tpsval(){ rcon "tps" 2>/dev/null | grep -oE '[0-9]+([.][0-9]+)?' | head -1; }
 ram_pct_gt(){ read -r u t <<< "$(free -m 2>/dev/null | awk '/^Mem:/{print $3, $2}')"; [ -n "$t" ] && [ "$t" -gt 0 ] && [ $((u*100/t)) -gt "$1" ]; }
