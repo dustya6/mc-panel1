@@ -211,6 +211,9 @@
     $('auto-edit-enabled').checked = a.enabled !== false;
     S.insertList = a.blocks; S.insertLabel = 'racine';
     S.selBlock = null; S.selIsTrigger = false;
+    const fresh = !a.trigger && !a.blocks.length;
+    const pbox = $('auto-presets');
+    if (fresh) { renderPresetsPanel(); pbox.hidden = false; } else pbox.hidden = true;
     renderPalette();
     renderCanvas();
     renderParams();
@@ -526,11 +529,12 @@
       }
     });
     $('btn-auto-new').addEventListener('click', async () => {
-      const n = S.autos.length + 1;
-      const a = { id: 'auto' + Date.now(), name: `Automatisation ${n}`, enabled: false, trigger: null, blocks: [] };
+      const a = { id: 'auto' + Date.now(), name: '', enabled: false, trigger: null, blocks: [] };
       S.autos.push(a);
       S.selId = a.id;
       await persist(); renderList(); renderEditor();
+      const ni = $('auto-edit-name');
+      if (ni) ni.focus();
     });
     $('btn-auto-presets').addEventListener('click', () => {
       const box = $('auto-presets');
