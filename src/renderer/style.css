@@ -525,3 +525,31 @@ select:focus { outline: none; border-color: var(--primary); }
 .auto-log { margin-top: 10px; max-height: 220px; overflow-y: auto; background: #0a0d12; border: 1px solid var(--border); padding: 8px; font-family: var(--mono); font-size: 11px; white-space: pre-wrap; color: var(--text); }
 .auto-log-title { margin-top: 14px; }
 .preset-menu { border: 1px solid var(--primary); background: var(--panel-2); padding: 8px; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Automatisations V2 : interface plus clean ---------- */
+.auto-ed-head { display: flex; align-items: center; gap: 12px; }
+.auto-ed-title { font-weight: 800; font-size: 15px; white-space: nowrap; }
+.auto-ed-head input { flex: 1; margin-top: 0; }
+.auto-ed-hint { margin: 8px 0 12px; font-size: 12px; line-height: 1.5; }
+.auto-layout { grid-template-columns: 250px minmax(0, 1fr) 280px; gap: 14px; }
+.auto-main { min-width: 0; }
+.pal-cat { display: flex; align-items: center; }
+.pal-chip { display: inline-block; width: 10px; height: 10px; margin-right: 7px; flex: none; }
+.pal-cat-hot { background: rgba(210, 153, 34, .18); outline: 1px solid #d29922; border-radius: 0; }
+.pal-block { display: block; width: 100%; text-align: left; }
+.pal-label { display: block; font-weight: 600; }
+.pal-desc { display: block; font-size: 10px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+.auto-block { box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+.ab-num { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; background: var(--bg); border: 1px solid var(--border); font-size: 11px; font-weight: 700; color: var(--muted); flex: none; }
+.ab-num-trig { color: #d29922; border-color: #d29922; background: rgba(210, 153, 34, .12); }
+.auto-zone.insert-here { outline: 1px dashed var(--primary); outline-offset: 2px; }
+.auto-zone.insert-here > .ab-add { border-color: var(--primary); color: var(--primary); border-style: solid; }
+.auto-trigger-empty { display: block; width: 100%; padding: 14px; border: 1px dashed #d29922; background: rgba(210, 153, 34, .07); color: #d29922; font-size: 13px; font-weight: 600; cursor: pointer; }
+.auto-trigger-empty:hover { background: rgba(210, 153, 34, .16); }
+.ap-desc { font-size: 12px; color: var(--muted); margin: 6px 0 2px; line-height: 1.4; }
+.auto-validation { position: sticky; bottom: 0; }
+.preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.preset-card { flex: 1; min-width: 200px; text-align: left; border: 1px solid var(--border); background: var(--panel-2); padding: 12px 14px; cursor: pointer; }
+.preset-card:hover { border-color: var(--primary); background: var(--panel); }
+.preset-name { display: block; font-weight: 700; font-size: 13px; }
+.preset-desc { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }

@@ -64,6 +64,34 @@
   ];
   const META = {};
   for (const b of BLOCKS) META[b.kind] = b;
+  const DESC = {
+    tr_daily: 'Tous les jours à HH:MM (cron)', tr_at: 'Une seule fois à HH:MM', tr_every_min: 'Toutes les X minutes (cron)',
+    tr_every_hour: 'Toutes les X heures (cron)', tr_weekday: 'Un jour précis de la semaine (cron)',
+    tr_start: 'Quand le serveur démarre (watcher)', tr_stop: 'Quand le serveur s’arrête (watcher)',
+    tr_crash: 'Quand un crash est détecté dans les logs (watcher)', tr_offline: 'Quand le serveur passe hors ligne (watcher)',
+    tr_online: 'Quand le serveur revient en ligne (watcher)',
+    c_online: 'Vrai si le serveur répond (RCON)', c_offline: 'Vrai si le serveur ne répond plus',
+    c_ram: 'RAM utilisée > X %', c_tps: 'TPS < X', c_cpu: 'CPU > X %', c_disk: 'Moins de X Go libres sur le disque',
+    c_backup_ok: 'La dernière sauvegarde a réussi', c_backup_fail: 'La dernière sauvegarde a échoué',
+    c_time: 'Heure actuelle = HH:MM', c_last: 'Résultat de la condition précédente', c_if: 'Branche ALORS / SINON selon une condition',
+    a_start: 'Lance le serveur (commande de démarrage)', a_stop: 'Arrêt propre via RCON (stop)', a_restart: 'stop puis relance',
+    a_save: 'save-all (sauvegarde rapide)', a_backup: 'save-all + archive tar datée du monde',
+    a_prune: 'Supprime les backups de plus de X jours', a_state: 'Écrit l’état (en ligne + joueurs) dans le log',
+    a_perf: 'Écrit TPS / RAM / CPU / disque dans le log', a_cmd: 'Envoie une commande au serveur (ex : say Bonjour)',
+    a_mnt_on: 'whitelist on (bloque les non-whitelistés)', a_mnt_off: 'whitelist off',
+    a_report: 'Génère un fichier rapport de perfs sur le VPS', a_event: 'Ligne EVENT dans le log (vue aussi dans Actualités)',
+    t_wait: 'Pause de X secondes / minutes / heures', t_repeat: 'Répète les blocs imbriqués X fois',
+    t_repeat_until: 'Répète les blocs imbriqués jusqu’à ce que la condition soit vraie', t_stop: 'Arrête l’automatisation tout de suite',
+    t_skip: 'Ne fait rien (étape ignorée)', t_redo: 'Relance l’action précédente une fois',
+    e_on_fail: 'Si l’action précédente a échoué → exécute les blocs imbriqués', e_retry: 'Relance l’action précédente jusqu’à X fois',
+    e_noresp: 'Si le serveur ne répond pas → blocs imbriqués', e_backup_fail: 'Si la sauvegarde a échoué → blocs imbriqués',
+    e_stop_err: 'En cas d’erreur : tout s’arrête', e_cont_err: 'En cas d’erreur : on continue', e_log_err: 'Écrit l’erreur dans le log',
+  };
+  const PRESET_DESC = {
+    'Backup tous les jours à 3h00': 'save-all + archive tar du monde, chaque nuit à 3h00',
+    'Redémarrage auto si crash': 'détecte le crash dans les logs, attend 30 s, redémarre',
+    'Bonsoir automatique à 20h00': 'envoie « say Bonsoir » à tous les joueurs à 20h00',
+  };
   const RCON_ACTIONS = ['a_stop', 'a_restart', 'a_save', 'a_backup', 'a_cmd', 'a_mnt_on', 'a_mnt_off', 'a_state', 'a_perf'];
   const CONTAINER_ZONES = { c_if: ['then', 'else'], t_repeat: ['body'], t_repeat_until: ['body'], e_on_fail: ['body'], e_noresp: ['body'], e_backup_fail: ['body'] };
 
@@ -202,7 +230,9 @@
       head.style.borderLeftColor = CATS[cat].color;
       pal.appendChild(head);
       for (const m of BLOCKS.filter((b) => b.cat === cat)) {
-        const b = el('button', 'pal-block cat-' + cat, m.label);
+        const b = el('button', 'pal-block cat-' + cat);
+        b.appendChild(el('span', 'pal-label', m.label));
+        if (DESC[m.kind]) b.appendChild(el('span', 'pal-desc', DESC[m.kind]));
         b.addEventListener('click', () => {
           const a = auto();
           if (!a) return;
@@ -241,30 +271,40 @@
     if (!a) return;
     // zone déclencheur
     const tz = el('div', 'auto-trigger-zone');
-    const th = el('div', 'ab-zone-label', 'DÉCLENCHEUR (obligatoire, en premier)');
+    const th = el('div', 'ab-zone-label', '1 · DÉCLENCHEUR (un seul, en haut)');
     tz.appendChild(th);
     if (a.trigger) tz.appendChild(blockEl(a.trigger, true));
-    else tz.appendChild(el('div', 'auto-trigger-empty', 'Ajoute un bloc jaune « Déclencheurs » depuis la palette.'));
+    else {
+      const b = el('button', 'auto-trigger-empty', '＋ Choisir un déclencheur (blocs jaunes, palette à gauche)');
+      b.addEventListener('click', () => {
+        const pal = $('auto-palette');
+        const heads = pal.querySelectorAll('.pal-cat');
+        if (heads && heads[0]) { heads[0].classList.add('pal-cat-hot'); heads[0].scrollIntoView({ block: 'center' }); }
+      });
+      tz.appendChild(b);
+    }
     cv.appendChild(tz);
     cv.appendChild(zoneEl(a.blocks, 'racine', a.blocks));
   }
 
   function zoneEl(list, label, listRef) {
-    const z = el('div', 'auto-zone');
-    const head = el('div', 'ab-zone-label', label === 'racine' ? 'ACTIONS / LOGIQUE' : label.toUpperCase());
+    const active = listRef === S.insertList;
+    const z = el('div', 'auto-zone' + (active ? ' insert-here' : ''));
+    const head = el('div', 'ab-zone-label', label === 'racine' ? '2 · BLOCS (exécutés de haut en bas)' : label.toUpperCase());
     z.appendChild(head);
-    for (const b of list) z.appendChild(blockEl(b, false));
-    const add = el('button', 'ab-add', '＋ ajouter ici');
-    add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); });
+    for (let i = 0; i < list.length; i++) z.appendChild(blockEl(list[i], false, i + 1));
+    const add = el('button', 'ab-add', active ? '✓ zone d’ajout active — choisis un bloc à gauche' : '＋ ajouter dans cette zone');
+    add.addEventListener('click', () => { S.insertList = listRef; S.insertLabel = label; renderPalette(); renderCanvas(); });
     z.appendChild(add);
     return z;
   }
 
-  function blockEl(b, isTrigger) {
+  function blockEl(b, isTrigger, num) {
     const m = META[b.kind] || { cat: b.cat, label: b.kind };
     const d = el('div', 'auto-block cat-' + m.cat + (S.selBlock === b && S.selIsTrigger === isTrigger ? ' sel' : ''));
     d.dataset.uid = b.uid;
     const head = el('div', 'ab-head');
+    head.appendChild(el('span', 'ab-num' + (isTrigger ? ' ab-num-trig' : ''), isTrigger ? '►' : String(num)));
     head.appendChild(el('span', 'ab-label', m.label));
     const sum = paramSummary(b);
     if (sum) head.appendChild(el('span', 'ab-sum', sum));
@@ -334,7 +374,13 @@
     const b = S.selIsTrigger ? a.trigger : S.selBlock;
     if (!b) { box.appendChild(el('p', 'muted', 'Clique sur un bloc pour régler ses paramètres.')); return; }
     const m = META[b.kind] || {};
-    box.appendChild(el('div', 'pal-cat', (S.selIsTrigger ? 'Déclencheur' : 'Bloc') + ' : ' + (m.label || b.kind)));
+    const titleRow = el('div', 'pal-cat');
+    const chip = el('span', 'pal-chip');
+    chip.style.background = (CATS[m.cat] && CATS[m.cat].color) || '#888';
+    titleRow.appendChild(chip);
+    titleRow.appendChild(el('span', null, (S.selIsTrigger ? 'Déclencheur : ' : 'Bloc : ') + (m.label || b.kind)));
+    box.appendChild(titleRow);
+    if (DESC[b.kind]) box.appendChild(el('p', 'ap-desc', DESC[b.kind]));
     for (const p of (m.params || [])) {
       const lab = el('label', 'ap-label', p.label);
       let input;
@@ -488,25 +534,9 @@
       await persist(); renderList(); renderEditor();
     });
     $('btn-auto-presets').addEventListener('click', () => {
-      const a = auto() || (() => { const x = { id: 'auto' + Date.now(), name: 'Nouveau preset', enabled: false, trigger: null, blocks: [] }; S.autos.push(x); S.selId = x.id; return x; })();
-      if (!confirm('Appliquer un preset ? Les blocs actuels de cette automatisation seront remplacés.')) { renderList(); return; }
-      const menu = el('div', 'preset-menu');
-      for (const p of PRESETS) {
-        const b = el('button', 'pal-block cat-action', '🎁 ' + p.name);
-        b.addEventListener('click', async () => {
-          a.name = p.name;
-          a.trigger = mkBlock(p.trigger.kind);
-          a.trigger.params = { ...p.trigger.params };
-          a.blocks = withUids(p.blocks);
-          menu.remove();
-          await persist(); renderList(); renderEditor();
-          flashStatus('Preset appliqué ✓ — vérifie puis « Enregistrer et déployer ».');
-        });
-        menu.appendChild(b);
-      }
-      const card = $('auto-editor-card');
-      if (!card.hidden) { const old = card.querySelector('.preset-menu'); if (old) old.remove(); card.appendChild(menu); }
-      else { const old = document.querySelector('.preset-menu'); if (old) old.remove(); document.querySelector('#page-automations .card').appendChild(menu); renderEditor(); }
+      const box = $('auto-presets');
+      if (box.hidden) { renderPresetsPanel(); box.hidden = false; }
+      else box.hidden = true;
     });
     $('btn-auto-status').addEventListener('click', async () => {
       const out = $('auto-status-out');
@@ -515,6 +545,27 @@
       const r = await window.api.autoStatus(S.serverId);
       out.textContent = r.ok ? r.out : (r.noSsh ? 'SSH non configuré sur ce serveur.' : `Erreur : ${r.error}`);
     });
+  }
+
+  function renderPresetsPanel() {
+    const box = $('auto-presets');
+    box.innerHTML = '';
+    for (const p of PRESETS) {
+      const card = el('button', 'preset-card');
+      card.appendChild(el('span', 'preset-name', 'Preset · ' + p.name));
+      card.appendChild(el('span', 'preset-desc', PRESET_DESC[p.name] || ''));
+      card.addEventListener('click', async () => {
+        const a = { id: 'auto' + Date.now(), name: p.name, enabled: false, trigger: mkBlock(p.trigger.kind), blocks: withUids(p.blocks) };
+        a.trigger.params = { ...p.trigger.params };
+        S.autos.push(a);
+        S.selId = a.id;
+        await persist();
+        box.hidden = true;
+        renderList(); renderEditor();
+        flashStatus(`Preset « ${p.name} » créé ✓ — vérifie les blocs puis « Enregistrer et déployer sur le VPS ».`);
+      });
+      box.appendChild(card);
+    }
   }
 
   window.AutoPage = { init, reload };
