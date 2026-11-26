@@ -118,6 +118,57 @@
     e_cont_err: 'En cas d’erreur : on continue quand même (c’est le réglage par défaut).',
     e_log_err: 'Si l’étape d’avant a échoué, écrit « erreur » dans le journal.',
   };
+  // infos structurées de l'infobulle "i" (util / ex / io / warn) ; la ligne "ce que ça fait" = DESC
+  const INFO = {
+    tr_daily: { util: 'Faire quelque chose tous les jours à heure fixe', ex: 'Sauvegarder le serveur tous les jours à 03:00', io: 'Heure choisie (HH:MM)', warn: 'Utilise l’heure du serveur, pas celle de ton PC' },
+    tr_at: { util: 'Faire quelque chose une seule fois par jour à une heure précise', ex: 'Envoyer « bonsoir » à 20:00 pile', io: 'Heure (HH:MM)', warn: 'Ne se répète pas dans la même journée' },
+    tr_every_min: { util: 'Répéter une action toutes les X minutes', ex: 'Vérifier la vitesse du serveur toutes les 5 minutes', io: 'Nombre de minutes (1 à 59)', warn: 'Pour 60 min et plus, utilise « toutes les X heures »' },
+    tr_every_hour: { util: 'Répéter une action toutes les X heures', ex: 'Sauvegarde toutes les 2 heures', io: 'Nombre d’heures (1 à 23)', warn: '' },
+    tr_weekday: { util: 'Faire quelque chose un jour précis de la semaine', ex: 'Message « bon week-end » le vendredi à 18:00', io: 'Jour + heure', warn: '' },
+    tr_start: { util: 'Réagir au démarrage du serveur', ex: 'Prévenir les joueurs que le serveur est ouvert', io: 'État du serveur', warn: 'Vérifié toutes les 15 secondes' },
+    tr_stop: { util: 'Réagir à l’arrêt du serveur', ex: 'Faire une dernière sauvegarde avant l’arrêt', io: 'État du serveur', warn: '' },
+    tr_crash: { util: 'Réagir à un plantage du serveur', ex: 'Redémarrer automatiquement après un crash', io: 'Logs du serveur + dossier des rapports de crash', warn: 'Ne voit que les crashs arrivés pendant la surveillance' },
+    tr_offline: { util: 'Réagir quand le serveur ne répond plus', ex: 'Prévenir que le serveur est hors ligne', io: 'État du serveur', warn: '' },
+    tr_online: { util: 'Réagir quand le serveur revient en ligne', ex: 'Dire « le serveur est de retour »', io: 'État du serveur', warn: '' },
+    c_online: { util: 'Vérifier que le serveur répond', ex: 'Ne rien faire si le serveur est éteint', io: 'Réponse du serveur (oui / non)', warn: 'Si faux → bloque TOUS les blocs suivants' },
+    c_offline: { util: 'Vérifier que le serveur ne répond plus', ex: 'Alerter quand le serveur tombe', io: 'Réponse du serveur (oui / non)', warn: 'Si faux → bloque la suite' },
+    c_ram: { util: 'Vérifier la mémoire utilisée', ex: 'Alerter si la mémoire dépasse 90 %', io: 'Mémoire en % + seuil X', warn: 'Si faux → bloque la suite' },
+    c_tps: { util: 'Vérifier si le serveur rame', ex: 'Alerter si la vitesse descend sous 15', io: 'Vitesse actuelle (TPS) + seuil X', warn: 'Si faux → bloque la suite' },
+    c_cpu: { util: 'Vérifier la charge du processeur', ex: 'Alerter si le processeur dépasse 90 %', io: 'CPU en % + seuil X', warn: 'Si faux → bloque la suite' },
+    c_disk: { util: 'Vérifier la place restante sur le disque', ex: 'Alerter s’il reste moins de 10 Go', io: 'Go libres + seuil X', warn: 'Si faux → bloque la suite' },
+    c_backup_ok: { util: 'Savoir si la dernière sauvegarde a réussi', ex: 'Prévenir les joueurs seulement si la sauvegarde a marché', io: 'Résultat de la dernière sauvegarde', warn: 'Mets un bloc « Sauvegarde complète » avant' },
+    c_backup_fail: { util: 'Savoir si la dernière sauvegarde a échoué', ex: 'Refaire la sauvegarde si ça a planté', io: 'Résultat de la dernière sauvegarde', warn: 'Mets un bloc « Sauvegarde complète » avant' },
+    c_time: { util: 'Vérifier l’heure actuelle', ex: 'Activer un mode le soir à 20:00 pile', io: 'Heure actuelle + heure choisie', warn: 'Heure du serveur, pas de ton PC' },
+    c_last: { util: 'Réutiliser le résultat de la condition d’avant', ex: 'Enchaîner deux vérifications', io: 'Résultat de la condition précédente', warn: 'Ne marche que s’il y a une condition avant' },
+    c_if: { util: 'Faire deux chemins : ALORS / SINON', ex: 'Si le serveur répond → « en ligne », sinon → « hors ligne »', io: 'La condition choisie', warn: 'Blocs du HAUT = alors, du BAS = sinon' },
+    a_start: { util: 'Démarrer le serveur à distance', ex: 'Relancer le serveur automatiquement le matin', io: 'Commande de démarrage (renseignée dans Mes serveurs)', warn: 'Ne marche que si cette commande est renseignée ; ne fait rien si le serveur est déjà en ligne' },
+    a_stop: { util: 'Arrêter proprement le serveur', ex: 'Éteindre le serveur à 23:00', io: 'Connexion au serveur (mot de passe RCON)', warn: 'Le serveur sauvegarde avant de s’arrêter' },
+    a_restart: { util: 'Redémarrer le serveur', ex: 'Redémarrage chaque nuit à 04:00', io: 'Connexion au serveur + commande de démarrage', warn: 'Les joueurs sont déconnectés pendant le redémarrage' },
+    a_save: { util: 'Sauvegarder rapidement le monde', ex: 'Sauvegarde toutes les heures', io: 'Connexion au serveur', warn: 'Écrit sur le disque du serveur (pas une copie externe)' },
+    a_backup: { util: 'Faire une copie complète du monde', ex: 'Copie complète tous les jours à 03:00', io: 'Dossier du serveur', warn: 'Prend de la place sur le disque ; fichier dans backups/' },
+    a_prune: { util: 'Nettoyer les vieilles sauvegardes', ex: 'Garder seulement les sauvegardes des 7 derniers jours', io: 'Dossier backups/ + nombre de jours', warn: 'Suppression définitive' },
+    a_state: { util: 'Savoir si le serveur est en ligne et qui joue', ex: 'Noter la présence toutes les heures dans le journal', io: 'Connexion au serveur', warn: '' },
+    a_perf: { util: 'Noter la vitesse et les ressources du serveur', ex: 'Bilan toutes les 30 minutes dans le journal', io: 'Vitesse (TPS), mémoire, CPU, disque', warn: '' },
+    a_cmd: { util: 'Envoyer n’importe quelle commande au serveur', ex: 'say Bonjour tout le monde · give @p diamond 64 · time set day', io: 'Ta commande + connexion au serveur', warn: 'La commande doit exister côté serveur' },
+    a_mnt_on: { util: 'Fermer le serveur (mode maintenance)', ex: 'Fermer pendant une mise à jour', io: 'Connexion au serveur', warn: 'Ne marche que si la whitelist est activée sur le serveur' },
+    a_mnt_off: { util: 'Rouvrir le serveur à tout le monde', ex: 'Rouvrir après la mise à jour', io: 'Connexion au serveur', warn: '' },
+    a_report: { util: 'Créer un fichier avec l’état du serveur', ex: 'Un rapport pour toi chaque jour', io: 'Joueurs, vitesse, mémoire, disque', warn: 'Fichier créé dans le dossier de l’appli sur le serveur' },
+    a_event: { util: 'Laisser une trace dans le journal', ex: 'Noter « sauvegarde faite » à chaque fois', io: 'Ton message', warn: '' },
+    t_wait: { util: 'Faire une pause avant de continuer', ex: 'Attendre 30 secondes après un arrêt avant de relancer', io: 'Durée + unité (secondes / minutes / heures)', warn: '' },
+    t_repeat: { util: 'Refaire des blocs X fois', ex: 'Envoyer un rappel 3 fois', io: 'Nombre de fois + blocs placés à l’intérieur', warn: '' },
+    t_repeat_until: { util: 'Refaire des blocs jusqu’à ce qu’une condition soit vraie', ex: 'Réessayer jusqu’à ce que le serveur réponde', io: 'Condition + pause entre essais + blocs à l’intérieur', warn: 'Limité à 1000 essais pour éviter une boucle infinie' },
+    t_stop: { util: 'Tout arrêter immédiatement', ex: 'Stopper le scénario si une erreur a été vue avant', io: '', warn: '' },
+    t_skip: { util: 'Laisser un bloc vide (pour la lisibilité)', ex: 'Séparer deux parties du scénario', io: '', warn: 'Ne fait vraiment rien' },
+    t_redo: { util: 'Refair une fois l’action d’avant', ex: 'Réessayer une commande une seule fois', io: 'La dernière action', warn: 'Ne marche que s’il y a une action avant' },
+    e_on_fail: { util: 'Réagir si l’action d’avant a échoué', ex: 'Noter dans le journal si la sauvegarde a planté', io: 'Résultat de l’action précédente', warn: 'Se place APRÈS un autre bloc' },
+    e_retry: { util: 'Réessayer automatiquement une action qui a échoué', ex: 'Réessayer la sauvegarde jusqu’à 3 fois', io: 'Nombre d’essais + la dernière action', warn: 'Se place APRÈS un autre bloc' },
+    e_noresp: { util: 'Réagir si le serveur ne répond plus', ex: 'Noter « serveur hors ligne » dans le journal', io: 'État du serveur + blocs à l’intérieur', warn: 'Se place APRÈS un autre bloc' },
+    e_backup_fail: { util: 'Réagir si la sauvegarde a échoué', ex: 'Prévenir si la copie du monde n’a pas marché', io: 'Résultat de la sauvegarde + blocs à l’intérieur', warn: 'Mets d’abord un bloc « Sauvegarde complète »' },
+    e_stop_err: { util: 'Arrêter tout le scénario à la moindre erreur', ex: 'Mode strict', io: '', warn: '' },
+    e_cont_err: { util: 'Continuer même s’il y a une erreur', ex: 'C’est le réglage par défaut', io: '', warn: '' },
+    e_log_err: { util: 'Noter les erreurs dans le journal', ex: 'Tracer ce qui a échoué et quand', io: 'Résultat de l’étape précédente', warn: 'Se place APRÈS un autre bloc' },
+  };
+
   const RCON_ACTIONS = ['a_stop', 'a_restart', 'a_save', 'a_backup', 'a_cmd', 'a_mnt_on', 'a_mnt_off', 'a_state', 'a_perf'];
   const CONTAINER_ZONES = { c_if: ['then', 'else'], t_repeat: ['body'], t_repeat_until: ['body'], e_on_fail: ['body'], e_noresp: ['body'], e_backup_fail: ['body'] };
 
@@ -167,6 +218,45 @@
     renderEditor();
   }
   async function reload() { await init(); }
+
+
+  // ---------- infobulle "i" des blocs (fixe, opaque, structurée) ----------
+  let tipEl = null;
+  function blkTipEl() {
+    if (!tipEl) { tipEl = el('div', 'blk-tip'); tipEl.id = 'blk-tip'; tipEl.hidden = true; document.body.appendChild(tipEl); }
+    return tipEl;
+  }
+  function showBlkTip(icon, kind) {
+    const m = META[kind] || { label: kind };
+    const d = DESC[kind] || '';
+    const f = INFO[kind] || {};
+    const t = blkTipEl();
+    t.innerHTML = '';
+    t.appendChild(el('div', 'bt-h', m.label));
+    const row = (k, v) => { if (!v) return; const r = el('div', 'bt-row'); r.appendChild(el('span', 'bt-k', k)); r.appendChild(el('span', 'bt-v', v)); t.appendChild(r); };
+    row('À quoi ça sert ?', f.util);
+    row('Ce que ça fait', d);
+    row('Exemple', f.ex);
+    row('Données', f.io);
+    if (f.warn) { const r = el('div', 'bt-row bt-warn'); r.appendChild(el('span', 'bt-k', '⚠ Attention')); r.appendChild(el('span', 'bt-v', f.warn)); t.appendChild(r); }
+    t.hidden = false;
+    const rc = icon.getBoundingClientRect ? icon.getBoundingClientRect() : { right: 0, left: 0, top: 0 };
+    const tw = t.offsetWidth || 300, th = t.offsetHeight || 200;
+    const iw = (typeof window !== 'undefined' && window.innerWidth) || 1200;
+    const ih = (typeof window !== 'undefined' && window.innerHeight) || 800;
+    let x = rc.right + 10, y = rc.top;
+    if (x + tw > iw - 8) x = rc.left - tw - 10;
+    if (x < 8) x = 8;
+    if (y + th > ih - 8) y = ih - th - 8;
+    if (y < 8) y = 8;
+    t.style.left = x + 'px'; t.style.top = y + 'px';
+  }
+  function hideBlkTip() { const t = blkTipEl(); t.hidden = true; }
+  function bindBlkInfo(info, kind) {
+    info.addEventListener('mouseenter', () => showBlkTip(info, kind));
+    info.addEventListener('mouseleave', hideBlkTip);
+    info.addEventListener('click', (e) => { if (e) { e.stopPropagation(); e.preventDefault(); } showBlkTip(info, kind); });
+  }
 
   // ---------- liste ----------
   function listStatus(msg) {
@@ -254,8 +344,7 @@
         b.appendChild(el('span', 'pal-label', m.label));
         if (DESC[m.kind]) {
           const info = el('span', 'info pal-info', 'i');
-          info.dataset.tip = DESC[m.kind];
-          info.addEventListener('click', (e) => { if (e) { e.stopPropagation(); e.preventDefault(); } }); // le "i" n'ajoute pas le bloc
+          bindBlkInfo(info, m.kind); // le "i" n'ajoute pas le bloc
           b.appendChild(info);
         }
         b.addEventListener('click', () => {
@@ -412,7 +501,7 @@
     const desc = DESC[b.kind] || '';
     if (desc) {
       const info = el('span', 'info ab-info', 'i');
-      info.dataset.tip = desc; // infobulle au survol : à quoi sert ce bloc
+      bindBlkInfo(info, b.kind);
       d.appendChild(info);
     }
     if (selected) {

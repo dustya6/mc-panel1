@@ -563,3 +563,12 @@ body.light .ab-num { background: #ffffff; }
 .pal-block { position: relative; padding-right: 26px; }
 .pal-info { top: 4px; right: 4px; }
 .pal-info::after { width: 220px; }
+
+/* ---------- infobulle "i" opaque et structurée ---------- */
+.pal-info::after, .ab-info::after { display: none !important; }
+#blk-tip { position: fixed; z-index: 200; width: 300px; background: #000; border: 1px solid var(--accent); padding: 11px 13px; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.55); }
+body.light #blk-tip { background: #ffffff; box-shadow: 0 6px 18px rgba(29,37,20,.25); }
+.bt-h { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--accent-bright); margin-bottom: 7px; }
+.bt-row { margin-top: 7px; font-size: 12px; line-height: 1.45; }
+.bt-k { display: block; font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 1px; }
+.bt-warn .bt-k { color: var(--amber); }
