@@ -87,41 +87,8 @@
     e_noresp: 'Si le serveur ne répond pas → blocs imbriqués', e_backup_fail: 'Si la sauvegarde a échoué → blocs imbriqués',
     e_stop_err: 'En cas d’erreur : tout s’arrête', e_cont_err: 'En cas d’erreur : on continue', e_log_err: 'Écrit l’erreur dans le log',
   };
-  const PRESET_DESC = {
-    'Backup tous les jours à 3h00': 'save-all + archive tar du monde, chaque nuit à 3h00',
-    'Redémarrage auto si crash': 'détecte le crash dans les logs, attend 30 s, redémarre',
-    'Bonsoir automatique à 20h00': 'envoie « say Bonsoir » à tous les joueurs à 20h00',
-  };
   const RCON_ACTIONS = ['a_stop', 'a_restart', 'a_save', 'a_backup', 'a_cmd', 'a_mnt_on', 'a_mnt_off', 'a_state', 'a_perf'];
   const CONTAINER_ZONES = { c_if: ['then', 'else'], t_repeat: ['body'], t_repeat_until: ['body'], e_on_fail: ['body'], e_noresp: ['body'], e_backup_fail: ['body'] };
-
-  const PRESETS = [
-    {
-      name: 'Backup tous les jours à 3h00',
-      trigger: { kind: 'tr_daily', params: { time: '03:00' } },
-      blocks: [
-        { kind: 'a_save', params: {} },
-        { kind: 't_wait', params: { n: 10, unit: 'secondes' } },
-        { kind: 'a_backup', params: {} },
-      ],
-    },
-    {
-      name: 'Redémarrage auto si crash',
-      trigger: { kind: 'tr_crash', params: {} },
-      blocks: [
-        { kind: 't_wait', params: { n: 30, unit: 'secondes' } },
-        { kind: 'a_restart', params: {} },
-        { kind: 'a_event', params: { msg: 'Crash détecté : redémarrage automatique' } },
-      ],
-    },
-    {
-      name: 'Bonsoir automatique à 20h00',
-      trigger: { kind: 'tr_daily', params: { time: '20:00' } },
-      blocks: [
-        { kind: 'a_cmd', params: { cmd: 'say Bonsoir tout le monde !' } },
-      ],
-    },
-  ];
 
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => {
@@ -164,39 +131,63 @@
     await loadServer();
     if (!S.serverId) return;
     S.autos = await window.api.autoList(S.serverId);
-    if (!S.autos.some((a) => a.id === S.selId)) S.selId = S.autos.length ? S.autos[0].id : null;
+    if (S.selId && !S.autos.some((a) => a.id === S.selId)) S.selId = null; // on ouvre sur la liste
     renderList();
     renderEditor();
   }
   async function reload() { await init(); }
 
   // ---------- liste ----------
+  function listStatus(msg) {
+    const elx = $('auto-list-status');
+    if (!elx) return;
+    elx.textContent = msg || '';
+    clearTimeout(listStatus._t);
+    if (msg) listStatus._t = setTimeout(() => { elx.textContent = ''; }, 6000);
+  }
+
+  async function toggleAuto(a) {
+    if (a.enabled === false && hasErrors(a)) { listStatus('Ouvre l’automatisation et corrige les erreurs avant de l’activer.'); return; }
+    a.enabled = a.enabled === false;
+    await persist();
+    const r = await window.api.autoDeploy({ id: S.serverId, auto: a }).catch((e) => ({ ok: false, error: String(e) }));
+    if (r && r.ok) listStatus(a.enabled ? '✓ Activée et déployée sur le VPS' : '✓ Désactivée sur le VPS (cron commenté, watcher arrêté)');
+    else listStatus('Erreur : ' + ((r && (r.error || (r.problems || []).join(' | '))) || 'échec du déploiement'));
+    renderList();
+  }
+
+  async function deleteAuto(a) {
+    if (!confirm(`Supprimer « ${a.name || a.id} » ? Le script et la ligne cron seront aussi retirés du VPS.`)) return;
+    await window.api.autoClean({ id: S.serverId, autoId: a.id }).catch(() => {});
+    S.autos = S.autos.filter((x) => x.id !== a.id);
+    if (S.selId === a.id) S.selId = null;
+    await persist();
+    listStatus('✓ Supprimée');
+    renderList(); renderEditor();
+  }
+
   function renderList() {
+    $('auto-list-card').hidden = !!S.selId; // en édition : la liste est cachée
     const ul = $('auto-list');
     ul.innerHTML = '';
-    if (!S.autos.length) {
-      const li = el('li', 'muted', 'Aucune automatisation.');
-      ul.appendChild(li);
-      return;
-    }
+    $('auto-list-empty').hidden = S.autos.length > 0;
     for (const a of S.autos) {
-      const li = el('li', 'auto-item' + (a.id === S.selId ? ' sel' : ''));
+      const li = el('li', 'auto-item');
+      li.title = 'Cliquer pour ouvrir l’éditeur de blocs';
+      li.addEventListener('click', () => { S.selId = a.id; S.selBlock = null; S.insertList = null; renderList(); renderEditor(); });
       const trLabel = a.trigger ? (META[a.trigger.kind] ? META[a.trigger.kind].label : a.trigger.kind) : 'sans déclencheur';
       const name = el('span', 'auto-item-name', a.name || '(sans nom)');
-      const sub = el('span', 'auto-item-sub', trLabel);
-      const badge = el('span', 'badge ' + (a.enabled !== false ? 'online' : 'offline'), a.enabled !== false ? 'activée' : 'désactivée');
-      const open = el('button', 'ghost ab-btn', 'Ouvrir');
-      open.addEventListener('click', () => { S.selId = a.id; S.selBlock = null; renderList(); renderEditor(); });
-      const del = el('button', 'ghost ab-btn', 'Supprimer');
-      del.addEventListener('click', async () => {
-        if (!confirm(`Supprimer « ${a.name} » ? Le script et la ligne cron seront aussi retirés du VPS.`)) return;
-        await window.api.autoClean({ id: S.serverId, autoId: a.id }).catch(() => {});
-        S.autos = S.autos.filter((x) => x.id !== a.id);
-        await window.api.autoSave({ id: S.serverId, list: S.autos });
-        if (S.selId === a.id) S.selId = S.autos.length ? S.autos[0].id : null;
-        renderList(); renderEditor();
-      });
-      li.appendChild(name); li.appendChild(sub); li.appendChild(badge); li.appendChild(open); li.appendChild(del);
+      const sub = el('span', 'auto-item-sub', `${trLabel} · ${a.enabled !== false ? 'activée' : 'désactivée'}`);
+      const btns = el('span', 'auto-item-btns');
+      const tog = el('button', 'auto-toggle' + (a.enabled !== false ? ' active' : ''), a.enabled !== false ? 'Désactiver' : 'Activer');
+      tog.addEventListener('click', (e) => { if (e && e.stopPropagation) e.stopPropagation(); toggleAuto(a); });
+      btns.appendChild(tog);
+      if (a.enabled === false) { // on ne peut supprimer que si désactivée
+        const del = el('button', 'auto-del', 'Supprimer');
+        del.addEventListener('click', (e) => { if (e && e.stopPropagation) e.stopPropagation(); deleteAuto(a); });
+        btns.appendChild(del);
+      }
+      li.appendChild(name); li.appendChild(sub); li.appendChild(btns);
       ul.appendChild(li);
     }
   }
@@ -208,10 +199,8 @@
     if (!a) { card.hidden = true; return; }
     card.hidden = false;
     $('auto-edit-name').value = a.name || '';
-    $('auto-edit-enabled').checked = a.enabled !== false;
     S.insertList = a.blocks; S.insertLabel = 'racine';
     S.selBlock = null; S.selIsTrigger = false;
-    $('auto-presets').hidden = true;
     renderPalette();
     renderCanvas();
     renderValidation();
@@ -544,97 +533,25 @@
 
   function bindEditor() {
     $('auto-edit-name').addEventListener('change', () => { const a = auto(); if (a) { a.name = $('auto-edit-name').value.trim(); renderList(); renderValidation(); } });
-    $('auto-edit-enabled').addEventListener('change', async () => {
-      const a = auto(); if (!a) return;
-      a.enabled = $('auto-edit-enabled').checked;
-      await persist(); renderList();
-      const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
-      flashStatus(r.ok ? (a.enabled ? 'Activée et déployée ✓' : 'Désactivée sur le VPS ✓') : `Erreur : ${r.error || (r.problems || []).join(' | ')}`);
-    });
-    $('btn-auto-save').addEventListener('click', async () => {
-      const a = auto(); if (!a) return;
-      if (hasErrors(a)) { renderValidation(); flashStatus('Corrige les erreurs (✕) avant d’enregistrer.'); return; }
-      await persist(); renderList(); renderValidation();
-      flashStatus('Enregistré ✓');
-    });
-    $('btn-auto-deploy').addEventListener('click', async () => {
-      const a = auto(); if (!a) return;
-      if (hasErrors(a)) { renderValidation(); flashStatus('Corrige les erreurs (✕) avant de déployer.'); return; }
-      await persist(); renderList(); renderValidation();
-      flashStatus('Déploiement sur le VPS…');
-      const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
-      if (r.ok) flashStatus(`Déployé ✓ — ${a.enabled !== false ? 'activée' : 'DÉSACTIVÉE : coche « Activée » !'} (${r.cron.length} ligne(s) cron${r.watcher ? ' + watcher' : ''})`);
-      else flashStatus(`Erreur : ${r.error || (r.problems || []).join(' | ') || 'échec du déploiement'}`);
-    });
-    $('btn-auto-test').addEventListener('click', async () => {
-      const a = auto(); if (!a) return;
-      if (hasErrors(a)) { renderValidation(); flashStatus('Corrige les erreurs (✕) avant de tester.'); return; }
-      const out = $('auto-test-out');
-      out.hidden = false;
-      out.textContent = 'Test dry-run sur le VPS (aucune action réelle)…';
-      const r = await window.api.autoTest({ id: S.serverId, autoId: a.id });
-      out.textContent = r.ok ? r.out : `Erreur : ${r.error}`;
-    });
-    $('btn-auto-log').addEventListener('click', async () => {
-      const a = auto(); if (!a) return;
-      const out = $('auto-log-out');
-      out.hidden = false;
-      out.textContent = 'Chargement du log…';
-      const r = await window.api.autoLog({ id: S.serverId, autoId: a.id, n: 80 });
-      out.textContent = r.ok ? r.out : `Erreur : ${r.error}`;
-      // miroite les EVENT: nouveaux dans Actualités
-      if (r.ok) {
-        const events = String(r.out).split('\n').filter((l) => l.includes('EVENT:'));
-        const seenKey = `autoSeen_${a.id}`;
-        const seen = Number(await window.api.getSetting(seenKey)) || 0;
-        const fresh = events.slice(seen);
-        for (const line of fresh) {
-          const msg = line.split('EVENT:')[1].trim();
-          if (msg) await window.api.newsAdd({ ts: Date.now(), type: 'serveur', msg: `[auto] ${msg}` }).catch(() => {});
-        }
-        await window.api.setSetting(seenKey, events.length);
-      }
-    });
+    $('btn-auto-back').addEventListener('click', () => { S.selId = null; S.selBlock = null; renderList(); renderEditor(); });
     $('btn-auto-new').addEventListener('click', async () => {
       const a = { id: 'auto' + Date.now(), name: '', enabled: false, trigger: null, blocks: [] };
       S.autos.push(a);
       S.selId = a.id;
       await persist(); renderList(); renderEditor();
       const ni = $('auto-edit-name');
-      if (ni) ni.focus();
+      if (ni) { ni.focus(); if (ni.select) ni.select(); }
     });
-    $('btn-auto-presets').addEventListener('click', () => {
-      const box = $('auto-presets');
-      if (box.hidden) { renderPresetsPanel(); box.hidden = false; }
-      else box.hidden = true;
+    $('btn-auto-deploy').addEventListener('click', async () => {
+      const a = auto(); if (!a) return;
+      if (hasErrors(a)) { renderValidation(); flashStatus('Corrige les erreurs (✕) en dessous avant de déployer.'); return; }
+      a.enabled = true; // déployer = activer
+      await persist(); renderList(); renderValidation();
+      flashStatus('Déploiement sur le VPS…');
+      const r = await window.api.autoDeploy({ id: S.serverId, auto: a });
+      if (r.ok) flashStatus(`✓ Déployée et activée (${r.cron.length} ligne(s) cron${r.watcher ? ' + watcher' : ''})`);
+      else flashStatus(`Erreur : ${r.error || (r.problems || []).join(' | ') || 'échec du déploiement'}`);
     });
-    $('btn-auto-status').addEventListener('click', async () => {
-      const out = $('auto-status-out');
-      out.hidden = false;
-      out.textContent = 'Lecture du crontab et des watchers sur le VPS…';
-      const r = await window.api.autoStatus(S.serverId);
-      out.textContent = r.ok ? r.out : (r.noSsh ? 'SSH non configuré sur ce serveur.' : `Erreur : ${r.error}`);
-    });
-  }
-
-  function renderPresetsPanel() {
-    const box = $('auto-presets');
-    box.innerHTML = '';
-    for (const p of PRESETS) {
-      const card = el('button', 'preset-card');
-      card.appendChild(el('span', 'preset-name', p.name));
-      card.addEventListener('click', async () => {
-        const a = { id: 'auto' + Date.now(), name: p.name, enabled: false, trigger: mkBlock(p.trigger.kind), blocks: withUids(p.blocks) };
-        a.trigger.params = { ...p.trigger.params };
-        S.autos.push(a);
-        S.selId = a.id;
-        await persist();
-        box.hidden = true;
-        renderList(); renderEditor();
-        flashStatus('Preset créé ✓');
-      });
-      box.appendChild(card);
-    }
   }
 
   window.AutoPage = { init, reload };

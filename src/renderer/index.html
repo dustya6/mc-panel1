@@ -194,35 +194,30 @@
         </div>
       </section>
       <section id="page-automations" hidden>
-        <div class="card">
+        <div class="card" id="auto-list-card">
           <div class="card-title">Automatisations
             <button type="button" id="btn-auto-new" class="primary">Nouveau</button>
           </div>
           <ul id="auto-list" class="auto-list"></ul>
-          <pre id="auto-status-out" class="auto-log" hidden></pre>
+          <p id="auto-list-empty" class="hint">Aucune automatisation pour l'instant — clique sur « Nouveau ».</p>
+          <p id="auto-list-status" class="hint"></p>
         </div>
         <div class="card" id="auto-editor-card" hidden>
+          <div class="auto-ed-head">
+            <input id="auto-edit-name" type="text" placeholder="Nom de l'automatisation" />
+            <button type="button" id="btn-auto-back" class="ghost">← Retour</button>
+          </div>
           <div class="auto-layout">
             <div class="auto-palette" id="auto-palette"></div>
             <div class="auto-main">
               <div class="auto-canvas" id="auto-canvas"></div>
+              <div id="auto-validation" class="auto-validation"></div>
+              <div class="row auto-actions">
+                <button type="button" id="btn-auto-deploy" class="primary big">Déployer</button>
+                <span id="auto-save-status" class="hint"></span>
+              </div>
             </div>
           </div>
-          <div id="auto-validation" class="auto-validation"></div>
-          <div class="row auto-actions">
-            <input id="auto-edit-name" type="text" placeholder="Nom" />
-            <label class="auto-en-label"><input type="checkbox" id="auto-edit-enabled" /> Activée</label>
-            <button type="button" id="btn-auto-presets" class="ghost">Presets</button>
-            <button type="button" id="btn-auto-save">Enregistrer</button>
-            <button type="button" id="btn-auto-deploy" class="primary">Déployer</button>
-            <button type="button" id="btn-auto-test" class="ghost">Tester</button>
-            <button type="button" id="btn-auto-status" class="ghost">État VPS</button>
-            <button type="button" id="btn-auto-log" class="ghost">Log</button>
-            <span id="auto-save-status" class="hint"></span>
-          </div>
-          <div id="auto-presets" class="preset-row" hidden></div>
-          <pre id="auto-test-out" class="auto-log" hidden></pre>
-          <pre id="auto-log-out" class="auto-log" hidden></pre>
         </div>
       </section>
       <section id="page-servers" hidden>
