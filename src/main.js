@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'auto-test-fix';
+const BUILD = 'auto-audit';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -491,16 +491,22 @@ function configSh(server) {
 function cronForTrigger(tr, id) {
   const script = `$HOME/.mc-panel/auto-${id}.sh`;
   const p = tr.params || {};
-  const [h, m] = String(p.time || '03:00').split(':').map((x) => Math.max(0, Math.min(59, parseInt(x, 10) || 0)));
-  const mm = String(p.time || '03:00').split(':')[1] || '00';
-  const hh = String(p.time || '03:00').split(':')[0] || '03';
+  // heure HH:MM sanitisée : hh 0-23, mm 0-59, toujours sur 2 chiffres
+  const tp = String(p.time || '03:00').split(':');
+  let hh = parseInt(tp[0], 10), mm = parseInt(tp[1], 10);
+  if (!Number.isFinite(hh)) hh = 3;
+  if (!Number.isFinite(mm)) mm = 0;
+  hh = Math.max(0, Math.min(23, hh));
+  mm = Math.max(0, Math.min(59, mm));
+  const HH = String(hh).padStart(2, '0');
+  const MM = String(mm).padStart(2, '0');
   switch (tr.kind) {
-    case 'tr_daily': return [`${mm} ${hh} * * * ${script} --run`];
-    case 'tr_every_min': return [`*/${Math.max(1, Number(p.n) || 5)} * * * * ${script} --run`];
-    case 'tr_every_hour': return [`0 */${Math.max(1, Number(p.n) || 1)} * * * ${script} --run`];
+    case 'tr_daily': return [`${MM} ${HH} * * * ${script} --run`];
+    case 'tr_every_min': return [`*/${Math.min(59, Math.max(1, Number(p.n) || 5))} * * * * ${script} --run`];
+    case 'tr_every_hour': return [`0 */${Math.min(23, Math.max(1, Number(p.n) || 1))} * * * ${script} --run`];
     case 'tr_weekday': {
       const days = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 };
-      return [`${mm} ${hh} * * ${days[p.day] != null ? days[p.day] : 1} ${script} --run`];
+      return [`${MM} ${HH} * * ${days[p.day] != null ? days[p.day] : 1} ${script} --run`];
     }
     default: return null; // watcher
   }
@@ -566,6 +572,11 @@ function emitBlocks(blocks, ind) {
       if (prevSnippet) out += `${pad}i=0; LAST_RC=1; while [ "$LAST_RC" -ne 0 ] && [ $i -lt ${n} ]; do i=$((i+1)); log "nouvel essai $i/${n}"; ${prevSnippet}; LAST_RC=$?; done; [ "$LAST_RC" -ne 0 ] && log "ERR: ${label} a échoué après ${n} essais"\n`;
     } else if (b.kind === 't_redo') {
       if (prevSnippet) out += `${pad}${prevSnippet}; LAST_RC=$?\n`;
+    } else if (b.kind === 't_wait') {
+      const nw = Math.max(1, Number(b.params.n) || 10);
+      const mult = b.params.unit === 'heures' ? 3600 : b.params.unit === 'minutes' ? 60 : 1;
+      const sec = Math.max(1, Math.min(604800, Math.round(nw * mult)));
+      out += `${pad}sleep ${sec}; log "attente ${nw} ${b.params.unit || 'secondes'}"\n`;
     } else if (b.kind === 't_stop') {
       out += `${pad}log "arrêt de l'automatisation demandé"; exit 0\n`;
     } else if (b.kind === 't_skip') {
@@ -686,7 +697,7 @@ chmod 700 "$HOME/.mc-panel/auto-${id}.sh" && test -x "$HOME/.mc-panel/auto-${id}
   const tag = `mc-panel:${id}`;
   const enabled = auto.enabled !== false;
   const echoLines = cron.map((l) => `echo ${shQuote((enabled ? '' : '# ') + l + ' # ' + tag)}`).join('; ');
-  const r4 = await sshExec(server, `command -v crontab >/dev/null 2>&1 || echo NOCRON; (crontab -l 2>/dev/null | grep -v '${tag}'; ${echoLines}) 2>/dev/null | crontab - 2>/dev/null && echo CRONOK || echo CRONERR`, 30000);
+  const r4 = await sshExec(server, `command -v crontab >/dev/null 2>&1 || echo NOCRON; (crontab -l 2>/dev/null | grep -v '${tag}$'; ${echoLines}) 2>/dev/null | crontab - 2>/dev/null && echo CRONOK || echo CRONERR`, 30000);
   if (r4.error) return { ok: false, error: r4.error };
   const out4 = String(r4.out || '');
   if (out4.includes('NOCRON')) problems.push('la commande crontab manque sur le VPS → sudo apt install cron');
@@ -986,7 +997,7 @@ app.whenReady().then(() => {
   ipcMain.handle('auto:clean', async (event, { id, autoId }) => {
     const server = loadServers().find((s) => s.id === id);
     if (!server || !server.sshUser) return { ok: false, noSsh: true };
-    await sshExec(server, `pkill -f "auto-${autoId}.sh --watch" 2>/dev/null; rm -f "$HOME/.mc-panel/auto-${autoId}.sh" "$HOME/.mc-panel/auto-${autoId}.log" "$HOME/.mc-panel/auto-${autoId}.state" "$HOME/.mc-panel/auto-${autoId}.lock"; (crontab -l 2>/dev/null | grep -v 'mc-panel:${autoId}') | crontab -; true`, 30000);
+    await sshExec(server, `pkill -f "auto-${autoId}.sh --watch" 2>/dev/null; rm -f "$HOME/.mc-panel/auto-${autoId}.sh" "$HOME/.mc-panel/auto-${autoId}.log" "$HOME/.mc-panel/auto-${autoId}.state" "$HOME/.mc-panel/auto-${autoId}.lock"; (crontab -l 2>/dev/null | grep -v 'mc-panel:${autoId}$') | crontab -; true`, 30000);
     return { ok: true };
   });
 

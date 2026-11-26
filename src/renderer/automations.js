@@ -16,8 +16,8 @@
   const BLOCKS = [
     { kind: 'tr_daily', cat: 'trigger', label: 'Tous les jours à HH:MM', params: [{ k: 'time', label: 'Heure', type: 'time', def: '03:00' }] },
     { kind: 'tr_at', cat: 'trigger', label: 'À une heure précise (une fois)', params: [{ k: 'time', label: 'Heure', type: 'time', def: '12:00' }] },
-    { kind: 'tr_every_min', cat: 'trigger', label: 'Toutes les X minutes', params: [{ k: 'n', label: 'Minutes', type: 'number', min: 1, max: 1440, def: 5 }] },
-    { kind: 'tr_every_hour', cat: 'trigger', label: 'Toutes les X heures', params: [{ k: 'n', label: 'Heures', type: 'number', min: 1, max: 24, def: 1 }] },
+    { kind: 'tr_every_min', cat: 'trigger', label: 'Toutes les X minutes', params: [{ k: 'n', label: 'Minutes', type: 'number', min: 1, max: 59, def: 5 }] },
+    { kind: 'tr_every_hour', cat: 'trigger', label: 'Toutes les X heures', params: [{ k: 'n', label: 'Heures', type: 'number', min: 1, max: 23, def: 1 }] },
     { kind: 'tr_weekday', cat: 'trigger', label: 'Un jour de la semaine à HH:MM', params: [{ k: 'day', label: 'Jour', type: 'select', opts: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'], def: 'lundi' }, { k: 'time', label: 'Heure', type: 'time', def: '03:00' }] },
     { kind: 'tr_start', cat: 'trigger', label: 'Au démarrage du serveur' },
     { kind: 'tr_stop', cat: 'trigger', label: "À l'arrêt du serveur" },
@@ -470,6 +470,13 @@
     if (!a.name || !a.name.trim()) errs.push({ level: 'error', msg: "Donne un nom à l'automatisation.", uid: null });
     else if (S.autos.some((x) => x.id !== a.id && (x.name || '').trim().toLowerCase() === a.name.trim().toLowerCase())) errs.push({ level: 'error', msg: 'Ce nom est déjà utilisé par une autre automatisation de ce serveur.', uid: null });
     // au moins UNE action (bleu) dans toute l'automatisation — le reste est optionnel
+    const timeOk = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return !!m && Number(m[1]) <= 23 && Number(m[2]) <= 59; };
+    if (a.trigger) {
+      const tp = a.trigger.params || {};
+      if (a.trigger.kind === 'tr_every_min' && (Number(tp.n) < 1 || Number(tp.n) > 59)) errs.push({ level: 'error', msg: '« Toutes les X minutes » : entre 1 et 59.', uid: a.trigger.uid || null });
+      if (a.trigger.kind === 'tr_every_hour' && (Number(tp.n) < 1 || Number(tp.n) > 23)) errs.push({ level: 'error', msg: '« Toutes les X heures » : entre 1 et 23.', uid: a.trigger.uid || null });
+      if ((a.trigger.kind === 'tr_daily' || a.trigger.kind === 'tr_at' || a.trigger.kind === 'tr_weekday') && !timeOk(tp.time)) errs.push({ level: 'error', msg: 'Heure invalide (HH:MM, ex 20:30).', uid: a.trigger.uid || null });
+    }
     const all = [];
     const collect = (list) => { for (const b of list || []) { all.push(b); if (b.children) for (const z of Object.keys(b.children)) collect(b.children[z]); } };
     collect(a.blocks);
@@ -480,6 +487,8 @@
       let prev = prevAction;
       for (const b of list) {
         const m = META[b.kind];
+        if (b.cat === 'trigger') errs.push({ level: 'error', msg: 'Un bloc déclencheur (jaune) ne va que comme premier bloc.', uid: b.uid });
+        if (b.kind === 'c_time' && !timeOk(b.params.time)) errs.push({ level: 'error', msg: '« Si une heure précise… » : heure invalide (HH:MM).', uid: b.uid });
         if (b.kind === 'a_cmd' && !(b.params.cmd || '').trim()) errs.push({ level: 'error', msg: `« ${m.label} » : la commande est vide.`, uid: b.uid });
         if (b.kind === 't_wait' && !(Number(b.params.n) >= 1)) errs.push({ level: 'error', msg: '« Attendre » : la durée doit être au moins 1.', uid: b.uid });
         if (b.kind === 't_repeat' && (Number(b.params.n) < 1 || Number(b.params.n) > 1000)) errs.push({ level: 'error', msg: '« Répéter » : entre 1 et 1000.', uid: b.uid });
