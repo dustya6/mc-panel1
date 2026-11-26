@@ -809,8 +809,8 @@ let statsLogsCache = 0;
 let statsLogsData = null;
 let lastHistLen = -1;
 
-function fmtDur(ms) {
-  if (!ms || ms <= 0) return '0 min';
+function fmtDurMs(ms) {
+  if (ms == null || isNaN(ms) || ms <= 0) return '0 min';
   const m = Math.floor(ms / 60000);
   if (m < 60) return m + ' min';
   const h = Math.floor(m / 60);
@@ -834,63 +834,40 @@ function statCard(id, title, kw, value, sub) {
 async function loadStats() {
   if (!currentServer) return;
   const hist = await window.api.getHistory(currentServer.id).catch(() => []);
-  renderStats(hist || [], lastStatus);
+  renderStats(hist || []);
   applyStatsFilter();
   if (currentServer.sshUser) loadStatsLogs();
 }
 function loadStatsLight() {
   if (!currentServer) return;
-  window.api.getHistory(currentServer.id).then((h) => { renderStats(h || [], lastStatus); applyStatsFilter(); }).catch(() => {});
+  window.api.getHistory(currentServer.id).then((h) => { renderStats(h || []); applyStatsFilter(); }).catch(() => {});
 }
 
-function renderStats(hist, status) {
+function renderStats(hist) {
   if (!statsGrid) return;
   lastHistLen = hist.length;
   statsGrid.innerHTML = '';
-  const now = Date.now();
-  const h24 = hist.filter((p) => now - p.ts < 24 * 3600e3);
-  const h7 = hist.filter((p) => now - p.ts < 7 * 86400e3);
-  const withP = (a) => a.filter((p) => p.players != null);
-  const avg = (a, f) => { const b = a.filter((p) => f(p) != null); return b.length ? b.reduce((s, p) => s + f(p), 0) / b.length : null; };
   let rec = null;
-  for (const p of withP(hist)) if (!rec || p.players > rec.players) rec = p;
-  const latAvg = avg(h24, (p) => p.latency);
-  const latMax = h24.reduce((m, p) => Math.max(m, p.latency || 0), 0);
-  const tpsA = h24.filter((p) => p.tps != null);
-  const tpsAvg = tpsA.length ? tpsA.reduce((s, p) => s + p.tps, 0) / tpsA.length : null;
-  const tpsMin = tpsA.length ? Math.min(...tpsA.map((p) => p.tps)) : null;
-  const up = h7.length ? (withP(h7).length / h7.length) * 100 : null;
-  const buckets = Array.from({ length: 24 }, () => ({ sum: 0, n: 0 }));
-  for (const p of withP(hist)) { const b = buckets[new Date(p.ts).getHours()]; b.sum += p.players; b.n++; }
-  let peakH = -1, peakV = -1;
-  buckets.forEach((b, i) => { if (b.n && b.sum / b.n > peakV) { peakV = b.sum / b.n; peakH = i; } });
-  const days = Array.from({ length: 7 }, () => ({ sum: 0, n: 0 }));
-  for (const p of withP(hist)) { const b = days[new Date(p.ts).getDay()]; b.sum += p.players; b.n++; }
-  const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-  let dayI = -1, dayV = -1;
-  days.forEach((b, i) => { if (b.n && b.sum / b.n > dayV) { dayV = b.sum / b.n; dayI = i; } });
-  const online = status && status.ping ? status.ping.playersOnline : null;
-  const pmax = status && status.ping ? status.ping.playersMax : null;
+  for (const p of hist) if (p.players != null && (!rec || p.players > rec.players)) rec = p;
   const sd = statsLogsData;
+  const needSsh = currentServer && currentServer.sshUser;
   const cards = [];
-  cards.push(statCard('st-online', 'Joueurs en ligne maintenant', 'en ligne maintenant online joueurs actuels connectés', online == null ? '—' : online + (pmax ? ' / ' + pmax : ''), status && status.ping ? 'MOTD : ' + String(status.ping.motd || '').replace(/§./g, '') : ''));
-  if (rec) cards.push(statCard('st-record', 'Record de joueurs', 'record max pic joueurs jamais maximum', rec.players, 'le ' + fmtDate(rec.ts)));
-  const a24 = avg(h24, (p) => p.players), a30 = avg(hist, (p) => p.players);
-  cards.push(statCard('st-avg24', 'Moyenne de joueurs (24 h)', 'moyenne moyenne joueurs 24h 24 heures journée', a24 == null ? '—' : a24.toFixed(1), h24.length + ' échantillons'));
-  cards.push(statCard('st-avg30', 'Moyenne de joueurs (tout)', 'moyenne 30j mois tout joueurs', a30 == null ? '—' : a30.toFixed(1), ''));
-  cards.push(statCard('st-lat', 'Latence (ping)', 'latence ping ms délai réponse', latAvg == null ? '—' : Math.round(latAvg) + ' ms', 'max vu : ' + (latMax || '—') + ' ms'));
-  cards.push(statCard('st-tps', 'Vitesse du serveur (TPS)', 'tps vitesse lag fps serveur', tpsAvg == null ? '—' : tpsAvg.toFixed(1), 'pire vu : ' + (tpsMin == null ? '—' : tpsMin)));
-  cards.push(statCard('st-uptime', 'Disponibilité estimée (7 j)', 'uptime dispo en ligne disponible pourcentage 7j semaine', up == null ? '—' : up.toFixed(1) + ' %', 'd’après les échantillons enregistrés'));
-  if (peakH >= 0) cards.push(statCard('st-peak', 'Heure de pic moyenne', 'pic heure pointe quand plus de monde heure', peakH + 'h', peakV.toFixed(1) + ' joueurs en moyenne à cette heure'));
-  if (dayI >= 0) cards.push(statCard('st-day', 'Jour le plus chargé', 'jour semaine lundi mardi mercredi jeudi vendredi samedi dimanche chargé', dayNames[dayI], dayV.toFixed(1) + ' joueurs en moyenne ce jour-là'));
-  cards.push(statCard('st-uniques', 'Joueurs uniques (logs)', 'joueurs uniques total jamais venus connectés historique joueurs', sd ? sd.uniques : '…', currentServer.sshUser ? (sd ? 'vus dans les logs du serveur' : 'chargement…') : 'nécessite SSH (VPS)'));
-  cards.push(statCard('st-bans', 'Bans et expulsions (logs)', 'bans kicks bannis expulsés modération', sd ? sd.bans + ' bans · ' + sd.kicks + ' kicks' : '…', 'depuis le début des logs'));
-  cards.push(statCard('st-first', 'Première ligne des logs', 'début historique premier démarrage âge ancien', sd ? (sd.first || '—') : '…', 'début du plus vieux fichier de logs'));
-  cards.push(statCard('st-top', 'Joueur le plus actif', 'top joueur actif temps de jeu le plus heures', sd && sd.top ? sd.top.name + ' — ' + fmtDur(sd.top.ms) : '…', sd ? 'temps de jeu total cumulé : ' + fmtDur(sd.total) : ''));
-  cards.push(statCard('st-session', 'Session moyenne par joueur', 'session moyenne durée connexion jeu temps', sd && sd.avgSession ? fmtDur(sd.avgSession) : '…', sd ? sd.joins + ' connexions au total' : ''));
-  cards.push(statCard('st-span', 'Données collectées', 'historique depuis collecte échantillons 15s données', hist.length ? 'depuis le ' + fmtDate(hist[0].ts) : '—', hist.length + ' échantillons (un toutes les 15 s)'));
-  if (status && status.ping) cards.push(statCard('st-version', 'Version du serveur', 'version paper spigot motd', String(status.ping.version || '—'), ''));
-  if (pmax) cards.push(statCard('st-max', 'Capacité max du serveur', 'max slots capacité limite joueurs total', pmax + ' joueurs', ''));
+  // 1) temps de fonctionnement (uptime)
+  cards.push(statCard('st-uptime', 'Temps de fonctionnement', 'uptime fonctionnement actif depuis durée serveur en ligne marche', sd ? (sd.uptimeSec != null ? fmtDurMs(sd.uptimeSec * 1000) : '—') : '…', sd ? (sd.uptimeLine || 'session en cours (process java)') : (needSsh ? 'chargement…' : 'nécessite SSH (VPS)')));
+  // 2) record de joueurs
+  if (rec) cards.push(statCard('st-record', 'Record de joueurs', 'record max pic joueurs jamais simultanés maximum', rec.players, 'le ' + fmtDate(rec.ts)));
+  // 3) monde : taille + régions explorées (proxy de "chunks chargés")
+  cards.push(statCard('st-monde', 'Monde : taille + régions', 'monde chunks régions taille monde exploré gigas dossiers', sd ? (sd.mondeSize || '—') : '…', sd ? (sd.regions + ' régions explorées (chunks chargés = seulement avec un plugin type spark)') : (needSsh ? 'chargement…' : 'nécessite SSH (VPS)')));
+  // 4) temps de jeu total
+  cards.push(statCard('st-playtotal', 'Temps de jeu total (tous les joueurs)', 'temps de jeu total heures jouées cumulé ensemble', sd ? fmtDurMs(sd.total) : '…', sd ? sd.joins + ' connexions au total' : (needSsh ? 'chargement…' : 'nécessite SSH (VPS)')));
+  // 5) morts + top tueur
+  cards.push(statCard('st-deaths', 'Morts sur le serveur', 'morts décès tué morts total killed', sd ? sd.deaths : '…', sd && sd.topKiller ? 'top tueur : ' + sd.topKiller : ''));
+  // 6) % de joueurs qui reviennent + nouveaux cette semaine
+  cards.push(statCard('st-return', 'Joueurs qui reviennent', 'reviennent pourcentage récurrent anciens joueurs nouveaux cette semaine', sd ? sd.revPct + ' %' : '…', sd ? sd.newWeek + ' nouveaux joueurs cette semaine · ' + sd.uniques + ' joueurs uniques' : ''));
+  // 7) commandes tapées dans la console du serveur
+  cards.push(statCard('st-console', 'Commandes dans la console du serveur', 'commandes console tapées shell historique', sd ? sd.consoleCmds : '…', 'fichier .console_history'));
+  // 8) depuis quand les données sont récupérées
+  cards.push(statCard('st-span', 'Données collectées par l’appli', 'historique depuis collecte échantillons 15s données récupérées', hist.length ? 'depuis le ' + fmtDate(hist[0].ts) : '—', hist.length + ' échantillons (un toutes les 15 s)'));
   for (const c of cards) statsGrid.appendChild(c);
 }
 
@@ -905,8 +882,8 @@ function applyStatsFilter() {
   }
   if (q && visible === 0) {
     statsEmpty.hidden = false;
-    statsEmpty.textContent = `Aucune statistique pour « ${q} » — essaie : tps, record, disque, joueurs, latence…`;
-  } else if (lastHistLen === 0) {
+    statsEmpty.textContent = `Aucune statistique pour « ${q} » — essaie : record, monde, morts, jeu, uptime…`;
+  } else if (lastHistLen === 0 && !statsLogsData) {
     statsEmpty.hidden = false;
     statsEmpty.textContent = 'Aucune donnée pour l’instant — l’appli enregistre un échantillon toutes les 15 s ; reviens dans quelques minutes.';
   } else {
@@ -920,26 +897,57 @@ async function loadStatsLogs() {
   statsLogsCache = Date.now();
   const dir = currentServer.serverDir || '~/minecraft';
   const D = `D=${dir}; cd "$D" 2>/dev/null || exit 0`;
-  const r1 = await window.api.sshExec(currentServer.id, `${D}; { grep -h "joined the game" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "joined the game"; } | sed -E 's/.*\\]: *([^ ]+) joined the game.*/\\1/' | sort -u | wc -l; { grep -h "was banned" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "was banned"; } | wc -l; { grep -h "was kicked" logs/latest.log 2>/dev/null; zcat logs/*.gz 2>/dev/null | grep "was kicked"; } | wc -l`).catch(() => null);
-  const r2 = await window.api.sshExec(currentServer.id, `${D}; f=$(ls logs/ 2>/dev/null | sort | head -1); if [ -n "$f" ]; then case "$f" in *.gz) zcat "logs/$f";; *) cat "logs/$f";; esac | head -1; fi`).catch(() => null);
+  const DEATH = `\\]: [^ ]+ (was slain|was shot|was killed|was blown|was fireballed|was impaled|was poked|was struck|drowned|fell|blew up|starved|withered|suffocated|burned|hit the ground|went up in flames|walked into|tried to swim|discovered the floor|experienced kinetic)`;
+  const r1 = await window.api.sshExec(currentServer.id, `${D}
+printf '==UP==\\n'; pid=$(pgrep -f java | head -1); if [ -n "$pid" ]; then ps -o etimes= -p "$pid" | tr -d ' '; else head -1 logs/latest.log 2>/dev/null; fi
+printf '==MONDE==\\n'; du -sh world 2>/dev/null | cut -f1; ls world/region 2>/dev/null | wc -l
+printf '==CONSOLE==\\n'; wc -l < .console_history 2>/dev/null || echo 0
+printf '==MORTS==\\n'; { grep -hE "${DEATH}" logs/latest.log 2>/dev/null; for f in logs/*.gz; do [ -e "$f" ] && zcat "$f"; done | grep -hE "${DEATH}"; } | wc -l
+printf '==TOPKILL==\\n'; { grep -hE "${DEATH}" logs/latest.log 2>/dev/null; for f in logs/*.gz; do [ -e "$f" ] && zcat "$f"; done | grep -hE "${DEATH}"; } | grep -oE 'by [A-Za-z0-9_]+$' | sort | uniq -c | sort -nr | head -1`).catch(() => null);
   const r3 = await window.api.sshExec(currentServer.id, `${D}; { for f in logs/*.log.gz logs/*.log; do [ -e "$f" ] || continue; b=$(basename "$f"); [ "$b" = "latest.log" ] && continue; d=$(echo "$b" | cut -d- -f1-3); if [[ "$f" == *.gz ]]; then zcat "$f"; else cat "$f"; fi | grep -hE 'joined the game|left the game' | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$d \\1 \\2 \\3/"; done; grep -hE 'joined the game|left the game' logs/latest.log 2>/dev/null | sed -E "s/^\\[([0-9:]{8})\\].*\\]: ([^ ]+) (joined|left) the game/$(date +%F) \\1 \\2 \\3/"; } | tail -20000`).catch(() => null);
   if (!r1 || r1.error || !r3 || r3.error) return;
-  const nums = (r1.out || '').split('\n').map((x) => parseInt(x, 10) || 0);
-  const first = (r2 && r2.out ? r2.out.split('\n')[0] : '').trim();
+  // parse sections ==XX==
+  const out = r1.out || '';
+  const sec = {};
+  let cur = null;
+  for (const line of out.split('\n')) {
+    const m = line.match(/^==([A-Z]+)==$/);
+    if (m) { cur = m[1]; sec[cur] = []; } else if (cur) sec[cur].push(line);
+  }
+  const upSec = (sec.UP && sec.UP[0] || '').trim();
+  const uptimeSec = /^\d+$/.test(upSec) ? parseInt(upSec, 10) : null;
+  const mondeSize = (sec.MONDE && sec.MONDE[0] || '').trim();
+  const regions = parseInt((sec.MONDE && sec.MONDE[1]) || '0', 10) || 0;
+  const consoleCmds = parseInt((sec.CONSOLE && sec.CONSOLE[0]) || '0', 10) || 0;
+  const deaths = parseInt((sec.MORTS && sec.MORTS[0]) || '0', 10) || 0;
+  const topKiller = ((sec.TOPKILL && sec.TOPKILL[0]) || '').trim().replace(/^\d+\s+/, '').replace(/^by /, '');
+  // sessions depuis joins/leaves
   const evs = (r3.out || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
     const m = l.match(/^(\d{4}-\d{2}-\d{2}) ([0-9:]{8}) (\S+) (joined|left)$/);
     return m ? { ts: Date.parse(m[1] + 'T' + m[2]), name: m[3], ev: m[4] } : null;
   }).filter(Boolean).sort((a, b) => a.ts - b.ts);
-  const play = {}; const open = {}; let joins = 0;
+  const play = {}; const joinsByPlayer = {}; const open = {}; let joins = 0;
+  const weekAgo = Date.now() - 7 * 86400e3;
+  let newWeek = 0;
   for (const e of evs) {
-    if (e.ev === 'joined') { joins++; open[e.name] = e.ts; }
-    else if (open[e.name] != null) { play[e.name] = (play[e.name] || 0) + (e.ts - open[e.name]); delete open[e.name]; }
+    if (e.ev === 'joined') {
+      joins++; joinsByPlayer[e.name] = (joinsByPlayer[e.name] || 0) + 1;
+      open[e.name] = e.ts;
+      if (e.ts >= weekAgo) newWeek++;
+    } else if (open[e.name] != null) {
+      play[e.name] = (play[e.name] || 0) + (e.ts - open[e.name]);
+      delete open[e.name];
+    }
   }
   const names = Object.keys(play);
+  const uniques = Object.keys(joinsByPlayer).length;
   const total = names.reduce((s, n) => s + play[n], 0);
-  let top = null;
-  for (const n of names) if (!top || play[n] > play[top.name]) top = { name: n, ms: play[n] };
-  statsLogsData = { uniques: nums[0] || 0, bans: nums[1] || 0, kicks: nums[2] || 0, first, top, total, avgSession: joins ? total / joins : 0, joins };
+  const revenants = names.filter((n) => (joinsByPlayer[n] || 0) >= 2).length;
+  statsLogsData = {
+    uptimeSec, uptimeLine: uptimeSec == null ? upSec : null,
+    mondeSize, regions, consoleCmds, deaths, topKiller,
+    total, joins, uniques, revPct: uniques ? Math.round((revenants / uniques) * 100) : 0, newWeek,
+  };
   if (currentPage === 'stats') loadStatsLight();
 }
 
