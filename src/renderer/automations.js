@@ -101,7 +101,7 @@
     a_mnt_on: 'Ferme le serveur à ceux qui ne sont pas sur la whitelist (mode maintenance).',
     a_mnt_off: 'Rouvre le serveur à tout le monde.',
     a_report: 'Crée un fichier avec l’état du serveur (joueurs, vitesse, mémoire, disque).',
-    a_event: 'Ajoute un message dans le journal de l’auto (fichier .log sur le serveur).',
+    a_event: 'Ajoute un message dans le journal de l’auto — affiché aussi dans Actualités.',
     // TEMPS (violet)
     t_wait: 'Attend X secondes / minutes / heures, puis continue.',
     t_repeat: 'Refait les blocs à l’intérieur X fois.',

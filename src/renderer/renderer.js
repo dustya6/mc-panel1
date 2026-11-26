@@ -741,6 +741,31 @@ async function refreshList() {
   }
 }
 
+
+// Événements des automatisations -> page Actualités (sans lire le .log à la main)
+let autoEventPoll = false;
+async function pollAutoEvents() {
+  if (!currentServer || autoEventPoll || !currentServer.sshUser) return;
+  autoEventPoll = true;
+  try {
+    const autos = await window.api.autoList(currentServer.id).catch(() => []);
+    for (const a of autos || []) {
+      const r = await window.api.autoLog({ id: currentServer.id, autoId: a.id, n: 300 }).catch(() => null);
+      if (!r || !r.ok || !r.out) continue;
+      const lines = String(r.out).split('\n').filter((l) => l.includes('EVENT:') || l.includes(' ERR '));
+      const key = `autoSeen_${a.id}`;
+      const seen = Number(await window.api.getSetting(key)) || 0;
+      for (const line of lines.slice(seen)) {
+        const isErr = line.includes(' ERR ');
+        const msg = line.split(isErr ? ' ERR ' : 'EVENT:')[1].trim();
+        if (msg) await addNews(isErr ? 'alerte' : 'auto', `[${a.name || a.id}] ${msg}`);
+      }
+      await window.api.setSetting(key, lines.length);
+    }
+  } catch { }
+  autoEventPoll = false;
+}
+
 async function loadStatus() {
   if (!currentServer) return;
   const result = await window.api.getStatus(currentServer.id);
@@ -766,6 +791,7 @@ async function loadStatus() {
     if (window.api.logDebug) window.api.logDebug(`draw error: ${err.message}`);
   }
   loadResources();
+  pollAutoEvents(); // événements des autos -> Actualités
 }
 
 function resColor(pct) {
