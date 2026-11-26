@@ -9,7 +9,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'stats-page-v2';
+const BUILD = 'sec-no-sshkey-fe';
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -139,7 +139,6 @@ function publicServer(server) {
     sshUser: server.sshUser,
     serverDir: server.serverDir,
     hasSshPassword: Boolean(server.encryptedSshPassword),
-    sshKey: server.sshKey,
     hasSshKey: Boolean(server.sshKey),
     startCmd: server.startCmd || '',
     type: server.type === 'aternos' ? 'aternos' : 'vps',
