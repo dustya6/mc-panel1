@@ -26,7 +26,7 @@
   --sans: "Segoe UI", -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-* { box-sizing: border-box; border-radius: 0 !important; }
+* { box-sizing: border-box; } /* radius géré par composant (v4 ci-dessous) ; défaut = 0 donc le thème sombre reste carré */
 [hidden] { display: none !important; }
 
 ::selection { background: var(--accent); color: var(--accent-ink); }
@@ -871,3 +871,99 @@ body.light {
 body.light #nav { background: #ffffff; }
 body.light .card { border-color: var(--border); box-shadow: 0 2px 10px rgba(29, 37, 20, .08); }
 body.light .brand-logo { background: #ffffff; box-shadow: 0 0 12px rgba(78, 122, 36, .25); }
+
+
+/* ============================================================
+   RESKIN v4 — style "DustySMP" (capture) : clair, sidebar violet,
+   cartes blanches arrondies + ombre douce, boutons violets.
+   Uniquement le style : aucun déplacement, scoping body.light.
+   ============================================================ */
+body.light {
+  --bg: #f6f5fb;
+  --panel: #ffffff;
+  --panel-2: #f4f2fc;
+  --panel-3: #ece8fb;
+  --border: #e7e4f5;
+  --border-strong: #d5cff0;
+  --text: #1f2430;
+  --muted: #7a7f92;
+  --accent: #6a4be8;
+  --accent-bright: #7c5cf0;
+  --accent-ink: #ffffff;
+  --ok: #22a55b;
+  --danger: #e5484d;
+  --amber: #e0a83c;
+  background-image: none;
+}
+body.light::before { content: none; box-shadow: none; } /* plus de barre verte en clair */
+body.light #license-overlay { background-image: none; }
+body.light main { padding: 28px 32px; }
+
+/* sidebar violet clair */
+body.light #nav { background: #e9e4ff; border-right: 1px solid #d9d2f7; width: 240px; }
+body.light .brand-logo { background: var(--accent); color: #fff; border: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(106, 75, 232, .35); }
+body.light .brand-txt h1 { color: #4c1d95; }
+body.light .brand-sub { color: #7a6fc0; }
+body.light .nav-btn { color: #6d5fc0; border-left: none; border-radius: 8px; margin: 2px 0; font-family: var(--sans); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 13px; }
+body.light .nav-btn::before { display: none; }
+body.light .nav-btn:hover { background: #ded7fb; color: #4c1d95; }
+body.light .nav-btn.active { background: #ffffff; color: var(--accent); box-shadow: 0 2px 8px rgba(80, 60, 180, .12); font-weight: 700; }
+body.light .nav-foot { border-top-color: #d9d2f7; }
+body.light #build-tag { color: #8a80c0; }
+body.light .news-dot { border-radius: 50%; }
+
+/* titres & cartes blanches arrondies */
+body.light h1 { color: var(--text); }
+body.light h2 { border-left: none; padding-left: 0; font-family: var(--sans); font-weight: 700; font-size: 17px; margin: 22px 0 14px; color: var(--text); }
+body.light .card { background: #fff; border: 1px solid #eceafa; border-radius: 14px; box-shadow: 0 6px 18px rgba(76, 60, 160, .08); padding: 20px; }
+body.light .card::before, body.light .card::after { content: none; }
+body.light .card-title { color: #8a8fa3; font-family: var(--sans); font-weight: 700; text-transform: none; letter-spacing: .02em; font-size: 13px; }
+body.light .card-title::before { content: none; }
+body.light .hint { color: var(--muted); }
+body.light .muted { color: var(--muted); font-family: var(--sans); }
+body.light code { background: var(--panel-2); border: none; border-radius: 5px; color: #5b21b6; }
+
+/* boutons violets arrondis */
+body.light button { border-radius: 9px; font-family: var(--sans); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 13px; border-color: var(--border-strong); background: #fff; color: var(--text); }
+body.light button:hover { border-color: var(--accent); color: var(--accent); background: #f6f3ff; }
+body.light button.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(106, 75, 232, .35); }
+body.light button.primary:hover { background: var(--accent-bright); color: #fff; box-shadow: 0 8px 20px rgba(106, 75, 232, .45); }
+body.light button.danger { border-color: #f3c2c5; color: var(--danger); }
+body.light button.danger:hover { background: var(--danger); color: #fff; }
+body.light button.ghost { color: var(--muted); }
+body.light input, body.light select { border-radius: 9px; background: #fbfaff; border-color: var(--border-strong); color: var(--text); }
+body.light input:focus, body.light select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(106, 75, 232, .18); }
+body.light label { font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 600; color: #565b6e; }
+body.light .info { border: none; background: var(--panel-3); color: var(--accent); border-radius: 50%; }
+
+/* badges pilules */
+body.light .badge { border: none; border-radius: 999px; font-family: var(--sans); text-transform: none; letter-spacing: 0; font-weight: 600; }
+body.light .badge.online { background: #e5f6ec; color: var(--ok); }
+body.light .badge.offline, body.light .badge.error { background: #fdeaea; color: var(--danger); }
+body.light .badge.info { background: #ece8fd; color: var(--accent); }
+body.light .badge .dot { border-radius: 50%; }
+
+/* chiffres, joueurs, graphiques, console */
+body.light .kpi-num, body.light .pv-big { color: var(--text); }
+body.light .players li { border-radius: 999px; border: 1px solid var(--border); background: #fff; }
+body.light .players img, body.light .avatar-fallback { border-radius: 6px; }
+body.light .avatar-fallback { background: var(--accent); }
+body.light .chart, body.light .spark { background: #fbfaff; border: 1px solid #eceafa; border-radius: 10px; }
+body.light #console-out { background: #16131f; border: 1px solid #eceafa; border-radius: 10px; color: #d6d3e8; }
+body.light #console-out .cmd { color: #b79bff; }
+body.light #console-out .err { color: #ff8a8d; }
+body.light .range-btn, body.light .metric-btn, body.light .set-btn, body.light .chart-btn { border: none; border-radius: 999px; background: var(--panel-2); color: var(--muted); font-family: var(--sans); text-transform: none; letter-spacing: 0; }
+body.light .range-btn.active, body.light .metric-btn.active, body.light .set-btn.active { background: var(--accent); color: #fff; box-shadow: none; }
+
+/* listes, éditeur, modales, licence : coins arrondis doux */
+body.light .server-item, body.light .plug-row, body.light .auto-item, body.light .pal-block, body.light .auto-block, body.light .stat-big, body.light .profile-cell { border-radius: 10px; }
+body.light .server-item.active { background: #f1edff; border-color: var(--accent); }
+body.light .auto-canvas { background: #fbfaff; border: 1px dashed var(--border-strong); border-radius: 12px; }
+body.light .modal { background: rgba(30, 25, 60, .45); }
+body.light .modal-box { border-radius: 16px; }
+body.light .lic-card { border-radius: 16px; }
+body.light #license-key { border-radius: 9px; }
+body.light .quick-btn, body.light .quick-del { border-radius: 8px; }
+body.light ::selection { background: rgba(106, 75, 232, .22); }
+body.light ::-webkit-scrollbar-thumb { background: #d9d2f7; border: 3px solid var(--bg); border-radius: 8px; }
+body.light ::-webkit-scrollbar-thumb:hover { background: #c4b8f2; }
