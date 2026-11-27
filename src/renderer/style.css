@@ -1042,3 +1042,8 @@ body.light .lic-card { border: 1px solid var(--border); box-shadow: 0 24px 48px 
 body.light ::-webkit-scrollbar-thumb { background: #d0d5dd; border: 3px solid var(--bg); }
 body.light ::-webkit-scrollbar-thumb:hover { background: #b6bcc9; }
 body.light ::selection { background: rgba(105, 65, 198, .18); }
+
+/* v5.1 : en thème clair, les pistes des barres de ressources passent en gris clair (pas noir) */
+body.light .res-bar { background: #eef0f4; border-color: var(--border); }
+body.light .code { background: #f2f4f7; color: #344054; border: none; }
+body.light .hm-swatch.g0 { background: #eef0f4; }
