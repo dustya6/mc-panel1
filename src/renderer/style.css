@@ -967,3 +967,78 @@ body.light .quick-btn, body.light .quick-del { border-radius: 8px; }
 body.light ::selection { background: rgba(106, 75, 232, .22); }
 body.light ::-webkit-scrollbar-thumb { background: #d9d2f7; border: 3px solid var(--bg); border-radius: 8px; }
 body.light ::-webkit-scrollbar-thumb:hover { background: #c4b8f2; }
+
+
+/* ============================================================
+   RESKIN v5 — polish "pro" du thème clair (style SaaS moderne)
+   Uniquement body.light : aucun déplacement, aucun changement de fonction.
+   ============================================================ */
+body.light {
+  --bg: #f7f7fa;
+  --panel: #ffffff;
+  --panel-2: #f2f4f7;
+  --panel-3: #eceaf6;
+  --border: #eaecf0;
+  --border-strong: #d0d5dd;
+  --text: #101828;
+  --muted: #667085;
+  --accent: #6941c6;
+  --accent-bright: #7f56d9;
+  --accent-ink: #ffffff;
+  --ok: #067647;
+  --danger: #b42318;
+  --amber: #b54708;
+}
+/* sidebar */
+body.light #nav { background: #f3f0fd; border-right: 1px solid #e6e1f8; width: 248px; padding: 22px 14px 14px; }
+body.light .brand { margin: 0 4px 22px; }
+body.light .brand-logo { width: 42px; height: 42px; border-radius: 12px; font-size: 15px; box-shadow: 0 4px 12px rgba(105, 65, 198, .30); }
+body.light .brand-txt h1 { font-family: var(--sans); font-weight: 800; font-size: 15px; letter-spacing: 0; color: #101828; }
+body.light .brand-sub { font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 10.5px; color: #8a84a8; }
+body.light .nav-btn { padding: 10px 14px; border-radius: 10px; font-size: 13.5px; color: #5f5a80; }
+body.light .nav-btn:hover { background: #e7e2fa; color: #3b2a75; }
+body.light .nav-btn.active { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(16, 24, 40, .10); }
+body.light .nav-foot { border-top-color: #e6e1f8; }
+/* contenu */
+body.light main { padding: 30px 36px; }
+body.light h1 { font-family: var(--sans); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; color: var(--text); }
+body.light h2 { font-size: 16px; margin: 24px 0 14px; }
+body.light .card { border-radius: 16px; border-color: var(--border); box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 8px 24px rgba(16,24,40,.05); padding: 22px; margin-bottom: 20px; }
+body.light .card-title { font-size: 13.5px; color: #475467; }
+/* boutons / champs */
+body.light button { border-radius: 10px; padding: 10px 18px; font-size: 13.5px; border-color: var(--border-strong); box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+body.light button.primary { box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 6px 16px rgba(105,65,198,.28); }
+body.light button.primary:hover { background: var(--accent-bright); box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 8px 20px rgba(105,65,198,.36); }
+body.light button:hover { background: #f9f8ff; }
+body.light input, body.light select { border-radius: 10px; border-color: var(--border-strong); padding: 10px 14px; font-size: 14px; background: #fff; }
+body.light input:focus, body.light select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(105, 65, 198, .14); }
+body.light label { color: #475467; font-size: 12.5px; }
+body.light .info { background: #ede9fe; color: var(--accent); }
+/* chiffres & badges */
+body.light .kpi-num, body.light .pv-big { font-size: 32px; font-weight: 700; color: var(--text); }
+body.light .badge.online { background: #ecfdf3; color: #067647; }
+body.light .badge.offline, body.light .badge.error { background: #fef3f2; color: #b42318; }
+body.light .badge.info { background: #f4f3ff; color: #5925dc; }
+/* joueurs, graphiques, console, pills */
+body.light .players li { border-color: var(--border); box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+body.light .chart, body.light .spark { background: #fff; border-color: var(--border); border-radius: 12px; }
+body.light #console-out { background: #101828; border-color: var(--border); border-radius: 12px; color: #d0d5dd; }
+body.light #console-out .cmd { color: #b794f6; }
+body.light #console-out .err { color: #fda29b; }
+body.light #console-out .ts { color: #667085; }
+body.light .range-btn, body.light .metric-btn, body.light .set-btn, body.light .chart-btn { background: #f2f4f7; color: #667085; border: none; }
+body.light .range-btn.active, body.light .metric-btn.active, body.light .set-btn.active { background: var(--accent); color: #fff; }
+/* listes / éditeur / modales / accueil / licence */
+body.light .server-item:hover, body.light .server-item.active { background: #f4f3ff; border-color: #d6bbfb; border-left-color: var(--accent); }
+body.light .plug-row:hover, body.light .auto-item:hover { background: #faf9ff; border-left-color: var(--accent); }
+body.light .auto-canvas { background: #fafaff; border-color: var(--border-strong); }
+body.light .auto-block, body.light .pal-block { background: #fff; }
+body.light .modal-box { border: 1px solid var(--border); box-shadow: 0 24px 48px rgba(16, 24, 40, .18); }
+body.light .welcome-logo { width: 96px; height: 96px; border-radius: 22px; background: var(--accent); color: #fff; border: none; font-size: 38px; box-shadow: 0 12px 32px rgba(105, 65, 198, .35); }
+body.light .welcome-title { font-family: var(--sans); font-weight: 800; font-size: 30px; letter-spacing: 0; color: var(--text); }
+body.light .welcome-sub { color: var(--muted); font-size: 15px; }
+body.light .type-btn { border-radius: 12px; }
+body.light .lic-card { border: 1px solid var(--border); box-shadow: 0 24px 48px rgba(16, 24, 40, .15); }
+body.light ::-webkit-scrollbar-thumb { background: #d0d5dd; border: 3px solid var(--bg); }
+body.light ::-webkit-scrollbar-thumb:hover { background: #b6bcc9; }
+body.light ::selection { background: rgba(105, 65, 198, .18); }
