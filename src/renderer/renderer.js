@@ -2333,7 +2333,7 @@ window.api.getBuild().then((b) => {
 (async () => {
   try {
     const t = await window.api.getSetting('theme');
-    if (t !== 'dark') applyTheme('light'); // défaut : thème CLAIR ("léger") ; "Sombre" reste dispo dans Réglages
+    if (t === 'light') applyTheme('light'); // défaut : thème Sombre = "verre vert futuriste" (v6) ; "Clair" reste dispo dans Réglages
     renderSettings();
     const r = await window.api.getSetting('refreshSec');
     if (r === 30 || r === 60) refreshSec = r;

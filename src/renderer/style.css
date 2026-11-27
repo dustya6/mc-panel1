@@ -1047,3 +1047,145 @@ body.light ::selection { background: rgba(105, 65, 198, .18); }
 body.light .res-bar { background: #eef0f4; border-color: var(--border); }
 body.light .code { background: #f2f4f7; color: #344054; border: none; }
 body.light .hm-swatch.g0 { background: #eef0f4; }
+
+
+/* ============================================================
+   RESKIN v6 — "verre vert futuriste" (thème par défaut / Sombre)
+   Sombre en verre dépoli translucide + accent vert néon + glow.
+   Uniquement du style ; body.light (Clair) reste le thème violet clair.
+   ============================================================ */
+:root {
+  --bg: #050807;
+  --panel: rgba(14, 24, 18, .55);
+  --panel-2: rgba(20, 32, 24, .55);
+  --panel-3: rgba(30, 46, 34, .55);
+  --border: rgba(74, 222, 128, .16);
+  --border-strong: rgba(74, 222, 128, .30);
+  --text: #e8ffef;
+  --muted: #7fa98c;
+  --accent: #22c55e;
+  --accent-bright: #4ade80;
+  --accent-ink: #03130a;
+  --amber: #fbbf24;
+  --danger: #f87171;
+  --ok: #22c55e;
+}
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1100px 480px at 50% -160px, rgba(34, 197, 94, .16), transparent 60%),
+    radial-gradient(700px 380px at 85% 110%, rgba(34, 197, 94, .07), transparent 60%),
+    linear-gradient(rgba(74, 222, 128, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 222, 128, .05) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  color: var(--text);
+}
+body::before {
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(34, 197, 94, .9), 0 0 40px rgba(34, 197, 94, .45);
+}
+::selection { background: rgba(34, 197, 94, .35); color: #eafff2; }
+::-webkit-scrollbar-thumb { background: rgba(74, 222, 128, .25); border: 3px solid var(--bg); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(74, 222, 128, .45); }
+
+main { padding: 30px 36px; }
+
+/* verre dépoli partagé */
+#nav, .card, .modal-box, .lic-card, .auto-palette, .stat-big, .profile-cell,
+.server-item, .plug-row, .auto-item, .pal-block, .auto-block, .players li,
+.ssh-box, .help-box {
+  background: var(--panel);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+#nav { background: rgba(10, 18, 13, .6); width: 248px; padding: 24px 14px 14px; border-right: 1px solid var(--border-strong); border-radius: 0; }
+.card { border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+.card::before, .card::after { content: none; } /* plus de coins HUD carrés : look verre */
+.card-title { color: var(--muted); letter-spacing: .12em; }
+.card-title::before { color: var(--accent); text-shadow: 0 0 8px rgba(34,197,94,.8); }
+
+/* sidebar */
+.brand-logo {
+  width: 44px; height: 44px; border-radius: 11px;
+  background: rgba(34, 197, 94, .12); border: 1px solid var(--border-strong);
+  color: var(--accent-bright); box-shadow: 0 0 18px rgba(34, 197, 94, .35), inset 0 0 12px rgba(34, 197, 94, .15);
+}
+.brand-txt h1 { color: var(--text); }
+.brand-sub { color: var(--muted); }
+.nav-btn { border-radius: 9px; border-left: none; color: var(--muted); }
+.nav-btn::before { border-color: var(--border-strong); }
+.nav-btn:hover { background: rgba(74, 222, 128, .08); color: var(--text); }
+.nav-btn.active { background: rgba(34, 197, 94, .14); color: var(--accent-bright); border-left: none; text-shadow: 0 0 10px rgba(74, 222, 128, .6); }
+.nav-btn.active::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(34, 197, 94, .9); }
+.nav-foot { border-top-color: var(--border); }
+#build-tag { color: var(--muted); }
+.news-dot { border-radius: 50%; box-shadow: 0 0 8px rgba(248, 113, 113, .9); }
+
+/* titres */
+h1 { color: var(--text); }
+h2 { border-left: 3px solid var(--accent); padding-left: 11px; color: var(--text); text-shadow: 0 0 12px rgba(74, 222, 128, .25); }
+.muted, .hint { color: var(--muted); }
+code { background: rgba(74, 222, 128, .08); border: 1px solid var(--border); color: var(--accent-bright); }
+
+/* boutons verre */
+button {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  backdrop-filter: blur(8px);
+}
+button:hover { border-color: var(--accent); color: var(--accent-bright); box-shadow: 0 0 14px rgba(34, 197, 94, .25); background: rgba(34, 197, 94, .08); }
+button.primary {
+  background: linear-gradient(180deg, rgba(74, 222, 128, .95), rgba(34, 197, 94, .9));
+  border-color: rgba(74, 222, 128, .8); color: var(--accent-ink); font-weight: 700;
+  box-shadow: 0 0 22px rgba(34, 197, 94, .45), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+button.primary:hover { box-shadow: 0 0 30px rgba(34, 197, 94, .65), inset 0 1px 0 rgba(255,255,255,.4); color: var(--accent-ink); }
+button.danger { border-color: rgba(248, 113, 113, .5); color: var(--danger); }
+button.danger:hover { background: rgba(248, 113, 113, .12); color: #fca5a5; box-shadow: 0 0 14px rgba(248, 113, 113, .3); }
+button.ghost { border-color: transparent; color: var(--muted); }
+input, select {
+  border-radius: 10px; background: rgba(255, 255, 255, .04); border: 1px solid var(--border-strong); color: var(--text);
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(34, 197, 94, .3); }
+label { color: var(--muted); }
+.info { border-color: var(--border-strong); background: rgba(74, 222, 128, .08); color: var(--accent-bright); border-radius: 50%; }
+
+/* chiffres, badges, joueurs, graphiques */
+.kpi-num, .pv-big { color: var(--accent-bright); text-shadow: 0 0 18px rgba(74, 222, 128, .45); }
+.badge { border-radius: 999px; }
+.badge.online { color: var(--ok); background: rgba(34, 197, 94, .12); box-shadow: inset 0 0 12px rgba(34, 197, 94, .15); }
+.badge.offline, .badge.error { color: var(--danger); background: rgba(248, 113, 113, .10); }
+.badge.info { color: var(--accent-bright); background: rgba(74, 222, 128, .10); }
+.badge .dot { border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+.players li { border-radius: 999px; }
+.players img, .avatar-fallback { border-radius: 7px; }
+.avatar-fallback { background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 10px rgba(34,197,94,.5); }
+.chart, .spark { background: rgba(3, 8, 5, .72); border: 1px solid var(--border); border-radius: 12px; }
+#console-out { background: rgba(2, 6, 4, .85); border: 1px solid var(--border-strong); border-radius: 12px; color: #c9f5d8; }
+#console-out .cmd { color: var(--accent-bright); text-shadow: 0 0 8px rgba(74,222,128,.5); }
+#console-out .err { color: #fca5a5; }
+#console-out .ts { color: #5c7a66; }
+.range-btn, .metric-btn, .set-btn, .chart-btn { border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--muted); }
+.range-btn.active, .metric-btn.active, .set-btn.active { background: rgba(34, 197, 94, .85); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 0 12px rgba(34, 197, 94, .4); }
+.res-bar { background: rgba(3, 8, 5, .8); border-color: var(--border); }
+.res-fill { box-shadow: 0 0 10px rgba(34, 197, 94, .6); }
+
+/* listes, éditeur, modales, accueil, licence */
+.server-item.active { background: rgba(34, 197, 94, .12); border-color: var(--accent); }
+.server-item:hover, .plug-row:hover, .auto-item:hover { border-color: var(--border-strong); border-left-color: var(--accent); }
+.auto-canvas { background: rgba(3, 8, 5, .72); border: 1px dashed var(--border-strong); border-radius: 14px; }
+.auto-block { border-radius: 10px; }
+.pal-block { border-radius: 10px; }
+.modal { background: rgba(2, 6, 4, .62); backdrop-filter: blur(6px); }
+.modal-box { border-radius: 16px; }
+.welcome-logo { border-radius: 22px; background: rgba(34, 197, 94, .12); border: 1px solid var(--border-strong); color: var(--accent-bright); box-shadow: 0 0 44px rgba(34, 197, 94, .5), inset 0 0 24px rgba(34, 197, 94, .18); }
+.welcome-title { color: var(--text); text-shadow: 0 0 24px rgba(74, 222, 128, .35); }
+.lic-card { border-radius: 16px; }
+#license-key { border-radius: 10px; background: rgba(255,255,255,.04); border-color: var(--border-strong); }
+#license-key:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(34,197,94,.3); }
+#license-overlay { background-image: radial-gradient(1100px 480px at 50% -160px, rgba(34,197,94,.16), transparent 60%), linear-gradient(rgba(74,222,128,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,.05) 1px, transparent 1px); background-size: auto, 32px 32px, 32px 32px; }
