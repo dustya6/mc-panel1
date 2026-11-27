@@ -2348,3 +2348,52 @@ window.api.getBuild().then((b) => {
     await selectServer(s);
   }
 })();
+
+// ---------- Licence (écran d'activation) ----------
+const licenseOverlay = document.getElementById('license-overlay');
+const licenseKeyEl = document.getElementById('license-key');
+const btnLicense = document.getElementById('btn-license');
+const licenseErr = document.getElementById('license-err');
+const licenseBuy = document.getElementById('license-buy');
+const licenseState = document.getElementById('license-state');
+
+async function refreshLicense() {
+  if (!licenseOverlay || !window.api || !window.api.licenseStatus) return;
+  try {
+    const st = await window.api.licenseStatus();
+    if (st && st.licensed) { licenseOverlay.hidden = true; return; }
+    licenseOverlay.hidden = false;
+    if (licenseBuy && st && st.buyUrl) licenseBuy.href = st.buyUrl;
+    if (licenseState) licenseState.textContent = (st && st.key) ? ('Clé enregistrée : ' + st.key + ' — validation en cours…') : '';
+  } catch { }
+}
+
+if (btnLicense) {
+  btnLicense.addEventListener('click', async () => {
+    if (!window.api || !window.api.licenseActivate) return;
+    const key = (licenseKeyEl && licenseKeyEl.value || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (licenseErr) licenseErr.hidden = true;
+    if (!/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/.test(key)) {
+      if (licenseErr) { licenseErr.textContent = 'Format de clé invalide (ex : XXXX-XXXX-XXXX-XXXX).'; licenseErr.hidden = false; }
+      return;
+    }
+    btnLicense.disabled = true;
+    btnLicense.textContent = 'Vérification…';
+    try {
+      const r = await window.api.licenseActivate(key);
+      if (r && r.ok) {
+        licenseOverlay.hidden = true;
+        if (typeof location !== 'undefined' && location.reload) location.reload();
+        return;
+      }
+      if (licenseErr) { licenseErr.textContent = (r && r.error) || 'Activation refusée.'; licenseErr.hidden = false; }
+    } catch (e) {
+      if (licenseErr) { licenseErr.textContent = 'Erreur : ' + (e && e.message || e); licenseErr.hidden = false; }
+    }
+    btnLicense.disabled = false;
+    btnLicense.textContent = 'Activer';
+  });
+}
+
+refreshLicense();
+setInterval(() => { refreshLicense(); }, 30000);

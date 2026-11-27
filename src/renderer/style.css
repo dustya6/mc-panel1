@@ -578,3 +578,46 @@ body.light #blk-tip { background: #ffffff; box-shadow: 0 6px 18px rgba(29,37,20,
 .stats-card .pv-big { font-size: 24px; }
 .stats-card .hint { display: block; margin-top: 5px; }
 #stats-search-input { font-family: var(--mono); }
+
+/* ---------- Écran de licence ---------- */
+#license-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(124, 179, 66, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 179, 66, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+#license-overlay[hidden] { display: none !important; }
+.lic-card {
+  position: relative;
+  width: 100%; max-width: 460px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  padding: 28px;
+}
+.lic-card::before, .lic-card::after {
+  content: ""; position: absolute; width: 12px; height: 12px; border: 2px solid var(--accent);
+}
+.lic-card::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.lic-card::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.lic-card .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.lic-card .logo {
+  font-family: var(--mono); font-weight: 700; font-size: 20px; color: var(--accent-bright);
+  border: 2px solid var(--accent); padding: 2px 9px; letter-spacing: 2px;
+}
+.lic-card .wordmark { font-family: var(--mono); text-transform: uppercase; letter-spacing: 3px; font-size: 13px; color: var(--muted); }
+.lic-card h2 { margin: 0 0 10px; font-size: 22px; }
+.lic-card .muted { color: var(--muted); font-size: 14px; }
+.lic-card .small { font-size: 12.5px; }
+#license-key {
+  width: 100%; margin: 14px 0 12px;
+  font-family: var(--mono); font-size: 18px; letter-spacing: 2px; text-transform: uppercase;
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border-strong); padding: 12px 14px; outline: none;
+}
+#license-key:focus { border-color: var(--accent); }
+.lic-err { color: var(--danger); font-size: 13px; font-family: var(--mono); margin: 10px 0 0; }
+#license-overlay .btn { width: 100%; }

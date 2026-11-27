@@ -7,6 +7,19 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+  <!-- Écran de licence (affiché tant que l'appli n'est pas activée) -->
+  <div id="license-overlay" hidden>
+    <div class="lic-card">
+      <div class="brand"><span class="logo">MC</span><span class="wordmark">Panel</span></div>
+      <h2>Licence requise</h2>
+      <p class="muted">MC Panel est un logiciel payant (14.90 CHF, paiement unique). Collez la clé de licence reçue après votre achat pour activer l'application sur ce PC.</p>
+      <input id="license-key" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="19">
+      <button id="btn-license" class="btn primary" type="button">Activer</button>
+      <p id="license-err" class="lic-err" hidden></p>
+      <p class="muted small" id="license-state"></p>
+      <p class="muted small">Pas encore de clé ? <a id="license-buy" href="#" target="_blank" rel="noopener">Acheter MC Panel</a></p>
+    </div>
+  </div>
     <nav id="nav" hidden>
       <div class="brand">
         <div class="brand-logo">MC</div>

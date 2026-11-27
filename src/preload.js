@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getBuild: () => ipcRenderer.invoke('app:build'),
+  licenseStatus: () => ipcRenderer.invoke('license:status'),
+  licenseActivate: (key) => ipcRenderer.invoke('license:activate', key),
   logDebug: (msg) => ipcRenderer.invoke('debug:log', msg),
   defaultSshKey: () => ipcRenderer.invoke('ssh:default-key'),
   getSetting: (key) => ipcRenderer.invoke('settings:get', key),

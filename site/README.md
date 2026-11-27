@@ -68,3 +68,23 @@ vraiment empêcher les téléchargements gratuits, il faudra plus tard une petit
 vérification **côté serveur** (webhook Worldline qui confirme le paiement avant
 de servir le fichier, ou URL de téléchargement signée et temporaire). À faire
 quand le site aura un petit backend.
+
+## 7. Protection anti-revente : clé de licence (license-server/)
+
+Le téléchargement est public, mais **l'appli ne se lance qu'avec une clé de
+licence valide** (écran « Licence requise » au démarrage). La clé est vérifiée
+en ligne contre ton serveur de licences (`license-server/license_server.py`,
+à installer sur ton VPS — voir `license-server/README.md`) :
+
+- 1 clé = 2 PC maximum (empreinte du PC envoyée au serveur)
+- clé révoquable à distance (`revoke`) en cas de revente/fraude
+- l'appli re-vérifie la licence au démarrage et toutes les 6 h (7 jours de
+  grâce si le serveur est injoignable)
+
+Flux d'achat : paiement Worldline → page `success.html` (téléchargement) +
+clé envoyée par e-mail (pour l'instant tu la génères à la main avec
+`python3 license_server.py genkey` ; plus tard un webhook Worldline le fera
+automatiquement et pourra la passer dans l'URL `success.html?key=...`).
+
+Dans l'appli, l'URL du serveur de licences est dans `src/main.js`
+(constante `LICENSE_API`) — mets-y ton domaine en **HTTPS** avant la vente.

@@ -3,13 +3,77 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
+const crypto = require('crypto');
 const { status } = require('minecraft-server-util');
 const { Rcon } = require('rcon-client');
 const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'sec-no-sshkey-fe';
+const BUILD = 'license-v1';
+
+// ---- Licence (niveau 2 : activation en ligne sur NOTRE serveur) ----
+// REMPLACE par l'URL HTTPS de ton serveur de licences avant la vraie vente
+// (ex: https://licence.ton-domaine.ch). Pour les tests : le VPS en HTTP.
+const LICENSE_API = 'http://62.220.136.19:8787';
+// Page d'achat (bouton "Acheter une clé" dans l'appli) — REMPLACE par ta vraie URL
+const BUY_URL = 'https://ton-domaine.ch/mcpanel-7f3k/';
+const LICENSE_GRACE_MS = 7 * 24 * 3600 * 1000; // 7 jours de grâce hors ligne
+// Canaux autorisés SANS licence active (le reste est bloqué côté main)
+const LICENSE_PUBLIC_CHANNELS = new Set(['app:build', 'debug:log', 'settings:get', 'settings:set', 'license:status', 'license:activate']);
+
+function licenseFile() { return path.join(app.getPath('userData'), 'license.json'); }
+function loadLicense() {
+  try { return JSON.parse(fs.readFileSync(licenseFile(), 'utf8')); } catch { return null; }
+}
+// Empreinte du PC (hostname + MACs + plateforme), hachée — envoyée au serveur de licences
+function hwid() {
+  const macs = Object.values(os.networkInterfaces()).flat()
+    .filter((b) => b && b.mac && b.mac !== '00:00:00:00:00:00')
+    .map((b) => b.mac).sort().join(',');
+  return crypto.createHash('sha256').update(os.hostname() + '|' + macs + '|' + os.platform() + '|' + os.arch()).digest('hex');
+}
+function licensed() {
+  try {
+    const lic = loadLicense();
+    if (!lic || !lic.key || !lic.hwid || !lic.lastOk) return false;
+    if (lic.hwid !== hwid()) return false;
+    return (Date.now() - lic.lastOk) <= LICENSE_GRACE_MS;
+  } catch { return false; }
+}
+async function licensePost(endpoint, body) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(LICENSE_API + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+async function licenseVerifyOnline() {
+  const lic = loadLicense();
+  if (!lic || !lic.key) return false;
+  try {
+    const r = await licensePost('/verify', { key: lic.key, hwid: hwid() });
+    if (r && r.ok) {
+      lic.lastOk = Date.now();
+      fs.writeFileSync(licenseFile(), JSON.stringify(lic));
+      return true;
+    }
+    if (r && r.ok === false) {
+      try { fs.unlinkSync(licenseFile()); } catch { }
+      debugLog('licence invalide/révoquée côté serveur -> supprimée');
+      return false;
+    }
+    return licensed(); // serveur injoignable : on garde la grâce hors ligne
+  } catch {
+    return licensed();
+  }
+}
 
 function tcpCheck(host, port, timeoutMs = 3000) {
   return new Promise((resolve) => {
@@ -785,12 +849,41 @@ ipcMain.handle = (channel, fn) => _ipcHandle(channel, (event, ...args) => {
     debugLog(`IPC refusé (origine inconnue) : ${channel}`);
     return { ok: false, error: 'appel refusé (origine inconnue)' };
   }
+  if (!LICENSE_PUBLIC_CHANNELS.has(channel) && !licensed()) {
+    debugLog(`IPC refusé (licence inactive) : ${channel}`);
+    return { ok: false, error: 'licence requise — activez votre clé de licence' };
+  }
   return fn(event, ...args);
 });
 
 app.whenReady().then(() => {
   debugLog('app ready');
   ipcMain.handle('app:build', () => BUILD);
+
+  ipcMain.handle('license:status', () => {
+    const lic = loadLicense();
+    return { licensed: licensed(), key: (lic && lic.key) || null, buyUrl: BUY_URL, build: BUILD };
+  });
+
+  ipcMain.handle('license:activate', async (event, keyRaw) => {
+    const key = String(keyRaw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/.test(key)) {
+      return { ok: false, error: 'Format de clé invalide (ex : XXXX-XXXX-XXXX-XXXX).' };
+    }
+    const h = hwid();
+    let r;
+    try {
+      r = await licensePost('/activate', { key, hwid: h });
+    } catch (e) {
+      return { ok: false, error: 'Serveur de licences injoignable (' + LICENSE_API + ').' };
+    }
+    if (r && r.ok) {
+      fs.writeFileSync(licenseFile(), JSON.stringify({ key, hwid: h, lastOk: Date.now(), activatedAt: Date.now() }));
+      debugLog('licence activée sur ce PC');
+      return { ok: true };
+    }
+    return { ok: false, error: (r && r.error) || 'Activation refusée.' };
+  });
 
   ipcMain.handle('debug:log', (event, msg) => {
     debugLog(`[renderer] ${msg}`);
@@ -1058,6 +1151,10 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+
+  // Vérification de la licence au démarrage puis toutes les 6 h
+  licenseVerifyOnline();
+  setInterval(() => { licenseVerifyOnline(); }, 6 * 3600 * 1000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
