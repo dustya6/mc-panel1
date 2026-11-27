@@ -172,3 +172,15 @@ p { margin: 0 0 14px; color: var(--text); }
   h1 { font-size: 30px; }
   .site-nav { display: none; }
 }
+
+/* v3.1 : halo doux en haut + glow logo/bouton (cohérent avec l'appli) */
+body {
+  background-image:
+    radial-gradient(900px 420px at 50% -160px, rgba(143, 206, 78, .12), transparent 60%),
+    linear-gradient(rgba(143, 206, 78, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 206, 78, .05) 1px, transparent 1px);
+  background-size: auto, 30px 30px, 30px 30px;
+}
+.brand .logo { box-shadow: 0 0 16px rgba(143, 206, 78, .35); }
+.btn.primary { box-shadow: 0 0 22px rgba(143, 206, 78, .40); }
+.btn.primary:hover { box-shadow: 0 0 30px rgba(143, 206, 78, .55); }

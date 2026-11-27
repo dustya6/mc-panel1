@@ -758,3 +758,93 @@ body.light button.primary { box-shadow: 0 0 14px rgba(78, 122, 36, .22); }
 body.light .brand-logo { box-shadow: 0 0 12px rgba(78, 122, 36, .20); }
 body.light .welcome-logo { box-shadow: 0 0 22px rgba(78, 122, 36, .22); }
 body.light #console-out { background: #0a0d08; }
+
+
+/* ============================================================
+   RESKIN v3.1 — version nettement plus visible (toujours append-only)
+   ============================================================ */
+:root {
+  --bg: #0a0d07;
+  --panel: #151c0e;
+  --panel-2: #1e2714;
+  --panel-3: #2a351d;
+  --border: #37452a;
+  --border-strong: #4d5f36;
+  --text: #f2f7e9;
+  --muted: #96a37f;
+  --accent: #8fce4e;
+  --accent-bright: #c2f086;
+  --accent-ink: #0a0d07;
+  --amber: #ecb452;
+  --danger: #f05a5e;
+  --ok: #8fce4e;
+}
+body {
+  font-size: 15px;
+  background-image:
+    radial-gradient(1200px 500px at 50% -180px, rgba(143, 206, 78, .10), transparent 60%),
+    linear-gradient(rgba(143, 206, 78, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 206, 78, .05) 1px, transparent 1px);
+  background-size: auto, 34px 34px, 34px 34px;
+}
+main { padding: 36px 44px; }
+
+/* sidebar plus contrastée */
+#nav { width: 258px; background: #0c1008; border-right: 1px solid var(--border-strong); padding: 26px 16px 16px; }
+.brand { margin: 0 4px 28px; }
+.brand-logo { width: 52px; height: 52px; font-size: 17px; box-shadow: 0 0 22px rgba(143, 206, 78, .40); }
+.brand-txt h1 { font-size: 17px; letter-spacing: .14em; }
+.nav-btn { padding: 12px 14px; font-size: 12px; }
+.nav-btn::before { width: 9px; height: 9px; }
+.nav-btn:hover { background: var(--panel-2); }
+.nav-btn.active { background: rgba(143, 206, 78, .14); color: var(--accent-bright); font-weight: 700; }
+
+/* titres, cartes, boutons plus présents */
+h2 { font-size: 18px; margin: 26px 0 18px; }
+.card { padding: 24px; margin-bottom: 24px; border-color: var(--border-strong); box-shadow: 0 4px 20px rgba(0, 0, 0, .35); }
+.card::before, .card::after { width: 14px; height: 14px; border-width: 3px; }
+.card-title { font-size: 12px; letter-spacing: .14em; }
+button { padding: 12px 20px; font-size: 12.5px; }
+button.primary { box-shadow: 0 0 22px rgba(143, 206, 78, .40); font-size: 13px; }
+button.primary:hover { box-shadow: 0 0 30px rgba(143, 206, 78, .55); }
+.big { font-size: 15.5px; padding: 18px 34px; }
+input, select { padding: 12px 14px; font-size: 14.5px; background: var(--panel-2); border-color: var(--border-strong); }
+input:focus, select:focus { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(143, 206, 78, .30); }
+
+/* chiffres et badges plus gros */
+.kpi-num { font-size: 42px; }
+.pv-big { font-size: 34px; }
+.badge { padding: 6px 13px; font-size: 11px; }
+.players li { padding: 6px 15px 6px 6px; font-size: 13.5px; }
+.players img, .avatar-fallback { width: 30px; height: 30px; }
+.avatar-fallback { font-size: 13px; }
+.chart-main { height: 320px; }
+#console-out { font-size: 14px; }
+.range-btn, .metric-btn, .set-btn, .chart-btn { padding: 6px 11px; font-size: 10.5px; }
+.range-btn.active, .metric-btn.active, .set-btn.active { box-shadow: 0 0 12px rgba(143, 206, 78, .35); }
+
+/* listes avec barre latérale plus marquée */
+.server-item, .plug-row, .auto-item { border-left-width: 4px; }
+.server-item:hover, .server-item.active, .plug-row:hover, .auto-item:hover { background: var(--panel-3); border-left-color: var(--accent); }
+
+/* accueil plus impactant */
+.welcome-logo { width: 112px; height: 112px; font-size: 44px; border-width: 3px; box-shadow: 0 0 44px rgba(143, 206, 78, .45); }
+.welcome-title { font-size: 46px; letter-spacing: .24em; }
+.setup-grid { max-width: 500px; }
+
+/* stats, modales, licence */
+.stats-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.stats-card .pv-big { font-size: 28px; }
+.modal-box { border-color: var(--border-strong); }
+.lic-card { border-color: var(--border-strong); padding: 36px; }
+#license-key { font-size: 20px; padding: 14px 16px; }
+.auto-canvas { background: #070a05; }
+
+/* thème clair : même halo doux */
+body.light {
+  background-image:
+    radial-gradient(1200px 500px at 50% -180px, rgba(78, 122, 36, .12), transparent 60%),
+    linear-gradient(rgba(78, 122, 36, .07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78, 122, 36, .07) 1px, transparent 1px);
+  background-size: auto, 34px 34px, 34px 34px;
+}
