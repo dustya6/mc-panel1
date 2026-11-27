@@ -2349,6 +2349,14 @@ window.api.getBuild().then((b) => {
   }
 })();
 
+// Anti-cache : ajoute ?v=<timestamp> au CSS pour forcer le rechargement à chaque lancement
+try {
+  document.querySelectorAll('link[rel="stylesheet"]').forEach((l) => {
+    const h = l.getAttribute('href') || '';
+    if (h && h.indexOf('?v=') === -1) l.href = h + '?v=' + Date.now();
+  });
+} catch { }
+
 // ---------- Licence (écran d'activation) ----------
 const licenseOverlay = document.getElementById('license-overlay');
 const licenseKeyEl = document.getElementById('license-key');

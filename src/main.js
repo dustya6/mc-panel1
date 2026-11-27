@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, shell, dialog, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -10,7 +10,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ui-v4';
+const BUILD = 'ui-v5';
 
 // ---- Licence (niveau 2 : activation en ligne sur NOTRE serveur) ----
 // REMPLACE par l'URL HTTPS de ton serveur de licences avant la vraie vente
@@ -856,8 +856,10 @@ ipcMain.handle = (channel, fn) => _ipcHandle(channel, (event, ...args) => {
   return fn(event, ...args);
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   debugLog('app ready');
+  // Vide le cache disque AVANT de créer la fenêtre : le CSS/JS chargés sont bien ceux du build courant
+  try { await session.defaultSession.clearCache(); } catch { }
   ipcMain.handle('app:build', () => BUILD);
 
   ipcMain.handle('license:status', () => {
