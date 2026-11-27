@@ -1307,3 +1307,63 @@ label { color: var(--muted); font-family: var(--sans); text-transform: none; let
 .lic-card { border-radius: 20px; }
 #license-key { border-radius: 11px; }
 #license-overlay { background-image: radial-gradient(900px 600px at 15% -10%, rgba(52,211,153,.20), transparent 55%), radial-gradient(800px 600px at 90% 110%, rgba(45,212,191,.14), transparent 55%); background-size: auto; }
+
+
+/* ============================================================
+   ANIM v8 — petites animations (CSS uniquement, rien ne bouge)
+   - entrée de page quand une section devient visible
+   - boutons : hover lift + clic scale
+   - modales : fondu + pop
+   - infobulle "i" : apparition douce
+   - pastille actu : pulsation
+   - cartes stats : entrée en cascade
+   ============================================================ */
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* arrivée sur une page (l'attribut hidden est retiré -> l'animation se rejoue) */
+main section:not([hidden]), #welcome:not([hidden]), #setup:not([hidden]) { animation: pageIn .22s ease-out both; }
+
+/* boutons : hover lift + clic press */
+button:not(.nav-btn) { transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .12s ease; }
+button:not(.nav-btn):hover { transform: translateY(-1px); }
+button:not(.nav-btn):active { transform: translateY(0) scale(.965); }
+.nav-btn:active { transform: scale(.98); }
+
+/* modales : fondu + pop */
+.modal:not([hidden]) { animation: fadeIn .16s ease-out both; }
+.modal:not([hidden]) .modal-box { animation: popIn .20s cubic-bezier(.2, .9, .3, 1.15) both; }
+
+/* écran de licence */
+#license-overlay:not([hidden]) .lic-card { animation: popIn .25s cubic-bezier(.2, .9, .3, 1.15) both; }
+
+/* infobulle "i" des blocs */
+#blk-tip { animation: tipIn .12s ease-out both; }
+
+/* pastille rouge des actualités */
+.news-dot:not([hidden]) { animation: pulseDot 1.6s ease-in-out infinite; }
+
+/* accueil : logo qui pop */
+#welcome:not([hidden]) .welcome-logo { animation: popIn .35s cubic-bezier(.2, .9, .3, 1.3) both; }
+
+/* cartes statistiques : entrée en cascade */
+.stats-grid .stats-card { animation: pageIn .30s ease-out both; }
+.stats-grid .stats-card:nth-child(1) { animation-delay: .02s; }
+.stats-grid .stats-card:nth-child(2) { animation-delay: .05s; }
+.stats-grid .stats-card:nth-child(3) { animation-delay: .08s; }
+.stats-grid .stats-card:nth-child(4) { animation-delay: .11s; }
+.stats-grid .stats-card:nth-child(5) { animation-delay: .14s; }
+.stats-grid .stats-card:nth-child(6) { animation-delay: .17s; }
+.stats-grid .stats-card:nth-child(7) { animation-delay: .20s; }
+.stats-grid .stats-card:nth-child(8) { animation-delay: .23s; }
+
+/* listes : apparition douce des lignes récentes */
+.auto-item, .server-item, .plug-row, .news-list li { animation: pageIn .18s ease-out both; }
+
+/* accessibilité : si l'OS demande moins d'animations, on coupe tout */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
