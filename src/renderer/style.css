@@ -1343,8 +1343,7 @@ button:not(.nav-btn):active { transform: translateY(0) scale(.965); }
 /* infobulle "i" des blocs */
 #blk-tip { animation: tipIn .12s ease-out both; }
 
-/* pastille rouge des actualités */
-.news-dot:not([hidden]) { animation: pulseDot 1.6s ease-in-out infinite; }
+/* pastille rouge des actualités : statique et discrète (plus de clignotement) */
 
 /* accueil : logo qui pop */
 #welcome:not([hidden]) .welcome-logo { animation: popIn .35s cubic-bezier(.2, .9, .3, 1.3) both; }
@@ -1367,3 +1366,6 @@ button:not(.nav-btn):active { transform: translateY(0) scale(.965); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* v8.1 : pastille d'alerte plus petite et fixe */
+.news-dot:not([hidden]) { animation: none; width: 7px; height: 7px; top: 11px; right: 12px; opacity: .9; }
