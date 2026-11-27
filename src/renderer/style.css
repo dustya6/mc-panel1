@@ -1189,3 +1189,121 @@ label { color: var(--muted); }
 #license-key { border-radius: 10px; background: rgba(255,255,255,.04); border-color: var(--border-strong); }
 #license-key:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(34,197,94,.3); }
 #license-overlay { background-image: radial-gradient(1100px 480px at 50% -160px, rgba(34,197,94,.16), transparent 60%), linear-gradient(rgba(74,222,128,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,.05) 1px, transparent 1px); background-size: auto, 32px 32px, 32px 32px; }
+
+
+/* ============================================================
+   RESKIN v7 — verre façon Apple "Liquid Glass" (thème unique)
+   Plus translucide, blur fort, hairline blanche, ombres douces,
+   vert émeraude doux, fond aurora lisse (sans grille), sans glow néon.
+   ============================================================ */
+:root {
+  --bg: #0a0f0d;
+  --panel: rgba(255, 255, 255, .055);
+  --panel-2: rgba(255, 255, 255, .075);
+  --panel-3: rgba(255, 255, 255, .10);
+  --border: rgba(255, 255, 255, .09);
+  --border-strong: rgba(255, 255, 255, .16);
+  --text: #f2f7f4;
+  --muted: #8fa39a;
+  --accent: #34d399;
+  --accent-bright: #6ee7b7;
+  --accent-ink: #052e22;
+  --amber: #fbbf24;
+  --danger: #fb7185;
+  --ok: #34d399;
+}
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(900px 600px at 15% -10%, rgba(52, 211, 153, .20), transparent 55%),
+    radial-gradient(800px 600px at 90% 110%, rgba(45, 212, 191, .14), transparent 55%),
+    radial-gradient(600px 400px at 70% 30%, rgba(16, 185, 129, .07), transparent 60%);
+  background-size: auto;
+}
+body::before { content: none; box-shadow: none; } /* plus de barre néon : look Apple épuré */
+::selection { background: rgba(52, 211, 153, .30); color: #ecfdf5; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border: 3px solid transparent; background-clip: padding-box; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .24); background-clip: padding-box; }
+
+/* verre Apple partagé : translucide + gros flou + hairline + ombre douce */
+#nav, .card, .modal-box, .lic-card, .auto-palette, .stat-big, .profile-cell,
+.server-item, .plug-row, .auto-item, .pal-block, .auto-block, .players li,
+.ssh-box, .help-box, button, input, select {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+#nav, .card, .modal-box, .lic-card, .auto-palette, .stat-big, .profile-cell,
+.server-item, .plug-row, .auto-item, .pal-block, .auto-block, .players li,
+.ssh-box, .help-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .09);
+}
+#nav { background: rgba(255, 255, 255, .045); width: 248px; padding: 24px 14px 14px; border-right: 1px solid var(--border); border-radius: 0; }
+.card { border-radius: 18px; padding: 22px; margin-bottom: 20px; }
+.card-title { color: var(--muted); letter-spacing: .01em; text-transform: none; font-family: var(--sans); font-weight: 600; font-size: 13.5px; }
+.card-title::before { content: none; }
+
+/* sidebar épurée */
+.brand-logo { border-radius: 12px; background: rgba(52, 211, 153, .16); border: 1px solid rgba(52, 211, 153, .35); color: var(--accent-bright); box-shadow: none; }
+.brand-txt h1 { color: var(--text); font-family: var(--sans); font-weight: 700; letter-spacing: 0; }
+.brand-sub { color: var(--muted); font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 10.5px; }
+.nav-btn { border-radius: 10px; border-left: none; color: var(--muted); font-family: var(--sans); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 13.5px; }
+.nav-btn::before { display: none; }
+.nav-btn:hover { background: rgba(255, 255, 255, .07); color: var(--text); }
+.nav-btn.active { background: rgba(52, 211, 153, .16); color: var(--accent-bright); text-shadow: none; box-shadow: inset 0 0 0 1px rgba(52, 211, 153, .25); }
+.nav-foot { border-top-color: var(--border); }
+.news-dot { border-radius: 50%; box-shadow: none; }
+
+/* titres sobres */
+h1 { color: var(--text); font-family: var(--sans); font-weight: 700; }
+h2 { border-left: none; padding-left: 0; color: var(--text); text-shadow: none; font-family: var(--sans); font-weight: 700; font-size: 17px; }
+.muted, .hint { color: var(--muted); }
+code { background: rgba(255, 255, 255, .07); border: 1px solid var(--border); color: var(--accent-bright); border-radius: 6px; }
+
+/* boutons verre Apple */
+button { border-radius: 11px; background: rgba(255, 255, 255, .07); border: 1px solid var(--border); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08); }
+button:hover { background: rgba(255, 255, 255, .12); border-color: var(--border-strong); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+button.primary { background: linear-gradient(180deg, #6ee7b7, #34d399); border-color: rgba(110, 231, 183, .6); color: var(--accent-ink); font-weight: 700; box-shadow: 0 6px 18px rgba(52, 211, 153, .30), inset 0 1px 0 rgba(255,255,255,.5); }
+button.primary:hover { box-shadow: 0 8px 24px rgba(52, 211, 153, .40), inset 0 1px 0 rgba(255,255,255,.5); color: var(--accent-ink); }
+button.danger { border-color: rgba(251, 113, 133, .4); color: var(--danger); }
+button.danger:hover { background: rgba(251, 113, 133, .12); color: #fda4af; box-shadow: none; }
+button.ghost { border-color: transparent; color: var(--muted); box-shadow: none; }
+input, select { border-radius: 11px; background: rgba(255, 255, 255, .06); border: 1px solid var(--border); color: var(--text); box-shadow: inset 0 1px 2px rgba(0,0,0,.15); }
+input:focus, select:focus { border-color: rgba(52, 211, 153, .7); box-shadow: 0 0 0 4px rgba(52, 211, 153, .18); }
+label { color: var(--muted); font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 500; }
+.info { border: none; background: rgba(255, 255, 255, .10); color: var(--muted); border-radius: 50%; }
+.info:hover { color: var(--accent-bright); }
+
+/* chiffres sobres, badges doux, joueurs */
+.kpi-num, .pv-big { color: var(--text); text-shadow: none; font-weight: 700; }
+.badge { border-radius: 999px; border: none; font-family: var(--sans); text-transform: none; letter-spacing: 0; font-weight: 600; }
+.badge.online { color: #6ee7b7; background: rgba(52, 211, 153, .14); box-shadow: none; }
+.badge.offline, .badge.error { color: #fda4af; background: rgba(251, 113, 133, .12); }
+.badge.info { color: var(--accent-bright); background: rgba(52, 211, 153, .12); }
+.badge .dot { border-radius: 50%; box-shadow: none; }
+.players li { border-radius: 999px; }
+.players img, .avatar-fallback { border-radius: 8px; }
+.avatar-fallback { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+.chart, .spark { background: rgba(0, 0, 0, .30); border: 1px solid var(--border); border-radius: 14px; }
+#console-out { background: rgba(0, 0, 0, .42); border: 1px solid var(--border); border-radius: 14px; color: #d7e8de; }
+#console-out .cmd { color: var(--accent-bright); text-shadow: none; }
+#console-out .err { color: #fda4af; }
+#console-out .ts { color: #6b7f76; }
+.range-btn, .metric-btn, .set-btn, .chart-btn { border-radius: 999px; background: rgba(255, 255, 255, .07); border: 1px solid var(--border); color: var(--muted); font-family: var(--sans); text-transform: none; letter-spacing: 0; }
+.range-btn.active, .metric-btn.active, .set-btn.active { background: rgba(52, 211, 153, .85); color: var(--accent-ink); border-color: transparent; box-shadow: none; }
+.res-bar { background: rgba(0, 0, 0, .35); border-color: var(--border); }
+.res-fill { box-shadow: none; }
+
+/* listes, éditeur, modales, accueil, licence */
+.server-item, .plug-row, .auto-item, .pal-block, .auto-block { border-radius: 12px; }
+.server-item.active { background: rgba(52, 211, 153, .14); border-color: rgba(52, 211, 153, .4); }
+.server-item:hover, .plug-row:hover, .auto-item:hover { border-left-color: var(--accent); }
+.auto-canvas { background: rgba(0, 0, 0, .30); border: 1px dashed var(--border-strong); border-radius: 16px; }
+.modal { background: rgba(5, 10, 8, .55); backdrop-filter: blur(10px); }
+.modal-box { border-radius: 20px; }
+.welcome-logo { border-radius: 26px; background: rgba(52, 211, 153, .14); border: 1px solid rgba(52, 211, 153, .35); color: var(--accent-bright); box-shadow: 0 20px 60px rgba(52, 211, 153, .25), inset 0 1px 0 rgba(255,255,255,.12); }
+.welcome-title { color: var(--text); text-shadow: none; font-family: var(--sans); font-weight: 800; }
+.lic-card { border-radius: 20px; }
+#license-key { border-radius: 11px; }
+#license-overlay { background-image: radial-gradient(900px 600px at 15% -10%, rgba(52,211,153,.20), transparent 55%), radial-gradient(800px 600px at 90% 110%, rgba(45,212,191,.14), transparent 55%); background-size: auto; }
