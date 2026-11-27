@@ -10,7 +10,7 @@ const { Client } = require('ssh2');
 
 let mainWindow = null;
 const logStreams = new Map();
-const BUILD = 'ui-v5';
+const BUILD = 'ui-v6';
 
 // ---- Licence (niveau 2 : activation en ligne sur NOTRE serveur) ----
 // REMPLACE par l'URL HTTPS de ton serveur de licences avant la vraie vente
