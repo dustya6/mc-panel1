@@ -1871,10 +1871,6 @@ if (quickForm) {
   });
 }
 
-function applyTheme(t) {
-  document.body.classList.toggle('light', t === 'light');
-}
-
 let settingsStatusTimer = null;
 
 function showSettingsSaved() {
@@ -1891,10 +1887,6 @@ function renderSettings() {
   document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
     b.classList.toggle('active', Number(b.dataset.sec) === refreshSec);
   });
-  const theme = document.body.classList.contains('light') ? 'light' : 'dark';
-  document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.theme === theme);
-  });
 }
 
 document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
@@ -1910,14 +1902,6 @@ document.querySelectorAll('#refresh-row .set-btn').forEach((b) => {
   });
 });
 
-document.querySelectorAll('#theme-row .set-btn').forEach((b) => {
-  b.addEventListener('click', async () => {
-    applyTheme(b.dataset.theme);
-    await window.api.setSetting('theme', b.dataset.theme);
-    showSettingsSaved();
-    renderSettings();
-  });
-});
 
 // ---------- Page Plugins (recherche Hangar + compatibilite avec MA version) ----------
 const PLAT_KEYWORDS = [
@@ -2332,8 +2316,7 @@ window.api.getBuild().then((b) => {
 
 (async () => {
   try {
-    const t = await window.api.getSetting('theme');
-    if (t === 'light') applyTheme('light'); // défaut : thème Sombre = "verre vert futuriste" (v6) ; "Clair" reste dispo dans Réglages
+    // Thème unique : "verre vert futuriste" (v6) — plus de choix Sombre/Clair
     renderSettings();
     const r = await window.api.getSetting('refreshSec');
     if (r === 30 || r === 60) refreshSec = r;
