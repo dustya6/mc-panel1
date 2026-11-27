@@ -1331,7 +1331,7 @@ main section:not([hidden]), #welcome:not([hidden]), #setup:not([hidden]) { anima
 button:not(.nav-btn) { transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .12s ease; }
 button:not(.nav-btn):hover { transform: translateY(-1px); }
 button:not(.nav-btn):active { transform: translateY(0) scale(.965); }
-.nav-btn:active { transform: scale(.98); }
+.nav-btn:active { transform: scale(.995); }
 
 /* modales : fondu + pop */
 .modal:not([hidden]) { animation: fadeIn .16s ease-out both; }
@@ -1360,8 +1360,8 @@ button:not(.nav-btn):active { transform: translateY(0) scale(.965); }
 .stats-grid .stats-card:nth-child(7) { animation-delay: .20s; }
 .stats-grid .stats-card:nth-child(8) { animation-delay: .23s; }
 
-/* listes : apparition douce des lignes récentes */
-.auto-item, .server-item, .plug-row, .news-list li { animation: pageIn .18s ease-out both; }
+/* PAS d'animation sur les lignes de listes : elles sont reconstruites à chaque
+   rafraîchissement (15-60 s) -> sinon elles clignoteraient sans arrêt. */
 
 /* accessibilité : si l'OS demande moins d'animations, on coupe tout */
 @media (prefers-reduced-motion: reduce) {
