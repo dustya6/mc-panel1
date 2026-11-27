@@ -621,3 +621,140 @@ body.light #blk-tip { background: #ffffff; box-shadow: 0 6px 18px rgba(29,37,20,
 #license-key:focus { border-color: var(--accent); }
 .lic-err { color: var(--danger); font-size: 13px; font-family: var(--mono); margin: 10px 0 0; }
 #license-overlay .btn { width: 100%; }
+
+
+/* ============================================================
+   RESKIN v3 — look "léger, simple, pro" (aucun sélecteur supprimé :
+   on redéfinit juste les valeurs, en fin de fichier donc prioritaires)
+   ============================================================ */
+:root {
+  --bg: #0d110a;
+  --panel: #141a10;
+  --panel-2: #1b2215;
+  --panel-3: #242e1b;
+  --border: #2d3722;
+  --border-strong: #43542e;
+  --text: #eef3e4;
+  --muted: #8f9c78;
+  --accent: #8bc34a;
+  --accent-bright: #b8e37e;
+  --accent-ink: #0d110a;
+  --amber: #e8b04b;
+  --danger: #ef5350;
+  --ok: #8bc34a;
+}
+
+body {
+  font-size: 14.5px;
+  background-image:
+    linear-gradient(rgba(139, 195, 74, .038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 195, 74, .038) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb { background: var(--panel-3); border: 3px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+main { padding: 32px 38px; }
+
+/* ---- sidebar ---- */
+#nav { width: 252px; padding: 24px 16px 16px; background: var(--panel); }
+.brand { margin: 0 4px 26px; gap: 13px; }
+.brand-logo {
+  width: 48px; height: 48px; font-size: 16px;
+  box-shadow: 0 0 18px rgba(139, 195, 74, .28);
+}
+.brand-txt h1 { font-size: 16px; }
+.nav-btn { padding: 11px 13px; font-size: 11.5px; transition: background .12s, color .12s; }
+.nav-btn:hover { background: var(--panel-3); color: var(--text); }
+.nav-btn.active { background: var(--panel-3); color: var(--accent-bright); }
+.nav-btn.active::before { box-shadow: 0 0 8px rgba(139, 195, 74, .6); }
+.nav-foot { padding-top: 16px; }
+
+/* ---- titres & cartes ---- */
+h1 { font-size: 19px; }
+h2 { font-size: 16px; padding-left: 12px; border-left-width: 4px; margin: 24px 0 16px; letter-spacing: .02em; }
+.card { padding: 22px; margin-bottom: 22px; box-shadow: 0 3px 16px rgba(0, 0, 0, .28); }
+.card::before, .card::after { width: 12px; height: 12px; }
+.card-title { font-size: 11.5px; letter-spacing: .12em; margin-bottom: 14px; }
+.hint { font-size: 12.5px; line-height: 1.6; }
+.muted { font-size: 12.5px; }
+code { background: var(--panel-3); }
+
+/* ---- formulaires ---- */
+label { font-size: 11.5px; margin: 14px 0; }
+input, select { padding: 11px 13px; background: var(--panel-2); border-color: var(--border); transition: border-color .12s, box-shadow .12s; }
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(139, 195, 74, .22); }
+
+/* ---- boutons ---- */
+button { padding: 11px 18px; transition: background .13s, border-color .13s, color .13s, box-shadow .13s, transform .13s; }
+button:hover { border-color: var(--accent); background: var(--panel-3); color: var(--accent-bright); }
+button.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+  box-shadow: 0 0 18px rgba(139, 195, 74, .30);
+}
+button.primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); color: var(--accent-ink); box-shadow: 0 0 24px rgba(139, 195, 74, .45); transform: translateY(-1px); }
+button.danger:hover { box-shadow: 0 0 14px rgba(239, 83, 80, .35); }
+.big { font-size: 14.5px; padding: 16px 30px; }
+
+/* ---- KPIs / badges / joueurs ---- */
+.kpi-num { font-size: 36px; }
+.pv-big { font-size: 30px; }
+.badge { padding: 5px 12px; }
+.players li { padding: 5px 14px 5px 5px; transition: border-color .12s; }
+.players li:hover { border-color: var(--accent); }
+.stat-big { padding: 16px 18px; }
+.res-row { margin: 12px 0; }
+.res-bar { height: 10px; }
+
+/* ---- graphiques & console ---- */
+.chart, .spark { background: #080b06; }
+.chart-main { height: 300px; }
+#console-out { background: #040604; font-size: 13.5px; padding: 14px; }
+.range-btn, .metric-btn, .set-btn, .chart-btn { transition: background .12s, color .12s, border-color .12s; }
+
+/* ---- listes (serveurs, plugins, autos) ---- */
+.server-item, .plug-row, .auto-item, .pal-block { transition: border-color .12s, background .12s, transform .12s; }
+.server-item { padding: 13px 15px; margin: 8px 0; }
+.server-item:hover, .server-item.active { background: var(--panel-3); }
+.plug-row { padding: 13px 15px; }
+.plug-row:hover { background: var(--panel-3); }
+.auto-item { padding: 11px 14px; margin-top: 8px; }
+.auto-item:hover { background: var(--panel-3); }
+.pal-block { padding: 9px 11px; }
+.pal-block:hover { background: var(--panel-3); transform: translateX(4px); }
+
+/* ---- éditeur d'automatisations ---- */
+.auto-canvas { background: #080b06; padding: 12px; }
+.auto-block { padding: 9px 11px; }
+.auto-palette { background: var(--panel-2); padding: 11px; }
+#btn-auto-deploy { box-shadow: 0 0 18px rgba(139, 195, 74, .30); }
+
+/* ---- modales ---- */
+.modal { background: rgba(5, 8, 4, .78); backdrop-filter: blur(3px); }
+.modal-box { box-shadow: 0 10px 44px rgba(0, 0, 0, .55); }
+.modal-grid { gap: 26px; }
+.profile-cell { padding: 10px 12px; }
+
+/* ---- accueil ---- */
+#welcome { gap: 22px; }
+.welcome-logo { box-shadow: 0 0 34px rgba(139, 195, 74, .35); }
+.welcome-title { font-size: 40px; letter-spacing: .22em; }
+.welcome-sub { font-size: 14px; }
+
+/* ---- stats ---- */
+.stats-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.stats-card .pv-big { font-size: 26px; }
+
+/* ---- licence ---- */
+.lic-card { box-shadow: 0 10px 44px rgba(0, 0, 0, .55); padding: 32px; }
+#license-key { background: var(--panel-2); }
+#license-key:focus { box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(139, 195, 74, .22); }
+
+/* ---- thème clair : ajustements doux ---- */
+body.light .card { box-shadow: 0 2px 10px rgba(29, 37, 20, .10); }
+body.light button.primary { box-shadow: 0 0 14px rgba(78, 122, 36, .22); }
+body.light .brand-logo { box-shadow: 0 0 12px rgba(78, 122, 36, .20); }
+body.light .welcome-logo { box-shadow: 0 0 22px rgba(78, 122, 36, .22); }
+body.light #console-out { background: #0a0d08; }

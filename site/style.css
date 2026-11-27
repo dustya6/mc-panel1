@@ -4,18 +4,18 @@
    accent vert herbe, labels en mono.
    ============================================================ */
 :root {
-  --bg: #0a0c08;
-  --panel: #10130b;
-  --panel-2: #161a0f;
-  --panel-3: #1f2614;
-  --border: #28311b;
-  --border-strong: #3a4726;
-  --text: #e9efe0;
-  --muted: #87936f;
-  --accent: #7cb342;
-  --accent-bright: #a9dd63;
-  --accent-ink: #0a0c08;
-  --danger: #e5484d;
+  --bg: #0d110a;
+  --panel: #141a10;
+  --panel-2: #1b2215;
+  --panel-3: #242e1b;
+  --border: #2d3722;
+  --border-strong: #43542e;
+  --text: #eef3e4;
+  --muted: #8f9c78;
+  --accent: #8bc34a;
+  --accent-bright: #b8e37e;
+  --accent-ink: #0d110a;
+  --danger: #ef5350;
   --mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
   --sans: "Segoe UI", -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -105,7 +105,7 @@ p { margin: 0 0 14px; color: var(--text); }
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .btn:hover { border-color: var(--accent); color: var(--accent-bright); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 18px rgba(139,195,74,.30); }
 .btn.primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); color: var(--accent-ink); }
 .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 .btn.big { font-size: 16px; padding: 18px 36px; }
